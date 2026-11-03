@@ -10,6 +10,8 @@ online businesses.
 Hack1 gives someone a way to decide *who gets what, in what order* before it's too late, name a
 keyholder who can start the handover, and give the family a plan instead of a puzzle.
 
+**Live demo: <https://hack1-weld.vercel.app>** (no login, seeded with a demo household)
+
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fdawnikhq%2FHACK1&project-name=hack1&repository-name=hack1)
 
 **All accounts, balances, documents and transfers are simulated.** Nothing here creates a legal
@@ -185,3 +187,5 @@ and write back; mutations are read-modify-write. `POST /api/demo/reset` restores
   cooperation, security controls and compliance work.
 - Platform terms and inheritance law still apply. Hack1 makes the process preparable, not
   bypassable.
+- The demo is a single shared household: one plan, one keyholder. There are no accounts or logins,
+  so anyone with the link can press "Reset demo household".
