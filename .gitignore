@@ -1,0 +1,13 @@
+node_modules/
+.next/
+out/
+build/
+dist/
+data/*.db
+data/*.db-journal
+.env*
+*.log
+.DS_Store
+next-env.d.ts
+tsconfig.tsbuildinfo
+google_drive/
