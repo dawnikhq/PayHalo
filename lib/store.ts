@@ -92,10 +92,22 @@ export async function resetDemo(): Promise<Snapshot> {
   return { ...snapshotOf(doc), storage: driver.kind };
 }
 
-/** Small convenience for the UI. */
+/**
+ * Small convenience for the UI, and a real health check: it asks the driver
+ * for the document so a misconfigured durable store is visible immediately
+ * instead of failing on the first page load.
+ */
 export async function storageKind() {
   const driver = await getDriver();
-  return { kind: driver.kind, label: driver.label, durable: driver.durable };
+  let ok = true;
+  let error: string | undefined;
+  try {
+    await driver.load();
+  } catch (e) {
+    ok = false;
+    error = e instanceof Error ? e.message : String(e);
+  }
+  return { kind: driver.kind, label: driver.label, durable: driver.durable, ok, error };
 }
 
 export { latestClaim };

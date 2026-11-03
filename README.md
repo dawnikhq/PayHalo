@@ -75,10 +75,14 @@ vercel deploy --prod            # production
 
 | Order | Condition | Driver | Durable |
 |---|---|---|---|
-| 1 | `HACK1_STORE=kv` \| `sqlite` \| `memory` | forced driver | — |
-| 2 | `KV_REST_API_*` / `UPSTASH_REDIS_REST_*` present | Vercel KV / Upstash | ✅ |
-| 3 | local machine with a writable disk | SQLite file | ✅ |
-| 4 | anything else (e.g. Vercel without KV) | in-memory, seeded | ❌ |
+| 1 | `HACK1_STORE=supabase` \| `kv` \| `sqlite` \| `memory` | forced driver | — |
+| 2 | `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` present | Supabase Postgres | ✅ |
+| 3 | `KV_REST_API_*` / `UPSTASH_REDIS_REST_*` present | Vercel KV / Upstash | ✅ |
+| 4 | local machine with a writable disk | SQLite file | ✅ |
+| 5 | anything else (e.g. Vercel with no database) | in-memory, seeded | ❌ |
+
+Remote drivers are wrapped in a guard: if one errors, the app logs it, keeps serving from memory
+and reports itself as non-durable in the demo dock instead of returning a 500.
 
 ### Why it needed changes for Vercel
 
@@ -127,7 +131,7 @@ Next.js App Router (async server components read state directly)
         ├── lib/model.ts        the state document, seed, and every mutation
         ├── lib/engine.ts       the allocation rules (pure)
         ├── lib/ocr.ts          simulated document extraction
-        └── lib/storage/        drivers: kv.ts · sqlite.ts · memory.ts
+        └── lib/storage/        drivers: supabase.ts · kv.ts · sqlite.ts · memory.ts
 ```
 
 **Engine rule** (`lib/engine.ts`), executed when a verified claim's safety window ends:
@@ -160,7 +164,7 @@ and write back; mutations are read-modify-write. `POST /api/demo/reset` restores
 | POST | `/api/claim/fast-forward` | Demo: jump to the end of the window |
 | POST | `/api/beneficiary` | Toggle a beneficiary's reachability |
 | POST | `/api/demo/reset` | Restore the seeded household |
-| GET | `/api/meta` | Which storage driver is live (shown in the demo dock) |
+| GET | `/api/meta` | Which storage driver is live + a health probe (shown in the demo dock) |
 
 ---
 

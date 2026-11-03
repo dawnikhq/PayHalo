@@ -1,6 +1,6 @@
 import type { StateDoc } from "@/lib/model";
 
-export type StoreKind = "kv" | "sqlite" | "memory";
+export type StoreKind = "supabase" | "kv" | "sqlite" | "memory";
 
 export interface Driver {
   kind: StoreKind;

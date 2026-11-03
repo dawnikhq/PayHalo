@@ -7,7 +7,11 @@ export function DemoDock() {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
-  const [storage, setStorage] = useState<{ label: string; durable: boolean } | null>(null);
+  const [storage, setStorage] = useState<{
+    label: string;
+    durable: boolean;
+    ok?: boolean;
+  } | null>(null);
   const router = useRouter();
 
   async function toggle() {
@@ -66,13 +70,17 @@ export function DemoDock() {
           <p className="mt-2 flex items-start gap-1.5 border-t border-white/6 px-1 pt-2 text-[10px] leading-relaxed text-muted/50">
             <span
               className={`mt-[3px] h-1.5 w-1.5 shrink-0 rounded-full ${
-                storage?.durable ? "bg-sage" : "bg-ember/70"
+                storage?.ok === false || !storage?.durable ? "bg-ember/70" : "bg-sage"
               }`}
             />
             <span>
               {storage
                 ? `${storage.label}${
-                    storage.durable ? "" : " — state can reset between requests"
+                    storage.ok === false
+                      ? " — unreachable, running in memory"
+                      : storage.durable
+                        ? " — durable"
+                        : " — state can reset between requests"
                   }`
                 : "Checking storage…"}
             </span>

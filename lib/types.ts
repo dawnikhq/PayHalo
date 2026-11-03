@@ -105,5 +105,5 @@ export interface Snapshot {
   totalCents: number;
   secondsToWindowEnd: number | null;
   /** Which persistence driver served this state. */
-  storage: "kv" | "sqlite" | "memory";
+  storage: "supabase" | "kv" | "sqlite" | "memory";
 }
