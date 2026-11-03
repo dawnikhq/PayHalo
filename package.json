@@ -2,12 +2,13 @@
   "name": "hack1",
   "version": "1.0.0",
   "private": true,
-  "description": "Hack1 — a digital inheritance plan for the Dormant Billion.",
+  "description": "Hack1 \u2014 a digital inheritance plan for the Dormant Billion.",
   "scripts": {
     "dev": "next dev -H 0.0.0.0 -p 3000",
     "build": "next build",
     "start": "next start -H 0.0.0.0 -p 3000",
-    "lint": "next lint"
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.5",
@@ -24,5 +25,8 @@
     "postcss": "^8",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": "22.x"
   }
 }

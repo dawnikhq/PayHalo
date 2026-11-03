@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { savePlan, getSnapshot } from "@/lib/store";
+import { getSnapshot, savePlan } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     );
   }
 
-  savePlan({
+  await savePlan({
     name: body.name,
     email: body.email ?? "",
     assets: body.assets ?? [],
@@ -23,13 +23,15 @@ export async function POST(request: Request) {
       relationship: body.primary.relationship ?? "",
       note: body.primary.note ?? "",
     },
-    backups: (body.backups ?? []).map((b: { name: string; email?: string; relationship?: string; share: number; note?: string }) => ({
-      name: b.name,
-      email: b.email ?? "",
-      relationship: b.relationship ?? "",
-      share: Number(b.share) || 0,
-      note: b.note ?? "",
-    })),
+    backups: (body.backups ?? []).map(
+      (b: { name: string; email?: string; relationship?: string; share: number; note?: string }) => ({
+        name: b.name,
+        email: b.email ?? "",
+        relationship: b.relationship ?? "",
+        share: Number(b.share) || 0,
+        note: b.note ?? "",
+      }),
+    ),
     charity: {
       name: body.charity.name,
       email: body.charity.email ?? "",
@@ -43,5 +45,5 @@ export async function POST(request: Request) {
     },
   });
 
-  return NextResponse.json({ ok: true, snapshot: getSnapshot() });
+  return NextResponse.json({ ok: true, snapshot: await getSnapshot() });
 }

@@ -19,7 +19,7 @@ export default async function DashboardPage({
   searchParams: Promise<{ sealed?: string }>;
 }) {
   const { sealed } = await searchParams;
-  const s = getSnapshot();
+  const s = await getSnapshot();
   const firstName = s.user.name.split(" ")[0];
   const claimed = Boolean(sealed);
 

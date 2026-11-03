@@ -36,8 +36,8 @@ const MECHANICS = [
   },
 ];
 
-export default function Home() {
-  const s = getSnapshot();
+export default async function Home() {
+  const s = await getSnapshot();
   const recipients = s.beneficiaries.filter((b) => b.role !== "charity");
   const charity = s.beneficiaries.find((b) => b.role === "charity");
 

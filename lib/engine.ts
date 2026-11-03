@@ -1,5 +1,4 @@
-import type { DatabaseSync } from "node:sqlite";
-import type { Beneficiary, Plan, Claim, Role } from "./types";
+import type { Beneficiary, Role } from "./types";
 
 export interface Allocation {
   beneficiaryId: number;
@@ -45,41 +44,4 @@ export function allocate(beneficiaries: Beneficiary[], totalCents: number): Allo
 
 export function totalOf(assets: { balanceCents: number }[]): number {
   return assets.reduce((s, a) => s + a.balanceCents, 0);
-}
-
-export function executeDistribution(
-  db: DatabaseSync,
-  claim: Claim,
-  plan: Plan,
-  beneficiaries: Beneficiary[],
-  totalCents: number,
-): Allocation[] {
-  const allocations = allocate(beneficiaries, totalCents);
-  const now = new Date().toISOString();
-
-  db.prepare("DELETE FROM distribution WHERE claim_id = ?").run(claim.id);
-  const insert = db.prepare(
-    `INSERT INTO distribution (claim_id, beneficiary_id, amount_cents, share, status, created_at)
-     VALUES (?, ?, ?, ?, 'released', ?)`,
-  );
-  for (const a of allocations) {
-    insert.run(claim.id, a.beneficiaryId, a.amountCents, a.share, now);
-  }
-
-  db.prepare("UPDATE claim SET status = 'distributed', distributed_at = ? WHERE id = ?").run(
-    now,
-    claim.id,
-  );
-  db.prepare("UPDATE plan SET status = 'distributed', updated_at = ? WHERE id = ?").run(now, plan.id);
-
-  db.prepare(
-    "INSERT INTO event (plan_id, type, title, body, created_at) VALUES (?, 'distribution.executed', ?, ?, ?)",
-  ).run(
-    plan.id,
-    "Handover executed",
-    `${allocations.length} recipient${allocations.length === 1 ? "" : "s"} funded from ${beneficiaries.length} instructions.`,
-    now,
-  );
-
-  return allocations;
 }

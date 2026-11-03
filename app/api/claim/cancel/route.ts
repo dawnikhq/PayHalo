@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { cancelClaim, getSnapshot } from "@/lib/store";
+import { cancelClaimAction } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
 export async function POST() {
-  const result = cancelClaim();
+  const result = await cancelClaimAction();
   if (!result.ok) return NextResponse.json(result, { status: 400 });
-  return NextResponse.json({ ...result, snapshot: getSnapshot() });
+  return NextResponse.json(result);
 }

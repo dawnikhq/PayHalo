@@ -27,9 +27,62 @@ compilation, no external database).
 
 Production: `npm run build && npm start`.
 
-The database is created and seeded automatically at `data/hack1.db` on first request.
+State is created and seeded automatically on the first request. There is nothing to configure:
+locally it persists to `data/hack1.db`; on Vercel it runs in memory (or against Vercel KV if you
+attach one — see [Deploy to Vercel](#deploy-to-vercel)).
 
 ---
+
+## Deploy to Vercel
+
+The app is ready to deploy as-is — no database to provision, no environment variables required.
+
+**1. Import the repo**
+
+- Go to [vercel.com/new](https://vercel.com/new) → **Import Git Repository** → `dawnikhq/HACK1`.
+- Framework preset: **Next.js** (auto-detected). Root directory: `./`. Build command and output
+  directory: leave the defaults.
+- This work lives on the branch `arena/ecc53be6-hack1`. In the import screen open **"Deploying a
+  Git branch"** and pick it — or merge the branch into `main` first and deploy from there.
+- Click **Deploy**. Expect ~1 minute.
+
+**2. Optional — make demo state durable**
+
+Without this, the deployment runs in ephemeral mode: data is seeded per serverless instance and can
+reset between requests (the demo dock shows a red dot and *"resets per instance"*). For a
+stable demo — the one you'll want in front of judges — attach a Redis store:
+
+- Project → **Storage** → **Marketplace** → **Upstash Redis** → *Create* (free tier is plenty) →
+  **Connect** to the project.
+- Vercel injects `KV_REST_API_URL` + `KV_REST_API_TOKEN` (or the `UPSTASH_REDIS_REST_*` pair) into
+  all environments automatically. **Redeploy** once so the functions pick them up.
+- The demo dock should now show a green dot and *"Vercel KV / Upstash Redis"*.
+
+The app stores one JSON document under the key `hack1:state`, so nothing else is needed.
+
+**3. Deploy from the CLI (alternative)**
+
+```bash
+npm i -g vercel
+vercel link                     # link this folder to a Vercel project
+vercel deploy                   # preview URL
+vercel deploy --prod            # production
+```
+
+**Storage resolution order** (`lib/storage/index.ts`):
+
+| Order | Condition | Driver | Durable |
+|---|---|---|---|
+| 1 | `HACK1_STORE=kv` \| `sqlite` \| `memory` | forced driver | — |
+| 2 | `KV_REST_API_*` / `UPSTASH_REDIS_REST_*` present | Vercel KV / Upstash | ✅ |
+| 3 | local machine with a writable disk | SQLite file | ✅ |
+| 4 | anything else (e.g. Vercel without KV) | in-memory, seeded | ❌ |
+
+### Why it needed changes for Vercel
+
+Vercel's filesystem is read-only and ephemeral, so the original `node:sqlite` file store would have
+thrown `EROFS` on the first write. Persistence is now behind a driver interface with the same
+single-document model everywhere, which also made the engine and reset logic simpler.
 
 ## The four screens
 
@@ -66,12 +119,13 @@ A floating **Demo** dock (bottom-right) resets the household to its seeded state
 ## How it works
 
 ```
-Next.js App Router (server components read the DB directly)
+Next.js App Router (async server components read state directly)
         │
-        ├── lib/store.ts     reads + mutations, the only place SQL is written
-        ├── lib/engine.ts    the allocation rules
-        ├── lib/ocr.ts       simulated document extraction
-        └── lib/db.ts        node:sqlite connection, schema, seed, reset
+        ├── lib/store.ts        async facade: load → settle → save
+        ├── lib/model.ts        the state document, seed, and every mutation
+        ├── lib/engine.ts       the allocation rules (pure)
+        ├── lib/ocr.ts          simulated document extraction
+        └── lib/storage/        drivers: kv.ts · sqlite.ts · memory.ts
 ```
 
 **Engine rule** (`lib/engine.ts`), executed when a verified claim's safety window ends:
@@ -88,9 +142,9 @@ days`, and only releases once that timestamp has passed. The window can be cance
 any point (claim → `cancelled`, plan → `active`, nothing transferred). The *fast-forward* button
 exists purely so the demo can skip the fortnight; a live system would never expose it.
 
-**Persistence.** SQLite tables: `user`, `plan`, `asset`, `beneficiary`, `keyholder`, `claim`,
-`distribution`, `event`. Schema + seed live in `lib/db.ts` / `lib/seed.ts`; `POST /api/demo/reset`
-wipes and re-seeds.
+**Persistence.** The whole household is one JSON document (`user`, `plan`, `assets`,
+`beneficiaries`, `keyholder`, `claims`, `distributions`, `events`). Reads settle any expired window
+and write back; mutations are read-modify-write. `POST /api/demo/reset` restores the seed.
 
 ### API
 
@@ -104,6 +158,7 @@ wipes and re-seeds.
 | POST | `/api/claim/fast-forward` | Demo: jump to the end of the window |
 | POST | `/api/beneficiary` | Toggle a beneficiary's reachability |
 | POST | `/api/demo/reset` | Restore the seeded household |
+| GET | `/api/meta` | Which storage driver is live (shown in the demo dock) |
 
 ---
 

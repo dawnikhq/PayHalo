@@ -7,7 +7,21 @@ export function DemoDock() {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
+  const [storage, setStorage] = useState<{ label: string; durable: boolean } | null>(null);
   const router = useRouter();
+
+  async function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (next && !storage) {
+      try {
+        const res = await fetch("/api/meta", { cache: "no-store" });
+        if (res.ok) setStorage(await res.json());
+      } catch {
+        /* non-fatal */
+      }
+    }
+  }
 
   async function reset() {
     setMsg("Rewinding…");
@@ -49,10 +63,24 @@ export function DemoDock() {
           <p className="mt-2 px-1 text-[10.5px] leading-relaxed text-muted/70">
             All balances, certificates and transfers are simulated.
           </p>
+          <p className="mt-2 flex items-start gap-1.5 border-t border-white/6 px-1 pt-2 text-[10px] leading-relaxed text-muted/50">
+            <span
+              className={`mt-[3px] h-1.5 w-1.5 shrink-0 rounded-full ${
+                storage?.durable ? "bg-sage" : "bg-ember/70"
+              }`}
+            />
+            <span>
+              {storage
+                ? `${storage.label}${
+                    storage.durable ? "" : " — state can reset between requests"
+                  }`
+                : "Checking storage…"}
+            </span>
+          </p>
         </div>
       )}
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggle}
         className="ml-auto flex items-center gap-2 rounded-full border border-white/12 bg-[#101016]/90 px-3.5 py-2 text-[11.5px] text-muted shadow-xl backdrop-blur-xl transition hover:text-ivory"
       >
         <span className="relative flex h-1.5 w-1.5">

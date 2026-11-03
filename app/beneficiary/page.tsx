@@ -3,7 +3,7 @@ import { BeneficiaryPortal } from "@/components/BeneficiaryPortal";
 
 export const dynamic = "force-dynamic";
 
-export default function BeneficiaryPage() {
-  const snapshot = getSnapshot();
+export default async function BeneficiaryPage() {
+  const snapshot = await getSnapshot();
   return <BeneficiaryPortal snapshot={snapshot} />;
 }

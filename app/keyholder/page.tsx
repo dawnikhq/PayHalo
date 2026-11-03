@@ -3,7 +3,7 @@ import { KeyholderFlow } from "@/components/KeyholderFlow";
 
 export const dynamic = "force-dynamic";
 
-export default function KeyholderPage() {
-  const snapshot = getSnapshot();
+export default async function KeyholderPage() {
+  const snapshot = await getSnapshot();
   return <KeyholderFlow initial={snapshot} />;
 }

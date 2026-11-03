@@ -104,4 +104,6 @@ export interface Snapshot {
   events: EventRow[];
   totalCents: number;
   secondsToWindowEnd: number | null;
+  /** Which persistence driver served this state. */
+  storage: "kv" | "sqlite" | "memory";
 }
