@@ -10,6 +10,8 @@ online businesses.
 Hack1 gives someone a way to decide *who gets what, in what order* before it's too late, name a
 keyholder who can start the handover, and give the family a plan instead of a puzzle.
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fdawnikhq%2FHACK1&project-name=hack1&repository-name=hack1)
+
 **All accounts, balances, documents and transfers are simulated.** Nothing here creates a legal
 instrument or moves real money.
 
