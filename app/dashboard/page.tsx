@@ -48,7 +48,10 @@ export default async function DashboardPage({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link href="/plan/sheet" className="btn btn-ghost !py-2.5 !text-[12.5px]">
+            ⎙ Instruction sheet
+          </Link>
           <Link href="/onboarding" className="btn btn-ghost !py-2.5 !text-[12.5px]">
             Build a new plan
           </Link>
@@ -208,7 +211,8 @@ export default async function DashboardPage({
                       : "border-ember/25 bg-ember/8 text-ember/80"
                   }`}
                 >
-                  {b.name.split(" ")[0]} · {b.available ? "reachable" : "unreachable"}
+                  {b.role === "charity" ? "Final cause" : b.name.split(" ")[0]} ·{" "}
+                  {b.available ? "reachable" : "unreachable"}
                 </span>
               ))}
             </div>
@@ -252,7 +256,7 @@ export default async function DashboardPage({
             <div className="mb-4 flex items-center justify-between">
               <h2 className="font-serif text-[20px] leading-tight">Handover trail</h2>
               <span className="text-[10px] uppercase tracking-[0.14em] text-muted/60">
-                {s.events.length} events
+                {s.events.length} {s.events.length === 1 ? "event" : "events"}
               </span>
             </div>
             <Timeline events={s.events} />

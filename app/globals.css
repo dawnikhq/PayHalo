@@ -287,3 +287,23 @@ body::after {
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* the instruction sheet is a document, not a screen */
+@media print {
+  body {
+    background: #fff !important;
+    color: #1d1a14 !important;
+  }
+  body::after {
+    display: none !important;
+  }
+  .paper {
+    background: #fff !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+  @page {
+    margin: 16mm;
+  }
+}

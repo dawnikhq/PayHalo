@@ -14,7 +14,7 @@ export function TopNav() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/6 bg-ink/70 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-white/6 bg-ink/70 backdrop-blur-xl print:hidden">
       <div className="shell flex h-16 items-center justify-between gap-4">
         <Link href="/" aria-label="Hack1 home" className="shrink-0">
           <Logo />

@@ -64,6 +64,23 @@ export function SafetyWindowBanner({
               I&apos;m alive — cancel this
             </button>
           )}
+
+          <details className="mt-3 group">
+            <summary className="cursor-pointer list-none text-center text-[10.5px] uppercase tracking-[0.12em] text-muted transition hover:text-ivory">
+              View the notice you were sent
+            </summary>
+            <div className="mt-2 rounded-xl border border-white/10 bg-black/40 p-3 text-left">
+              <p className="text-[9.5px] uppercase tracking-[0.14em] text-muted/70">Hack1 · notice</p>
+              <p className="mt-1.5 text-[12px] font-medium text-ivory">
+                A handover has been started on your plan
+              </p>
+              <p className="mt-1 text-[11px] leading-relaxed text-muted">
+                {`Someone holding your access code submitted a death certificate on ${shortDate(
+                  initiatedAt,
+                )}. If this is a mistake, stop it from your dashboard. Nothing transfers for 14 days.`}
+              </p>
+            </div>
+          </details>
         </div>
       </div>
     </div>
