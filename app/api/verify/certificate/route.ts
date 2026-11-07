@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
-import { MAX_BYTES, verifyCertificate } from "@/lib/certs";
+import { MAX_BYTES, verifyCertificate, verifierStatus } from "@/lib/certs";
 import { existingHashes, getSnapshot } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
+
+/** GET — is the verifier wired up in this runtime? */
+export async function GET() {
+  return NextResponse.json(await verifierStatus());
+}
 
 /**
  * POST /api/verify/certificate

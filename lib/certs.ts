@@ -532,3 +532,24 @@ export async function verifyCertificate(input: VerifyInput): Promise<CertReport>
 
 /** The subset stored on a claim — everything the UI needs, nothing bulky. */
 export type StoredReport = Omit<CertReport, "textPreview"> & { textPreview?: string };
+
+/**
+ * Health probe for the API: can this runtime actually load the PDF reader?
+ * Cheap way to catch a bundling problem on a serverless platform before a
+ * keyholder discovers it with a certificate in hand.
+ */
+export async function verifierStatus(): Promise<{
+  ok: boolean;
+  pdfTextLayer: boolean;
+  maxBytes: number;
+  checks: number;
+}> {
+  let pdfTextLayer = false;
+  try {
+    const { extractText } = await import("unpdf");
+    pdfTextLayer = typeof extractText === "function";
+  } catch {
+    pdfTextLayer = false;
+  }
+  return { ok: pdfTextLayer, pdfTextLayer, maxBytes: MAX_BYTES, checks: 12 };
+}
