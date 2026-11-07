@@ -86,7 +86,9 @@ export function snapshotOf(
           .sort((a, b) => b.amountCents - a.amountCents)
       : [],
     events: [...doc.events]
-      .filter((e) => (audience === "owner" ? e.ownerVisible === 1 : true))
+      // `ownerVisible` was added with the 72-hour gate; older rows have no
+      // flag and were always owner-visible.
+      .filter((e) => (audience === "owner" ? e.ownerVisible !== 0 : true))
       .reverse()
       .slice(0, 14),
     totalCents: total,
@@ -258,6 +260,16 @@ export function settle(doc: StateDoc): boolean {
   const claim = latestClaim(doc);
   if (!claim) return false;
   let changed = false;
+
+  /* 0 — documents stored before the 72-hour gate existed had no review clock. */
+  const legacy = claim.status as string;
+  if (legacy === "verifying" || (legacy === "review" && !claim.reviewEndsAt)) {
+    claim.status = "review";
+    claim.reviewEndsAt = new Date(
+      Date.parse(claim.initiatedAt) + REVIEW_HOURS * 3_600_000,
+    ).toISOString();
+    changed = true;
+  }
 
   /* 1 — registry check cleared: only now does the owner hear about the claim. */
   if (
