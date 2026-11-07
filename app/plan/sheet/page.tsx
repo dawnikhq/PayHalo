@@ -161,7 +161,8 @@ export default async function SheetPage() {
           <ol className="mt-3 space-y-2 text-[12.5px] leading-relaxed text-[#3b3529]">
             {[
               "The keyholder submits proof of death through the portal.",
-              "The document is verified and the owner is notified immediately.",
+              "The certificate is checked against the registry. This takes up to 72 hours.",
+              "Only when that check clears is the owner notified — not before.",
               "A 14-day safety window begins. If the owner responds, everything stops and nothing transfers.",
               "If the window closes with no response, the automation engine releases the estate in the order above.",
               "Each recipient is notified, and the full trail is recorded.",

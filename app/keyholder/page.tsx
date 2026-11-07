@@ -4,6 +4,7 @@ import { KeyholderFlow } from "@/components/KeyholderFlow";
 export const dynamic = "force-dynamic";
 
 export default async function KeyholderPage() {
-  const snapshot = await getSnapshot();
+  // Keyholders see the internal audit trail, including the 72-hour check.
+  const snapshot = await getSnapshot("keyholder");
   return <KeyholderFlow initial={snapshot} />;
 }

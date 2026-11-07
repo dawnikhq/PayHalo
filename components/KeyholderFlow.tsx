@@ -4,31 +4,42 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Snapshot } from "@/lib/types";
+import type { CertCheck, CertReport } from "@/lib/certs";
 import { money, shortDate } from "@/lib/format";
 import { Countdown } from "./Countdown";
 import { Avatar } from "./Avatar";
 import { StatusPill } from "./StatusPill";
 
-type Field = { label: string; value: string; confidence: number };
-type Check = { label: string; pass: boolean; detail: string };
+const STAGES = ["Identify", "Document check", "72-hour review", "Safety window", "Release"];
 
 const STAGE_INDEX: Record<string, number> = {
   none: 0,
-  verifying: 1,
-  window: 2,
-  distributed: 3,
+  review: 2,
+  window: 3,
+  distributed: 4,
   cancelled: 0,
 };
 
-const STAGES = ["Identify", "Document", "Verification", "Window", "Release"];
+const VERDICT_STYLE: Record<CertReport["verdict"], { label: string; cls: string }> = {
+  verified: { label: "Checks passed", cls: "border-sage/35 bg-sage/12 text-sage" },
+  needs_review: { label: "Needs a human look", cls: "border-brass/35 bg-brass/12 text-brass" },
+  rejected: { label: "Not accepted", cls: "border-ember/35 bg-ember/12 text-ember" },
+};
+
+const CHECK_ICON: Record<CertCheck["status"], { glyph: string; cls: string }> = {
+  pass: { glyph: "✓", cls: "border-sage/40 bg-sage/15 text-sage" },
+  warn: { glyph: "!", cls: "border-brass/40 bg-brass/15 text-brass" },
+  fail: { glyph: "✕", cls: "border-ember/40 bg-ember/15 text-ember" },
+};
 
 export function KeyholderFlow({ initial }: { initial: Snapshot }) {
   const router = useRouter();
   const [s, setS] = useState(initial);
   const [code, setCode] = useState("");
-  const [docName, setDocName] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [report, setReport] = useState<CertReport | null>(null);
+  const [checking, setChecking] = useState(false);
   const [drag, setDrag] = useState(false);
-  const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -36,17 +47,51 @@ export function KeyholderFlow({ initial }: { initial: Snapshot }) {
   const claim = s.claim;
   const stage = claim && claim.status !== "cancelled" ? claim.status : "none";
   const activeIdx = STAGE_INDEX[stage] ?? 0;
-  const fields: Field[] = claim ? safeParse(claim.extracted) : [];
 
-  async function post(url: string, body?: unknown) {
+  const stored = claim ? safeParseReport(claim.verification) : null;
+
+  /* --------------------------------------------------------- file check -- */
+
+  async function checkFile(f: File) {
+    setError(null);
+    setChecking(true);
+    setReport(null);
+    setFile(f);
+    try {
+      const body = new FormData();
+      body.append("file", f);
+      const res = await fetch("/api/verify/certificate", { method: "POST", body });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? "The document could not be read.");
+      setReport(data as CertReport);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "The document could not be read.");
+      setFile(null);
+    } finally {
+      setChecking(false);
+    }
+  }
+
+  async function loadSample(path: string, name: string) {
+    setError(null);
+    setChecking(true);
+    try {
+      const res = await fetch(path);
+      const blob = await res.blob();
+      await checkFile(new File([blob], name, { type: blob.type || "application/pdf" }));
+    } catch {
+      setError("Couldn't load the sample document.");
+      setChecking(false);
+    }
+  }
+
+  /* ------------------------------------------------------------- claims -- */
+
+  async function post(url: string) {
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: body ? JSON.stringify(body) : undefined,
-      });
+      const res = await fetch(url, { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? "Something went wrong.");
       if (data.snapshot) setS(data.snapshot);
@@ -61,17 +106,31 @@ export function KeyholderFlow({ initial }: { initial: Snapshot }) {
   }
 
   async function startClaim() {
-    if (!docName) {
-      setError("Attach a certificate first.");
+    if (!file || !report) {
+      setError("Check a certificate first.");
       return;
     }
-    setScanning(true);
-    const started = Date.now();
-    const ok = await post("/api/claim", { accessCode: code, documentName: docName });
-    const elapsed = Date.now() - started;
-    await new Promise((r) => setTimeout(r, Math.max(0, 1500 - elapsed)));
-    setScanning(false);
-    if (!ok) setDocName(null);
+    setBusy(true);
+    setError(null);
+    try {
+      const body = new FormData();
+      body.append("accessCode", code);
+      body.append("file", file);
+      const res = await fetch("/api/claim", { method: "POST", body });
+      const data = await res.json();
+      if (!res.ok) {
+        if (data?.report) setReport(data.report as CertReport);
+        throw new Error(data?.error ?? "The claim couldn't be filed.");
+      }
+      if (data.snapshot) setS(data.snapshot);
+      setFile(null);
+      setReport(null);
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "The claim couldn't be filed.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -143,7 +202,6 @@ export function KeyholderFlow({ initial }: { initial: Snapshot }) {
                     placeholder="KEY-0000"
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
-                    autoFocus
                   />
                   <button
                     onClick={() => setCode(s.keyholder?.accessCode ?? "")}
@@ -162,7 +220,9 @@ export function KeyholderFlow({ initial }: { initial: Snapshot }) {
               <section className="card p-6 md:p-7">
                 <h2 className="font-serif text-[22px] leading-tight">2. Submit a death certificate</h2>
                 <p className="mt-1.5 text-[12px] text-muted">
-                  A scanned copy or photo. The extraction below is simulated for this prototype.
+                  We read the document itself: format, text layer, the name of the deceased, the
+                  certificate number and the issuing registrar. Anything that isn&apos;t a death
+                  certificate for {s.user.name} is refused.
                 </p>
 
                 <div
@@ -175,13 +235,13 @@ export function KeyholderFlow({ initial }: { initial: Snapshot }) {
                     e.preventDefault();
                     setDrag(false);
                     const f = e.dataTransfer.files?.[0];
-                    if (f) setDocName(f.name);
+                    if (f) void checkFile(f);
                   }}
                   onClick={() => fileRef.current?.click()}
                   className={`mt-5 cursor-pointer rounded-2xl border border-dashed p-8 text-center transition ${
                     drag
                       ? "border-brass/60 bg-brass/8"
-                      : docName
+                      : report
                         ? "border-sage/40 bg-sage/[0.05]"
                         : "border-white/12 bg-white/[0.015] hover:border-white/25"
                   }`}
@@ -191,25 +251,53 @@ export function KeyholderFlow({ initial }: { initial: Snapshot }) {
                     type="file"
                     accept=".pdf,.png,.jpg,.jpeg"
                     className="hidden"
-                    onChange={(e) => setDocName(e.target.files?.[0]?.name ?? null)}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) void checkFile(f);
+                    }}
                   />
                   <div className="mx-auto grid h-11 w-11 place-items-center rounded-xl border border-white/10 bg-black/30 text-brass">
-                    {docName ? "✓" : "⇪"}
+                    {checking ? (
+                      <span className="spin inline-block h-4 w-4 rounded-full border-2 border-brass/30 border-t-brass" />
+                    ) : file ? (
+                      "✓"
+                    ) : (
+                      "⇪"
+                    )}
                   </div>
                   <p className="mt-3 text-[13px] text-ivory">
-                    {docName ?? "Drop the certificate here, or click to browse"}
+                    {checking
+                      ? "Reading the document…"
+                      : (file?.name ?? "Drop the certificate here, or click to browse")}
                   </p>
                   <p className="mt-1 text-[11px] text-muted/70">
-                    PDF, PNG or JPG · up to 10MB · not stored in this demo
+                    PDF, PNG or JPG · up to 4MB · checked in memory, never stored
                   </p>
                 </div>
 
-                <button
-                  onClick={() => setDocName("ada-okafor-death-certificate.pdf")}
-                  className="mt-3 text-[11.5px] text-brass/80 transition hover:text-brass"
-                >
-                  No file handy? Use the sample certificate →
-                </button>
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[11.5px]">
+                  <button
+                    onClick={() =>
+                      void loadSample(
+                        "/documents/ada-okafor-death-certificate.pdf",
+                        "ada-okafor-death-certificate.pdf",
+                      )
+                    }
+                    className="text-brass/80 transition hover:text-brass"
+                  >
+                    No file handy? Use the sample certificate →
+                  </button>
+                  <button
+                    onClick={() =>
+                      void loadSample("/documents/gumroad-payout-receipt.pdf", "gumroad-payout-receipt.pdf")
+                    }
+                    className="text-muted/70 transition hover:text-ivory"
+                  >
+                    or try a document that isn&apos;t one (should be refused)
+                  </button>
+                </div>
+
+                {report && <VerificationPanel report={report} />}
 
                 {error && (
                   <p className="mt-4 rounded-xl border border-ember/30 bg-ember/10 p-3 text-[12px] text-ember">
@@ -219,78 +307,84 @@ export function KeyholderFlow({ initial }: { initial: Snapshot }) {
 
                 <button
                   onClick={startClaim}
-                  disabled={!docName || scanning || busy}
+                  disabled={!report || report.verdict === "rejected" || checking || busy}
                   className="btn btn-brass mt-5 w-full"
                 >
-                  {scanning ? (
+                  {busy ? (
                     <>
                       <span className="spin inline-block h-3 w-3 rounded-full border-2 border-[#1b1206]/30 border-t-[#1b1206]" />
-                      Reading document…
+                      Filing…
                     </>
                   ) : (
-                    "Submit certificate"
+                    "File the certificate for the 72-hour check"
                   )}
                 </button>
+                <p className="mt-2.5 text-[10.5px] leading-relaxed text-muted/60">
+                  Filing starts a 72-hour registry check. {s.user.name.split(" ")[0]} is not told
+                  until that check clears.
+                </p>
               </section>
             </>
           )}
 
-          {stage === "verifying" && claim && (
-            <>
-              <section className="card p-6 md:p-7">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <h2 className="font-serif text-[22px] leading-tight">Document read</h2>
-                    <p className="mt-1.5 text-[12px] text-muted">
-                      {claim.documentName} · extraction complete
-                    </p>
-                  </div>
-                  <span className="pill border-brass/30 bg-brass/8 text-[9.5px] text-brass">
-                    {Math.round(claim.confidence * 100)}% confidence
+          {stage === "review" && claim && (
+            <section className="card overflow-hidden">
+              <div className="border-b border-white/6 bg-brass/[0.07] px-6 py-4">
+                <p className="flex items-center gap-2 text-[10.5px] uppercase tracking-[0.2em] text-brass">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="breathe absolute inline-flex h-full w-full rounded-full bg-brass" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brass" />
                   </span>
+                  Registry check running · 72 hours
+                </p>
+              </div>
+              <div className="p-6 md:p-7">
+                <h2 className="font-serif text-[24px] leading-tight">
+                  Filed. Nobody has been told yet.
+                </h2>
+                <p className="mt-2 max-w-[54ch] text-[12.5px] leading-relaxed text-muted">
+                  {claim.documentName} passed the automated checks and is now with the registry for a
+                  72-hour review. {s.user.name.split(" ")[0]} is <span className="text-ivory">not</span>{" "}
+                  notified during this window — the notification only goes out once the record is
+                  confirmed.
+                </p>
+
+                <div className="mt-6 max-w-sm">
+                  <Countdown seconds={s.secondsToReviewEnd ?? 0} onExpire={() => router.refresh()} />
                 </div>
 
-                <div className="mt-5 overflow-hidden rounded-xl border border-white/8">
-                  {fields.map((f, i) => (
-                    <div
-                      key={f.label}
-                      className={`flex items-center justify-between gap-4 px-4 py-3 ${
-                        i % 2 ? "bg-white/[0.012]" : ""
-                      }`}
-                    >
-                      <span className="text-[11.5px] text-muted">{f.label}</span>
-                      <span className="flex items-center gap-3">
-                        <span className="text-right text-[12.5px] text-ivory">{f.value}</span>
-                        <span className="mono w-9 text-right text-[10.5px] text-sage/80">
-                          {Math.round(f.confidence * 100)}%
-                        </span>
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-5 space-y-2">
-                  <p className="label">Verification checks</p>
+                <div className="mt-6 space-y-2.5">
                   {[
-                    ["Name matches plan owner", `Exact match on ${s.user.name}`],
-                    ["Document integrity", "No tampering signals detected"],
-                    ["Issuing authority", "Lagos State Vital Records — recognised"],
-                    ["Duplicate submission", "No earlier claim on this plan"],
-                  ].map(([t, d]) => (
-                    <div key={t} className="flex items-center gap-3 rounded-xl border border-white/6 bg-white/[0.015] px-3.5 py-2.5">
-                      <span className="grid h-4 w-4 place-items-center rounded-full border border-sage/40 bg-sage/15 text-[8px] text-sage">
-                        ✓
+                    ["Document read", `${Math.round(claim.confidence * 100)}% automated score`, true],
+                    ["Registry check", "Running · up to 72 hours", false],
+                    ["Owner notification", "Sends only after the check clears", false],
+                  ].map(([t, d, done]) => (
+                    <div key={String(t)} className="flex items-center gap-3">
+                      <span
+                        className={`grid h-4 w-4 place-items-center rounded-full border text-[8px] ${
+                          done
+                            ? "border-sage/40 bg-sage/15 text-sage"
+                            : "border-brass/40 bg-brass/15 text-brass"
+                        }`}
+                      >
+                        {done ? "✓" : "•"}
                       </span>
-                      <span className="flex-1 text-[12px] text-ivory">{t}</span>
-                      <span className="hidden text-[10.5px] text-muted/80 sm:block">{d}</span>
+                      <span className="text-[12px] text-ivory">{String(t)}</span>
+                      <span className="text-[10.5px] text-muted/70">{String(d)}</span>
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-5 rounded-xl border border-white/8 bg-white/[0.02] p-3.5 text-[11px] leading-relaxed text-muted/85">
-                  This is document processing, not legal proof of death. A production system would
-                  require a registrar check and human review.
-                </div>
+                {stored && (
+                  <details className="mt-6 rounded-xl border border-white/8 bg-white/[0.02]">
+                    <summary className="cursor-pointer list-none px-4 py-3 text-[11.5px] text-muted transition hover:text-ivory">
+                      View the verification transcript →
+                    </summary>
+                    <div className="border-t border-white/6 px-4 py-4">
+                      <VerificationPanel report={stored} embedded />
+                    </div>
+                  </details>
+                )}
 
                 {error && (
                   <p className="mt-4 rounded-xl border border-ember/30 bg-ember/10 p-3 text-[12px] text-ember">
@@ -298,81 +392,91 @@ export function KeyholderFlow({ initial }: { initial: Snapshot }) {
                   </p>
                 )}
 
-                <button
-                  onClick={() => post("/api/claim/verify")}
-                  disabled={busy}
-                  className="btn btn-brass mt-5 w-full"
-                >
-                  {busy ? "Verifying…" : "Approve verification & notify owner"}
-                </button>
-              </section>
-            </>
+                <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+                  <button
+                    onClick={() => post("/api/claim/fast-forward")}
+                    disabled={busy}
+                    className="btn btn-brass flex-1"
+                  >
+                    {busy ? "Working…" : "Fast-forward the 72 hours (demo)"}
+                  </button>
+                  <Link href="/dashboard" className="btn btn-ghost flex-1">
+                    View owner side
+                  </Link>
+                </div>
+                <p className="mt-3 text-[10.5px] leading-relaxed text-muted/60">
+                  In the demo this skips the registry check. A live system would wait for the
+                  registrar, and the keyholder could never hurry it along.
+                </p>
+              </div>
+            </section>
           )}
 
           {stage === "window" && claim && (
-            <>
-              <section className="card overflow-hidden">
-                <div className="border-b border-white/6 bg-ember/[0.06] px-6 py-4">
-                  <p className="flex items-center gap-2 text-[10.5px] uppercase tracking-[0.2em] text-ember">
-                    <span className="relative flex h-1.5 w-1.5">
-                      <span className="breathe absolute inline-flex h-full w-full rounded-full bg-ember" />
-                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-ember" />
-                    </span>
-                    Safety window running
-                  </p>
+            <section className="card overflow-hidden">
+              <div className="border-b border-white/6 bg-ember/[0.06] px-6 py-4">
+                <p className="flex items-center gap-2 text-[10.5px] uppercase tracking-[0.2em] text-ember">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="breathe absolute inline-flex h-full w-full rounded-full bg-ember" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-ember" />
+                  </span>
+                  Safety window running
+                </p>
+              </div>
+              <div className="p-6 md:p-7">
+                <h2 className="font-serif text-[24px] leading-tight">
+                  Nothing moves until the clock runs out.
+                </h2>
+                <p className="mt-2 max-w-[52ch] text-[12.5px] leading-relaxed text-muted">
+                  The registry check cleared on {shortDate(claim.verifiedAt)} and{" "}
+                  {s.user.name.split(" ")[0]} was notified. They have 14 days to stop this. If they
+                  respond, the claim is void and you&apos;ll see it here.
+                </p>
+
+                <div className="mt-6 max-w-sm">
+                  <Countdown seconds={s.secondsToWindowEnd ?? 0} onExpire={() => router.refresh()} />
                 </div>
-                <div className="p-6 md:p-7">
-                  <h2 className="font-serif text-[24px] leading-tight">
-                    Nothing moves until the clock runs out.
-                  </h2>
-                  <p className="mt-2 max-w-[52ch] text-[12.5px] leading-relaxed text-muted">
-                    {s.user.name.split(" ")[0]} was notified on {shortDate(claim.initiatedAt)}. They
-                    have 14 days to stop this. If they respond, the claim is void and you&apos;ll see
-                    it here.
-                  </p>
 
-                  <div className="mt-6 max-w-sm">
-                    <Countdown seconds={s.secondsToWindowEnd ?? 0} />
-                  </div>
-
-                  <div className="mt-6 space-y-2.5">
-                    {[
-                      ["Owner notified", `Email + in-app alert sent ${shortDate(claim.initiatedAt)}`, true],
-                      ["Claim verified", `${Math.round(claim.confidence * 100)}% extraction confidence`, true],
-                      ["Waiting period", "14 days from verification", false],
-                    ].map(([t, d, done]) => (
-                      <div key={String(t)} className="flex items-center gap-3">
-                        <span
-                          className={`grid h-4 w-4 place-items-center rounded-full border text-[8px] ${
-                            done ? "border-sage/40 bg-sage/15 text-sage" : "border-ember/40 bg-ember/15 text-ember"
-                          }`}
-                        >
-                          {done ? "✓" : "•"}
-                        </span>
-                        <span className="text-[12px] text-ivory">{String(t)}</span>
-                        <span className="text-[10.5px] text-muted/70">{String(d)}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-                    <button
-                      onClick={() => post("/api/claim/fast-forward")}
-                      disabled={busy}
-                      className="btn btn-brass flex-1"
-                    >
-                      {busy ? "Releasing…" : "Fast-forward to day 14 (demo)"}
-                    </button>
-                    <Link href="/dashboard" className="btn btn-ghost flex-1">
-                      View owner side
-                    </Link>
-                  </div>
-                  <p className="mt-3 text-[10.5px] leading-relaxed text-muted/60">
-                    In the demo, fast-forward jumps the clock. A live system would never allow this.
-                  </p>
+                <div className="mt-6 space-y-2.5">
+                  {[
+                    ["Document checked", `${Math.round(claim.confidence * 100)}% automated score`, true],
+                    ["72-hour registry check", `Cleared ${shortDate(claim.verifiedAt)}`, true],
+                    ["Owner notified", `Email + in-app alert sent ${shortDate(claim.verifiedAt)}`, true],
+                    ["Waiting period", "14 days from verification", false],
+                  ].map(([t, d, done]) => (
+                    <div key={String(t)} className="flex items-center gap-3">
+                      <span
+                        className={`grid h-4 w-4 place-items-center rounded-full border text-[8px] ${
+                          done
+                            ? "border-sage/40 bg-sage/15 text-sage"
+                            : "border-ember/40 bg-ember/15 text-ember"
+                        }`}
+                      >
+                        {done ? "✓" : "•"}
+                      </span>
+                      <span className="text-[12px] text-ivory">{String(t)}</span>
+                      <span className="text-[10.5px] text-muted/70">{String(d)}</span>
+                    </div>
+                  ))}
                 </div>
-              </section>
-            </>
+
+                <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+                  <button
+                    onClick={() => post("/api/claim/fast-forward")}
+                    disabled={busy}
+                    className="btn btn-brass flex-1"
+                  >
+                    {busy ? "Releasing…" : "Fast-forward to day 14 (demo)"}
+                  </button>
+                  <Link href="/dashboard" className="btn btn-ghost flex-1">
+                    View owner side
+                  </Link>
+                </div>
+                <p className="mt-3 text-[10.5px] leading-relaxed text-muted/60">
+                  In the demo, fast-forward jumps the clock. A live system would never allow this.
+                </p>
+              </div>
+            </section>
           )}
 
           {stage === "distributed" && claim && (
@@ -391,7 +495,10 @@ export function KeyholderFlow({ initial }: { initial: Snapshot }) {
 
                 <div className="mt-6 space-y-2">
                   {s.distributions.map((d) => (
-                    <div key={d.id} className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.02] px-3.5 py-3">
+                    <div
+                      key={d.id}
+                      className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.02] px-3.5 py-3"
+                    >
                       <Avatar name={d.name} size={30} tone={d.role === "charity" ? "sage" : "brass"} />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-[12.5px] text-ivory">{d.name}</p>
@@ -457,6 +564,7 @@ export function KeyholderFlow({ initial }: { initial: Snapshot }) {
                 ["See balances", "Assets stay hidden from keyholders, always."],
                 ["Change recipients", "The plan is written once and sealed."],
                 ["Move money", "Release only happens through the engine."],
+                ["Skip the check", "72 hours of registry review runs before the owner is even told."],
                 ["Skip the window", "No claim can bypass the 14 days."],
               ].map(([t, d]) => (
                 <li key={t} className="flex gap-2.5">
@@ -490,11 +598,92 @@ export function KeyholderFlow({ initial }: { initial: Snapshot }) {
   );
 }
 
-function safeParse(json: string): Field[] {
+/* ------------------------------------------------------- verification UI -- */
+
+function VerificationPanel({ report, embedded = false }: { report: CertReport; embedded?: boolean }) {
+  const v = VERDICT_STYLE[report.verdict];
+  const textDoc = report.kind === "pdf" && report.textChars > 80;
+
+  return (
+    <div className={embedded ? "" : "mt-5"}>
+      <div className="flex flex-wrap items-center justify-between gap-2.5">
+        <span className={`pill ${v.cls}`}>
+          <span className="h-1.5 w-1.5 rounded-full bg-current" />
+          {v.label}
+        </span>
+        <span className="mono text-[10.5px] text-muted/70">
+          {report.kind.toUpperCase()} · {(report.sizeBytes / 1024).toFixed(0)} KB · sha256{" "}
+          {report.sha256.slice(0, 10)}…
+        </span>
+      </div>
+
+      <p className="mt-2.5 text-[11.5px] leading-relaxed text-muted">{report.summary}</p>
+
+      {report.fields.length > 0 && (
+        <div className="mt-4 overflow-hidden rounded-xl border border-white/8">
+          {report.fields.map((f, i) => (
+            <div
+              key={f.label}
+              className={`flex items-center justify-between gap-4 px-4 py-2.5 ${
+                i % 2 ? "bg-white/[0.012]" : ""
+              }`}
+            >
+              <span className="text-[11px] text-muted">{f.label}</span>
+              <span className="text-right text-[12px] text-ivory">{f.value}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <p className="label mt-4">Checks run on the file</p>
+      <div className="mt-2 space-y-1.5">
+        {report.checks.map((c) => {
+          const ic = CHECK_ICON[c.status];
+          return (
+            <div
+              key={c.id}
+              className="flex items-start gap-3 rounded-xl border border-white/6 bg-white/[0.015] px-3.5 py-2.5"
+            >
+              <span
+                className={`mt-[1px] grid h-4 w-4 shrink-0 place-items-center rounded-full border text-[8px] ${ic.cls}`}
+              >
+                {ic.glyph}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[12px] text-ivory">{c.label}</p>
+                <p className="text-[10.5px] leading-relaxed text-muted/80">{c.detail}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {textDoc && (
+        <p className="mt-3 text-[10.5px] text-muted/60">
+          Automated score {report.score}/100 · {report.textChars} characters of text read
+          {report.pages ? ` from ${report.pages} page${report.pages === 1 ? "" : "s"}` : ""}
+        </p>
+      )}
+
+      <div className="mt-3 rounded-xl border border-white/8 bg-white/[0.02] p-3.5 text-[11px] leading-relaxed text-muted/85">
+        These checks answer one question: does this document look like {report.verdict === "rejected"
+          ? "a death certificate"
+          : "this person's death certificate"}? They are not legal proof of death — a passed
+        document still waits for the 72-hour registry review.
+      </div>
+    </div>
+  );
+}
+
+/* --------------------------------------------------------------- parsing -- */
+
+function safeParseReport(json: string): CertReport | null {
   try {
     const parsed = JSON.parse(json);
-    return Array.isArray(parsed) ? (parsed as Field[]) : [];
+    return parsed && typeof parsed === "object" && "verdict" in parsed ? (parsed as CertReport) : null;
   } catch {
-    return [];
+    return null;
   }
 }
+
+

@@ -10,12 +10,15 @@ import {
   snapshotOf,
   submitClaim,
   verifyClaim,
+  type Audience,
   type PlanInput,
   type StateDoc,
 } from "./model";
+import type { StoredReport } from "./certs";
 import type { Snapshot } from "./types";
 
-export { SAFETY_WINDOW_DAYS } from "./model";
+export { SAFETY_WINDOW_DAYS, REVIEW_HOURS } from "./model";
+export type { Audience } from "./model";
 export type { PlanInput } from "./model";
 
 type MutationResult = { ok: boolean; error?: string };
@@ -34,22 +37,28 @@ async function withDoc(): Promise<{ doc: StateDoc; storage: Snapshot["storage"] 
   return { doc: await loadDoc(), storage: driver.kind };
 }
 
-/** Read the world, settling any expired safety window first. */
-export async function getSnapshot(): Promise<Snapshot> {
+/**
+ * Read the world, moving any elapsed clock first (the 72-hour registry check,
+ * then the 14-day window). The owner's view never includes events they haven't
+ * been notified about yet.
+ */
+export async function getSnapshot(audience: Audience = "owner"): Promise<Snapshot> {
   const driver = await getDriver();
   const doc = await loadDoc();
   if (settle(doc)) await driver.save(doc);
-  return { ...snapshotOf(doc), storage: driver.kind };
+  return { ...snapshotOf(doc, audience), storage: driver.kind };
 }
 
-async function mutate(fn: (doc: StateDoc) => MutationResult): Promise<
-  MutationResult & { snapshot: Snapshot }
-> {
+async function mutate(
+  fn: (doc: StateDoc) => MutationResult,
+  audience: Audience = "owner",
+): Promise<MutationResult & { snapshot: Snapshot }> {
   const driver = await getDriver();
   const doc = await loadDoc();
+  if (settle(doc)) await driver.save(doc);
   const result = fn(doc);
   if (result.ok) await driver.save(doc);
-  return { ...result, snapshot: { ...snapshotOf(doc), storage: driver.kind } };
+  return { ...result, snapshot: { ...snapshotOf(doc, audience), storage: driver.kind } };
 }
 
 export async function savePlan(input: PlanInput): Promise<Snapshot> {
@@ -59,15 +68,21 @@ export async function savePlan(input: PlanInput): Promise<Snapshot> {
   return { ...snapshotOf(doc), storage: driver.kind };
 }
 
+/** Every document hash already filed on this plan — used to catch duplicates. */
+export async function existingHashes(): Promise<string[]> {
+  const doc = await loadDoc();
+  return doc.claims.map((c) => c.documentHash).filter(Boolean);
+}
+
 export async function submitClaimAction(
   accessCode: string,
-  documentName: string,
+  report: StoredReport,
 ): Promise<MutationResult & { snapshot: Snapshot }> {
-  return mutate((doc) => submitClaim(doc, accessCode, documentName));
+  return mutate((doc) => submitClaim(doc, { accessCode, report }), "keyholder");
 }
 
 export async function verifyClaimAction() {
-  return mutate((doc) => verifyClaim(doc));
+  return mutate((doc) => verifyClaim(doc), "keyholder");
 }
 
 export async function cancelClaimAction() {
@@ -75,10 +90,7 @@ export async function cancelClaimAction() {
 }
 
 export async function fastForwardAction() {
-  return mutate((doc) => {
-    const result = fastForward(doc);
-    return result;
-  });
+  return mutate((doc) => fastForward(doc), "keyholder");
 }
 
 export async function setAvailabilityAction(id: number, available: boolean) {

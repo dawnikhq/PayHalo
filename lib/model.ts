@@ -1,5 +1,5 @@
 import { allocate, totalOf } from "./engine";
-import { mockExtract } from "./ocr";
+import type { StoredReport } from "./certs";
 import type {
   Asset,
   Beneficiary,
@@ -14,6 +14,13 @@ import type {
 } from "./types";
 
 export const SAFETY_WINDOW_DAYS = 14;
+
+/**
+ * Hours between a keyholder filing a certificate and the owner being told
+ * about it. The registry check happens inside this window; a claim that hasn't
+ * cleared it must never surface to the owner.
+ */
+export const REVIEW_HOURS = 72;
 
 /**
  * The whole prototype state is a single JSON document.
@@ -53,7 +60,12 @@ export function orderedBeneficiaries(doc: StateDoc): Beneficiary[] {
   );
 }
 
-export function snapshotOf(doc: StateDoc): Omit<Snapshot, "storage"> {
+export type Audience = "owner" | "keyholder";
+
+export function snapshotOf(
+  doc: StateDoc,
+  audience: Audience = "owner",
+): Omit<Snapshot, "storage"> {
   const claim = latestClaim(doc);
   const total = totalCents(doc);
 
@@ -73,8 +85,15 @@ export function snapshotOf(doc: StateDoc): Omit<Snapshot, "storage"> {
           })
           .sort((a, b) => b.amountCents - a.amountCents)
       : [],
-    events: [...doc.events].reverse().slice(0, 14),
+    events: [...doc.events]
+      .filter((e) => (audience === "owner" ? e.ownerVisible === 1 : true))
+      .reverse()
+      .slice(0, 14),
     totalCents: total,
+    secondsToReviewEnd:
+      claim && claim.status === "review" && claim.reviewEndsAt
+        ? Math.max(0, Math.floor((new Date(claim.reviewEndsAt).getTime() - Date.now()) / 1000))
+        : null,
     secondsToWindowEnd:
       claim && claim.status === "window" && claim.windowEndsAt
         ? Math.max(0, Math.floor((new Date(claim.windowEndsAt).getTime() - Date.now()) / 1000))
@@ -202,6 +221,7 @@ export function seedDoc(): StateDoc {
         title: "Plan sealed",
         body: "Ada sealed a plan covering 3 connected accounts and 4 recipients.",
         createdAt: sealed,
+        ownerVisible: 1,
       },
     ],
     seq: id,
@@ -216,9 +236,10 @@ function addEvent(
   title: string,
   body = "",
   createdAt = now(),
+  ownerVisible = 1,
 ): void {
   doc.seq += 1;
-  doc.events.push({ id: doc.seq, planId: doc.plan.id, type, title, body, createdAt });
+  doc.events.push({ id: doc.seq, planId: doc.plan.id, type, title, body, createdAt, ownerVisible });
 }
 
 export function allocateFor(doc: StateDoc) {
@@ -226,45 +247,87 @@ export function allocateFor(doc: StateDoc) {
 }
 
 /**
- * If a verified claim's safety window has elapsed, run the engine and close
- * the plan. Returns true when the document changed (so it can be persisted).
+ * Moves a claim through time. Two gates, in order:
+ *
+ *   1. the 72-hour registry check  → owner notified, 14-day safety window opens
+ *   2. the safety window           → the engine releases the estate
+ *
+ * Returns true when the document changed (so it can be persisted).
  */
 export function settle(doc: StateDoc): boolean {
   const claim = latestClaim(doc);
-  if (!claim || claim.status !== "window" || !claim.windowEndsAt) return false;
-  if (new Date(claim.windowEndsAt).getTime() > Date.now()) return false;
+  if (!claim) return false;
+  let changed = false;
 
-  const total = totalCents(doc);
-  const allocations = allocate(orderedBeneficiaries(doc), total);
-  const stamp = now();
+  /* 1 — registry check cleared: only now does the owner hear about the claim. */
+  if (
+    claim.status === "review" &&
+    claim.reviewEndsAt &&
+    Date.parse(claim.reviewEndsAt) <= Date.now()
+  ) {
+    claim.status = "window";
+    claim.verifiedAt = claim.reviewEndsAt;
+    claim.windowEndsAt = new Date(
+      Date.parse(claim.reviewEndsAt) + SAFETY_WINDOW_DAYS * 86_400_000,
+    ).toISOString();
+    doc.plan.status = "claiming";
+    doc.plan.updatedAt = now();
 
-  doc.distributions = doc.distributions.filter((d) => d.claimId !== claim.id);
-  for (const a of allocations) {
-    doc.seq += 1;
-    doc.distributions.push({
-      id: doc.seq,
-      claimId: claim.id,
-      beneficiaryId: a.beneficiaryId,
-      amountCents: a.amountCents,
-      share: a.share,
-      status: "released",
-      createdAt: stamp,
-    });
+    addEvent(
+      doc,
+      "claim.verified",
+      "Certificate verified",
+      `Passed the ${REVIEW_HOURS}-hour registry check — the record on file matches ${doc.user.name}. Claim #${claim.id}.`,
+      claim.reviewEndsAt,
+      1,
+    );
+    addEvent(
+      doc,
+      "owner.notified",
+      "Owner notified",
+      `${doc.user.name} was told a handover has been filed and has ${SAFETY_WINDOW_DAYS} days to respond before anything moves.`,
+      claim.reviewEndsAt,
+      1,
+    );
+    changed = true;
   }
 
-  claim.status = "distributed";
-  claim.distributedAt = stamp;
-  doc.plan.status = "distributed";
-  doc.plan.updatedAt = stamp;
+  /* 2 — the window closed with no answer: run the instructions. */
+  if (claim.status === "window" && claim.windowEndsAt && Date.parse(claim.windowEndsAt) <= Date.now()) {
+    const total = totalCents(doc);
+    const allocations = allocate(orderedBeneficiaries(doc), total);
+    const stamp = now();
 
-  addEvent(
-    doc,
-    "distribution.executed",
-    "Handover executed",
-    `${allocations.length} recipient${allocations.length === 1 ? "" : "s"} funded from ${doc.beneficiaries.length} instructions.`,
-    stamp,
-  );
-  return true;
+    doc.distributions = doc.distributions.filter((d) => d.claimId !== claim.id);
+    for (const a of allocations) {
+      doc.seq += 1;
+      doc.distributions.push({
+        id: doc.seq,
+        claimId: claim.id,
+        beneficiaryId: a.beneficiaryId,
+        amountCents: a.amountCents,
+        share: a.share,
+        status: "released",
+        createdAt: stamp,
+      });
+    }
+
+    claim.status = "distributed";
+    claim.distributedAt = stamp;
+    doc.plan.status = "distributed";
+    doc.plan.updatedAt = stamp;
+
+    addEvent(
+      doc,
+      "distribution.executed",
+      "Handover executed",
+      `${allocations.length} recipient${allocations.length === 1 ? "" : "s"} funded from ${doc.beneficiaries.length} instructions.`,
+      stamp,
+    );
+    changed = true;
+  }
+
+  return changed;
 }
 
 /* ------------------------------------------------------------- mutations -- */
@@ -368,11 +431,19 @@ export function applyPlan(input: PlanInput): StateDoc {
   return doc;
 }
 
-export function submitClaim(
-  doc: StateDoc,
-  accessCode: string,
-  documentName: string,
-): { ok: boolean; error?: string } {
+export interface SubmitClaimInput {
+  accessCode: string;
+  report: StoredReport;
+}
+
+/**
+ * Files a claim. The document has already been through lib/certs.ts on the
+ * server, so a rejected file never reaches this point — but the check is
+ * repeated here because this function is the gate that matters.
+ */
+export function submitClaim(doc: StateDoc, input: SubmitClaimInput): { ok: boolean; error?: string } {
+  const { accessCode, report } = input;
+
   if (!doc.keyholder) return { ok: false, error: "No keyholder on file." };
   if (accessCode.trim().toUpperCase() !== doc.keyholder.accessCode.toUpperCase()) {
     return { ok: false, error: "That access code doesn't match the keyholder on file." };
@@ -381,18 +452,30 @@ export function submitClaim(
   if (existing && existing.status !== "cancelled") {
     return { ok: false, error: "A handover is already in progress." };
   }
+  if (report.verdict === "rejected") {
+    return { ok: false, error: `That document can't start a claim. ${report.summary}` };
+  }
+  if (doc.claims.some((c) => c.documentHash === report.sha256)) {
+    return { ok: false, error: "This exact document has already been filed on this plan." };
+  }
 
-  const ocr = mockExtract(documentName || "death-certificate.pdf", doc.user.name);
+  const stamp = now();
+  const reviewEndsAt = new Date(Date.parse(stamp) + REVIEW_HOURS * 3_600_000).toISOString();
+
   doc.seq += 1;
   const claim: Claim = {
     id: doc.seq,
     planId: doc.plan.id,
     keyholderId: doc.keyholder.id,
-    status: "verifying",
-    documentName: ocr.documentName,
-    extracted: JSON.stringify(ocr.fields),
-    confidence: ocr.confidence,
-    initiatedAt: now(),
+    status: "review",
+    documentName: report.fileName,
+    documentHash: report.sha256,
+    documentKind: report.kind,
+    extracted: JSON.stringify(report.fields),
+    verification: JSON.stringify(report),
+    confidence: report.score / 100,
+    initiatedAt: stamp,
+    reviewEndsAt,
     verifiedAt: null,
     windowEndsAt: null,
     distributedAt: null,
@@ -402,29 +485,27 @@ export function submitClaim(
   addEvent(
     doc,
     "claim.submitted",
-    "Keyholder submitted a certificate",
-    `${doc.keyholder.name} uploaded ${ocr.documentName}. ${Math.round(ocr.confidence * 100)}% extraction confidence. Claim #${claim.id}.`,
+    "Certificate filed — registry check running",
+    `${doc.keyholder.name} filed ${report.fileName}. Automated checks: ${report.verdict.replace("_", " ")}. The ${REVIEW_HOURS}-hour registry check ends ${reviewEndsAt}. The owner has not been notified yet.`,
+    stamp,
+    0, // internal: the owner must not see this until the check clears
   );
+
   return { ok: true };
 }
 
+/**
+ * Demo shortcut: jump the 72-hour registry check. In production this is a
+ * registry/back-office integration — never a keyholder button.
+ */
 export function verifyClaim(doc: StateDoc): { ok: boolean; error?: string } {
   const claim = latestClaim(doc);
   if (!claim) return { ok: false, error: "No claim submitted." };
-  if (claim.status !== "verifying") return { ok: false, error: "Claim is not awaiting verification." };
-
-  claim.status = "window";
-  claim.verifiedAt = now();
-  claim.windowEndsAt = windowEnd();
-  doc.plan.status = "claiming";
-  doc.plan.updatedAt = now();
-
-  addEvent(
-    doc,
-    "claim.verified",
-    "Certificate verified",
-    `Owner notified. ${SAFETY_WINDOW_DAYS}-day safety window opened — no transfer can happen before it closes.`,
-  );
+  if (claim.status !== "review") {
+    return { ok: false, error: "This claim isn't waiting on a registry check." };
+  }
+  claim.reviewEndsAt = now();
+  settle(doc);
   return { ok: true };
 }
 
@@ -445,11 +526,25 @@ export function cancelClaim(doc: StateDoc): { ok: boolean; error?: string } {
   return { ok: true };
 }
 
+/**
+ * Demo controls for the two clocks. Skips the registry check if it is running,
+ * then closes the safety window and lets the engine pay out.
+ */
 export function fastForward(doc: StateDoc): { ok: boolean; error?: string } {
   const claim = latestClaim(doc);
-  if (!claim || claim.status !== "window") {
-    return { ok: false, error: "There is no open safety window." };
+  if (!claim) return { ok: false, error: "There is no handover to fast-forward." };
+
+  // One clock per press, so the demo walks through both gates in order.
+  if (claim.status === "review") {
+    claim.reviewEndsAt = now();
+    settle(doc);
+    return { ok: true };
   }
+
+  if (claim.status !== "window") {
+    return { ok: false, error: "There is no clock left to move." };
+  }
+
   claim.windowEndsAt = now();
   addEvent(
     doc,

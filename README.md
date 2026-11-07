@@ -99,7 +99,7 @@ single-document model everywhere, which also made the engine and reset logic sim
 | `/` | — | The story, the mechanics, and a live view of the seeded estate |
 | `/onboarding` | Owner | 8-step story-first setup: identity → accounts → primary → backups + split → cause → keyholder → seal |
 | `/dashboard` | Owner | Estate breakdown, the handover list, live split preview, keyholder code, safety-window alert, handover trail |
-| `/keyholder` | Trusted keyholder | Access code → certificate upload → simulated OCR + checks → verification → 14-day window → release |
+| `/keyholder` | Trusted keyholder | Access code → real certificate upload → automated document checks → 72-hour registry review → notification → 14-day window → release |
 | `/beneficiary` | Beneficiary | Read-only: allocation, assets released, the note left for them, and the audit trail |
 
 A floating **Demo** dock (bottom-right) resets the household to its seeded state at any time.
@@ -112,15 +112,21 @@ A floating **Demo** dock (bottom-right) resets the household to its seeded state
 2. **`/dashboard`** — the handover list. Toggle Chidi (primary) to **unreachable** and watch the
    split fall through to the backups at 60/40 instantly. Toggle them all off → everything routes to
    the charity. Toggle back.
-3. **`/keyholder`** — click *Use demo code*, *Use the sample certificate*, submit. Watch the
-   simulated extraction (fields + confidence + verification checks). Approve verification.
-4. Back on **`/dashboard`** — the owner now sees **"Someone started your handover"** with a live
-   14-day countdown and a cancel button. (This is the safety window doing its job.)
-5. Return to **`/keyholder`** → *Fast-forward to day 14* → the automation engine releases the
-   estate.
-6. **`/beneficiary`** — pick a recipient: their allocation, the assets it came from, and the note
+3. **`/keyholder`** — *Use demo code*, then *Use the sample certificate*. The document is read for
+   real: format, PDF structure, text layer, the deceased's name, the certificate number, the
+   registrar and the dates. All twelve checks pass. Now try the second link — *a document that
+   isn't one* (a Gumroad payout receipt) — and it is refused with reasons.
+4. File the certificate. The claim enters a **72-hour registry check**: the keyholder sees the
+   countdown, **the owner sees nothing at all** — back on `/dashboard` the plan is still just
+   `Plan active`, and the handover trail has no new entry. Notification is deliberately withheld
+   until the check clears.
+5. Return to **`/keyholder`** → *Fast-forward the 72 hours*. Now the owner is notified and
+   `/dashboard` shows **"Someone started your handover"** with a live 14-day countdown and a cancel
+   button. (This is the safety window doing its job.)
+6. **`/keyholder`** → *Fast-forward to day 14* → the automation engine releases the estate.
+7. **`/beneficiary`** — pick a recipient: their allocation, the assets it came from, and the note
    the owner wrote.
-7. Reset from the **Demo** dock and run it again with a different reachability combination.
+8. Reset from the **Demo** dock and run it again with a different reachability combination.
 
 ---
 
@@ -132,7 +138,7 @@ Next.js App Router (async server components read state directly)
         ├── lib/store.ts        async facade: load → settle → save
         ├── lib/model.ts        the state document, seed, and every mutation
         ├── lib/engine.ts       the allocation rules (pure)
-        ├── lib/ocr.ts          simulated document extraction
+        ├── lib/certs.ts        certificate verification: bytes → verdict, checks, fields
         └── lib/storage/        drivers: supabase.ts · kv.ts · sqlite.ts · memory.ts
 ```
 
@@ -145,10 +151,30 @@ Next.js App Router (async server components read state directly)
 Allocation is integer-cent arithmetic with the remainder going to the last recipient, and every
 step appends to an immutable `event` trail (the "handover trail" in the UI).
 
-**Safety window.** A claim starts as `verifying`, becomes `window` with `window_ends_at = now + 14
-days`, and only releases once that timestamp has passed. The window can be cancelled by the owner at
-any point (claim → `cancelled`, plan → `active`, nothing transferred). The *fast-forward* button
-exists purely so the demo can skip the fortnight; a live system would never expose it.
+**Certificate verification** (`lib/certs.ts`). The upload is read, not assumed: file signature vs.
+extension, size, PDF structure (header + `%%EOF`), text layer, the document's title, the fields a
+certificate carries, the deceased's name against the plan owner, the certificate-number format,
+date sanity (not future, not stale, issued after death), a known-registry match, PDF producer
+tamper signals, and a SHA-256 duplicate check. Twelve checks, three verdicts:
+
+| Verdict | Meaning | What happens |
+|---|---|---|
+| `verified` | every automated check passed | claim can be filed → 72-hour registry review |
+| `needs_review` | soft signals only (a photo, no text layer, unknown registrar) | claim can be filed → 72-hour **human** review |
+| `rejected` | a critical check failed | the claim cannot be filed; reasons are shown |
+
+The server re-runs the whole check inside `POST /api/claim`, so a client cannot talk it into
+accepting a document. Sample positives/negatives ship in `public/documents/`.
+
+**The 72-hour gate.** A filed claim starts in `review` with `review_ends_at = now + 72h`. The
+submission event is recorded as `ownerVisible = 0`, so the owner's snapshot and trail are untouched —
+they are not notified. When the check clears, the claim becomes `window`, `verified_at` is stamped,
+the owner is notified, `window_ends_at = verified_at + 14 days`, and only then can the engine release
+anything. The *fast-forward* buttons walk the demo through one clock per press; a live system waits
+for the registrar.
+
+**Safety window.** The owner can cancel at any point in the window (claim → `cancelled`, plan →
+`active`, nothing transferred).
 
 **Persistence.** The whole household is one JSON document (`user`, `plan`, `assets`,
 `beneficiaries`, `keyholder`, `claims`, `distributions`, `events`). Reads settle any expired window
@@ -160,10 +186,11 @@ and write back; mutations are read-modify-write. `POST /api/demo/reset` restores
 |---|---|---|
 | GET | `/api/state` | Full snapshot (auto-settles any expired window) |
 | POST | `/api/onboarding` | Create/replace a sealed plan |
-| POST | `/api/claim` | Keyholder submits a certificate (validates access code) |
-| POST | `/api/claim/verify` | Clears verification, opens the 14-day window |
+| POST | `/api/verify/certificate` | Multipart `file` → verification transcript (verdict, 12 checks, fields, SHA-256). Changes nothing |
+| POST | `/api/claim` | Multipart `accessCode` + `file`: re-verifies server-side, then files the claim into the 72-hour check |
+| POST | `/api/claim/verify` | Demo: clear the 72-hour check now (production: a registry integration) |
 | POST | `/api/claim/cancel` | Owner stops the handover |
-| POST | `/api/claim/fast-forward` | Demo: jump to the end of the window |
+| POST | `/api/claim/fast-forward` | Demo: move one clock (72-hour check, then the 14-day window) |
 | POST | `/api/beneficiary` | Toggle a beneficiary's reachability |
 | POST | `/api/demo/reset` | Restore the seeded household |
 | GET | `/api/meta` | Which storage driver is live + a health probe (shown in the demo dock) |
@@ -181,8 +208,12 @@ and write back; mutations are read-modify-write. `POST /api/demo/reset` restores
 
 ## Honest limits
 
-- The OCR is simulated and deterministic — it demonstrates document processing, not legal proof of
-  death. A production build needs registrar verification and human review.
+- The verifier reads the real file, but it is still a heuristic: it can be fooled by a well-made
+  forgery, and it is not connected to any civil registry. That is exactly why a passed document
+  still sits in a 72-hour review before the owner is told. It is document processing, not legal
+  proof of death.
+- Uploaded files are checked in memory and never stored — the claim keeps the SHA-256, the extracted
+  fields and the transcript, not the document itself.
 - No real platform integration: PayPal, wallets and storefronts would require their own
   cooperation, security controls and compliance work.
 - Platform terms and inheritance law still apply. Hack1 makes the process preparable, not

@@ -26,6 +26,9 @@ export default async function DashboardPage({
   const claim = s.claim;
   const isWindow = claim?.status === "window";
   const isDistributed = claim?.status === "distributed";
+  // A claim in its 72-hour registry check is deliberately invisible to the
+  // owner: no pill, no banner, no trail entry. The notification comes later.
+  const claimAnnounced = isWindow || isDistributed;
   const locked = Boolean(claim && claim.status !== "cancelled" && claim.status !== "distributed");
 
   return (
@@ -41,7 +44,7 @@ export default async function DashboardPage({
             {firstName}&apos;s plan<span className="text-brass">.</span>
           </h1>
           <div className="mt-3 flex flex-wrap items-center gap-3">
-            <StatusPill status={claim && claim.status !== "cancelled" ? claim.status : s.plan.status} />
+            <StatusPill status={claimAnnounced && claim ? claim.status : s.plan.status} />
             <span className="text-[11.5px] text-muted">
               sealed {shortDate(s.plan.sealedAt)} · updated {shortDate(s.plan.updatedAt)}
             </span>

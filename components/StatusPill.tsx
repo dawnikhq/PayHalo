@@ -3,7 +3,7 @@ export function StatusPill({ status }: { status: string }) {
     active: { label: "Plan active", cls: "border-sage/30 bg-sage/10 text-sage", dot: "bg-sage" },
     draft: { label: "Draft", cls: "border-white/12 bg-white/5 text-muted", dot: "bg-muted" },
     claiming: { label: "Safety window open", cls: "border-ember/35 bg-ember/10 text-ember", dot: "bg-ember" },
-    verifying: { label: "Awaiting verification", cls: "border-brass/30 bg-brass/10 text-brass", dot: "bg-brass" },
+    review: { label: "Under registry check", cls: "border-brass/30 bg-brass/10 text-brass", dot: "bg-brass" },
     window: { label: "Safety window open", cls: "border-ember/35 bg-ember/10 text-ember", dot: "bg-ember" },
     cancelled: { label: "Cancelled by owner", cls: "border-white/12 bg-white/5 text-muted", dot: "bg-muted" },
     distributed: { label: "Handover complete", cls: "border-brass/35 bg-brass/12 text-brass", dot: "bg-brass" },

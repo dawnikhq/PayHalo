@@ -32,7 +32,7 @@ const MECHANICS = [
   {
     n: "04",
     title: "The Secure Handover",
-    body: "No passwords shared with family. Once verification clears and the window closes, the automation engine releases according to your instructions.",
+    body: "No passwords shared with family. Once the registry check clears and the window closes, the automation engine releases according to your instructions.",
   },
 ];
 
@@ -269,7 +269,7 @@ export default async function Home() {
               href: "/keyholder",
               k: "Keyholder",
               t: "Submit a certificate",
-              d: "Simulated OCR reads the document, verification clears, and the 14-day clock starts ticking.",
+              d: "The document is fingerprinted and read, then a 72-hour registry check runs before the owner is notified.",
             },
             {
               href: "/beneficiary",
