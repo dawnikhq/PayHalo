@@ -12,6 +12,11 @@ keyholder who can start the handover, and give the family a plan instead of a pu
 
 **Live demo: <https://hack1-weld.vercel.app>** (no login, seeded with a demo household)
 
+![Hack1 — your money should know where to go](docs/demo/hack1-card-1200x630.png)
+
+Share cards live in `docs/demo/` (1200×630 for OG/GitHub/X, 1080×1080 for a square post) and are
+regenerated with `node scripts/make-demo-image.mjs`.
+
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fdawnikhq%2FHACK1&project-name=hack1&repository-name=hack1)
 
 **All accounts, balances, documents and transfers are simulated.** Nothing here creates a legal
