@@ -2,12 +2,17 @@ import { allocate, totalOf } from "./engine";
 import type { StoredReport } from "./certs";
 import type {
   Asset,
+  AssetKind,
   Beneficiary,
+  ClaimStatus,
+  DocumentRow,
   Claim,
   Distribution,
   EventRow,
   Keyholder,
   Plan,
+  PlanStatus,
+  PlanStep,
   Role,
   Snapshot,
   User,
@@ -37,13 +42,12 @@ export interface StateDoc {
   keyholder: Keyholder | null;
   claims: Claim[];
   distributions: Distribution[];
+  documents: DocumentRow[];
   events: EventRow[];
   seq: number;
 }
 
 const now = () => new Date().toISOString();
-const windowEnd = (days = SAFETY_WINDOW_DAYS) =>
-  new Date(Date.now() + days * 86_400_000).toISOString();
 
 export function totalCents(doc: StateDoc): number {
   return totalOf(doc.assets);
@@ -51,6 +55,18 @@ export function totalCents(doc: StateDoc): number {
 
 export function latestClaim(doc: StateDoc): Claim | null {
   return doc.claims.length ? doc.claims[doc.claims.length - 1] : null;
+}
+
+/** The five checklist items shown on My Plan and the dashboard progress card. */
+export function planSteps(doc: StateDoc): PlanStep[] {
+  const has = (role: Role) => doc.beneficiaries.some((b) => b.role === role);
+  return [
+    { key: "assets", label: "Assets", done: doc.assets.length > 0 },
+    { key: "beneficiaries", label: "Beneficiaries & allocations", done: has("primary") && has("backup") },
+    { key: "charity", label: "Fallback charity", done: has("charity") },
+    { key: "keyholder", label: "Trusted keyholder", done: Boolean(doc.keyholder) },
+    { key: "review", label: "Review & seal", done: Boolean(doc.plan.sealedAt) },
+  ];
 }
 
 export function orderedBeneficiaries(doc: StateDoc): Beneficiary[] {
@@ -73,6 +89,8 @@ export function snapshotOf(
     user: doc.user,
     plan: doc.plan,
     assets: doc.assets,
+    documents: doc.documents ?? [],
+    steps: planSteps(doc),
     beneficiaries: orderedBeneficiaries(doc),
     keyholder: doc.keyholder,
     claim,
@@ -175,6 +193,10 @@ export function seedDoc(): StateDoc {
       balanceCents: 842050,
       detail: "2 currencies · 41 pending payouts",
       connected: 1,
+      url: "paypal.com/business",
+      handoverNote: "Release the business balance to Chidi. Close the pending payouts first.",
+      accessNote: "Recovery goes through PayPal's deceased-account process. Never share the password.",
+      reviewed: 1,
     },
     {
       id: nid(),
@@ -185,6 +207,10 @@ export function seedDoc(): StateDoc {
       balanceCents: 561020,
       detail: "0.0842 BTC · 3.10 ETH",
       connected: 1,
+      url: "wallet address on file",
+      handoverNote: "Instructions live in Documents. The seed phrase is written down offline, not here.",
+      accessNote: "Follow the recovery instructions stored in Documents. Never enter a seed phrase into a website.",
+      reviewed: 0,
     },
     {
       id: nid(),
@@ -195,6 +221,12 @@ export function seedDoc(): StateDoc {
       balanceCents: 1230000,
       detail: "$4,100 MRR · 612 customers",
       connected: 1,
+      url: "adasstudio.demo",
+      handoverNote: "Storefront ownership, customer relationships and operating documentation.",
+      accessNote: "Use the business recovery guide in Documents. Never share live passwords.",
+      monthlyCents: 410000,
+      customers: 612,
+      reviewed: 0,
     },
   ];
 
@@ -208,13 +240,54 @@ export function seedDoc(): StateDoc {
   };
 
   return {
-    user: { id: userId, name: "Ada Okafor", email: "ada@hack1.demo" },
+    user: {
+      id: userId,
+      name: "Ada Okafor",
+      email: "ada@hack1.demo",
+      phone: "+234 800 000 0000",
+      timezone: "West Africa Time · UTC+1",
+    },
     plan: { id: planId, userId, status: "active", sealedAt: sealed, updatedAt: stamp },
     assets,
     beneficiaries,
     keyholder,
     claims: [],
     distributions: [],
+    documents: [
+      {
+        id: nid(),
+        userId,
+        name: "Business recovery guide",
+        kind: "PDF",
+        sizeKb: 1843,
+        relatedTo: "Ada's Studio",
+        access: "beneficiaries",
+        updatedAt: stamp,
+        createdAt: sealed,
+      },
+      {
+        id: nid(),
+        userId,
+        name: "Wallet recovery instructions",
+        kind: "PDF",
+        sizeKb: 840,
+        relatedTo: "Self-custody wallet",
+        access: "owner",
+        updatedAt: stamp,
+        createdAt: sealed,
+      },
+      {
+        id: nid(),
+        userId,
+        name: "Personal letter for Chidi",
+        kind: "PDF",
+        sizeKb: 220,
+        relatedTo: "My Plan",
+        access: "beneficiaries",
+        updatedAt: stamp,
+        createdAt: sealed,
+      },
+    ],
     events: [
       {
         id: nid(),
@@ -430,6 +503,7 @@ export function applyPlan(input: PlanInput): StateDoc {
   doc.keyholder = keyholder;
   doc.claims = [];
   doc.distributions = [];
+  doc.documents = [];
   doc.events = [];
   doc.seq = id;
 
@@ -582,4 +656,387 @@ export function setAvailability(doc: StateDoc, id: number, available: boolean): 
     );
   }
   return { ok: true };
+}
+
+
+/* ------------------------------------------------------------------ assets -- */
+
+export interface AssetInput {
+  kind: Asset["kind"];
+  label: string;
+  provider: string;
+  balanceCents: number;
+  detail: string;
+  url?: string;
+  handoverNote?: string;
+  accessNote?: string;
+  monthlyCents?: number | null;
+  customers?: number | null;
+}
+
+export function addAsset(doc: StateDoc, input: AssetInput): { ok: boolean; error?: string; id?: number } {
+  if (!input.label.trim()) return { ok: false, error: "Give the asset a name." };
+  if (!Number.isFinite(input.balanceCents) || input.balanceCents < 0) {
+    return { ok: false, error: "Enter a value of zero or more." };
+  }
+  doc.seq += 1;
+  const asset: Asset = {
+    id: doc.seq,
+    userId: doc.user.id,
+    kind: input.kind,
+    label: input.label.trim(),
+    provider: input.provider.trim() || "Not specified",
+    balanceCents: Math.round(input.balanceCents),
+    detail: input.detail.trim(),
+    connected: 1,
+    url: input.url?.trim() || null,
+    handoverNote: input.handoverNote?.trim() || null,
+    accessNote: input.accessNote?.trim() || null,
+    monthlyCents: input.monthlyCents ?? null,
+    customers: input.customers ?? null,
+    reviewed: 0 as number,
+  };
+  doc.assets.push(asset);
+  doc.plan.updatedAt = now();
+  addEvent(doc, "asset.added", `${asset.label} added`, `A ${asset.kind === "crypto" ? "crypto wallet" : asset.kind === "business" ? "digital business" : "payment account"} was added to the plan.`);
+  return { ok: true, id: asset.id };
+}
+
+export function updateAsset(doc: StateDoc, id: number, patch: Partial<AssetInput>): { ok: boolean; error?: string } {
+  const asset = doc.assets.find((a) => a.id === id);
+  if (!asset) return { ok: false, error: "That asset no longer exists." };
+  if (patch.label !== undefined) {
+    if (!patch.label.trim()) return { ok: false, error: "Give the asset a name." };
+    asset.label = patch.label.trim();
+  }
+  if (patch.provider !== undefined) asset.provider = patch.provider.trim() || asset.provider;
+  if (patch.balanceCents !== undefined) {
+    if (!Number.isFinite(patch.balanceCents) || patch.balanceCents < 0) {
+      return { ok: false, error: "Enter a value of zero or more." };
+    }
+    asset.balanceCents = Math.round(patch.balanceCents);
+  }
+  if (patch.detail !== undefined) asset.detail = patch.detail.trim();
+  if (patch.url !== undefined) asset.url = patch.url.trim() || null;
+  if (patch.handoverNote !== undefined) asset.handoverNote = patch.handoverNote.trim() || null;
+  if (patch.accessNote !== undefined) asset.accessNote = patch.accessNote.trim() || null;
+  if (patch.monthlyCents !== undefined) asset.monthlyCents = patch.monthlyCents;
+  if (patch.customers !== undefined) asset.customers = patch.customers;
+  asset.reviewed = 1;
+  doc.plan.updatedAt = now();
+  addEvent(doc, "asset.updated", `${asset.label} updated`, "Asset details and handover instructions were reviewed.");
+  return { ok: true };
+}
+
+export function removeAsset(doc: StateDoc, id: number): { ok: boolean; error?: string } {
+  const before = doc.assets.length;
+  doc.assets = doc.assets.filter((a) => a.id !== id);
+  if (doc.assets.length === before) return { ok: false, error: "That asset no longer exists." };
+  doc.plan.updatedAt = now();
+  addEvent(doc, "asset.removed", "An asset was removed", "It is no longer part of the plan.");
+  return { ok: true };
+}
+
+/* ----------------------------------------------------------- beneficiaries -- */
+
+export interface BeneficiaryInput {
+  name: string;
+  email: string;
+  relationship: string;
+  role: Role;
+  share?: number;
+  note?: string;
+}
+
+export function addBeneficiary(doc: StateDoc, input: BeneficiaryInput): { ok: boolean; error?: string } {
+  if (!input.name.trim()) return { ok: false, error: "Enter a name." };
+  if (doc.beneficiaries.some((b) => b.role === input.role && input.role !== "backup")) {
+    return { ok: false, error: `A ${input.role === "charity" ? "final cause" : "first choice"} is already on the plan.` };
+  }
+  const backups = doc.beneficiaries.filter((b) => b.role === "backup").length;
+  doc.seq += 1;
+  doc.beneficiaries.push({
+    id: doc.seq,
+    userId: doc.user.id,
+    name: input.name.trim(),
+    email: input.email.trim(),
+    relationship: input.relationship.trim() || "Relationship not set",
+    role: input.role,
+    share: input.share ?? (input.role === "backup" ? 0 : 100),
+    sort: input.role === "charity" ? 90 : input.role === "primary" ? 0 : backups + 1,
+    available: 1,
+    note: input.note?.trim() ?? "",
+  });
+  doc.plan.updatedAt = now();
+  addEvent(doc, "beneficiary.added", `${input.name.trim()} added`, `Added as ${input.role === "charity" ? "the final cause" : input.role === "primary" ? "the first choice" : "a family backup"}.`);
+  return { ok: true };
+}
+
+export function setAllocations(doc: StateDoc, shares: { id: number; share: number }[]): { ok: boolean; error?: string } {
+  const backups = doc.beneficiaries.filter((b) => b.role === "backup");
+  const total = shares.reduce((sum, s) => sum + (Number.isFinite(s.share) ? s.share : 0), 0);
+  if (shares.some((s) => s.share < 0 || s.share > 100)) {
+    return { ok: false, error: "Each share must be between 0% and 100%." };
+  }
+  if (backups.length > 0 && Math.round(total) !== 100) {
+    return { ok: false, error: `Backup shares must total 100% — they currently total ${Math.round(total)}%.` };
+  }
+  for (const s of shares) {
+    const b = doc.beneficiaries.find((x) => x.id === s.id && x.role === "backup");
+    if (b) b.share = Math.round(s.share);
+  }
+  doc.plan.updatedAt = now();
+  addEvent(doc, "beneficiaries.updated", "Backup shares updated", `Backups now split the estate ${shares.map((s) => `${Math.round(s.share)}%`).join(" / ")}.`);
+  return { ok: true };
+}
+
+export function updateBeneficiary(
+  doc: StateDoc,
+  id: number,
+  patch: { name?: string; email?: string; relationship?: string; note?: string; share?: number },
+): { ok: boolean; error?: string } {
+  const person = doc.beneficiaries.find((b) => b.id === id);
+  if (!person) return { ok: false, error: "That person is not on the plan." };
+  if (patch.name !== undefined) {
+    if (!patch.name.trim()) return { ok: false, error: "Enter a name." };
+    person.name = patch.name.trim();
+  }
+  if (patch.email !== undefined) person.email = patch.email.trim();
+  if (patch.relationship !== undefined) person.relationship = patch.relationship.trim();
+  if (patch.note !== undefined) person.note = patch.note.trim();
+  if (patch.share !== undefined && person.role !== "primary") person.share = Math.max(0, Math.min(100, patch.share));
+  doc.plan.updatedAt = now();
+  addEvent(doc, "beneficiary.updated", `${person.name} updated`, "Contact details and notes were brought up to date.");
+  return { ok: true };
+}
+
+export function removeBeneficiary(doc: StateDoc, id: number): { ok: boolean; error?: string } {
+  const person = doc.beneficiaries.find((b) => b.id === id);
+  if (!person) return { ok: false, error: "That person is not on the plan." };
+  if (person.role !== "backup") return { ok: false, error: "The first choice and the final cause can't be removed here." };
+  doc.beneficiaries = doc.beneficiaries.filter((b) => b.id !== id);
+  doc.plan.updatedAt = now();
+  addEvent(doc, "beneficiary.removed", `${person.name} removed`, "They are no longer a family backup.");
+  return { ok: true };
+}
+
+/* --------------------------------------------------------------- documents -- */
+
+export function addDocument(
+  doc: StateDoc,
+  input: { name: string; sizeKb: number; relatedTo: string; access: DocumentRow["access"] },
+): { ok: boolean; error?: string } {
+  const name = input.name.trim();
+  if (!name) return { ok: false, error: "Give the document a name." };
+  if (!/\.pdf$/i.test(name)) return { ok: false, error: "Only PDF documents are accepted in this prototype." };
+  if (input.sizeKb > 10_240) return { ok: false, error: "Documents must be 10 MB or smaller." };
+  doc.seq += 1;
+  const stamp = now();
+  doc.documents.push({
+    id: doc.seq,
+    userId: doc.user.id,
+    name,
+    kind: name.split(".").pop()?.toUpperCase() ?? "PDF",
+    sizeKb: Math.max(1, Math.round(input.sizeKb)),
+    relatedTo: input.relatedTo || "My Plan",
+    access: input.access,
+    updatedAt: stamp,
+    createdAt: stamp,
+  });
+  addEvent(doc, "document.added", `${name} added`, `Guidance for ${input.relatedTo || "the plan"}. Never upload passwords or recovery phrases.`);
+  return { ok: true };
+}
+
+/* ----------------------------------------------------------------- profile -- */
+
+export function updateProfile(
+  doc: StateDoc,
+  input: { name?: string; email?: string; phone?: string; timezone?: string },
+): { ok: boolean; error?: string } {
+  if (input.name !== undefined) {
+    if (!input.name.trim()) return { ok: false, error: "Enter your name." };
+    doc.user.name = input.name.trim();
+  }
+  if (input.email !== undefined) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email.trim())) return { ok: false, error: "Enter a valid email address." };
+    doc.user.email = input.email.trim();
+  }
+  if (input.phone !== undefined) doc.user.phone = input.phone.trim();
+  if (input.timezone !== undefined) doc.user.timezone = input.timezone.trim();
+  addEvent(doc, "profile.updated", "Profile updated", "Contact details kept current so a safety notice can reach the account holder.");
+  return { ok: true };
+}
+
+/* -------------------------------------------------------------------- plan -- */
+
+export function sealPlan(doc: StateDoc): { ok: boolean; error?: string } {
+  const steps = planSteps(doc);
+  const missing = steps.filter((s) => !s.done && s.key !== "review");
+  if (missing.length) {
+    return { ok: false, error: `Finish these first: ${missing.map((m) => m.label).join(", ")}.` };
+  }
+  const stamp = now();
+  doc.plan.sealedAt = stamp;
+  doc.plan.updatedAt = stamp;
+  doc.plan.status = "active";
+  addEvent(doc, "plan.sealed", "Plan sealed", `${doc.user.name} sealed a plan covering ${doc.assets.length} accounts and ${doc.beneficiaries.length} recipients.`, stamp);
+  return { ok: true };
+}
+
+/* ------------------------------------------------------- role-scoped views -- */
+
+/**
+ * What a keyholder is allowed to know. Deliberately excludes balances, asset
+ * details, recipient names, shares and anything from the 72-hour review that
+ * belongs to the owner. The portal renders this shape only — there is nothing
+ * downstream to hide.
+ */
+export interface KeyholderView {
+  ownerName: string;
+  ownerFirstName: string;
+  planStatus: PlanStatus;
+  sealedAt: string | null;
+  recipientCount: number;
+  keyholder: { name: string; relationship: string; accessCode: string } | null;
+  claim: {
+    id: number;
+    status: ClaimStatus;
+    documentName: string;
+    confidence: number;
+    initiatedAt: string;
+    reviewEndsAt: string | null;
+    verifiedAt: string | null;
+    windowEndsAt: string | null;
+    distributedAt: string | null;
+    verification: string;
+  } | null;
+  secondsToReviewEnd: number | null;
+  secondsToWindowEnd: number | null;
+  trail: { id: number; title: string; body: string; createdAt: string }[];
+}
+
+export function keyholderView(doc: StateDoc): KeyholderView {
+  const claim = latestClaim(doc);
+  return {
+    ownerName: doc.user.name,
+    ownerFirstName: doc.user.name.split(" ")[0],
+    planStatus: doc.plan.status,
+    sealedAt: doc.plan.sealedAt,
+    recipientCount: doc.beneficiaries.length,
+    keyholder: doc.keyholder
+      ? {
+          name: doc.keyholder.name,
+          relationship: doc.keyholder.relationship,
+          accessCode: doc.keyholder.accessCode,
+        }
+      : null,
+    claim: claim
+      ? {
+          id: claim.id,
+          status: claim.status,
+          documentName: claim.documentName,
+          confidence: claim.confidence,
+          initiatedAt: claim.initiatedAt,
+          reviewEndsAt: claim.reviewEndsAt,
+          verifiedAt: claim.verifiedAt,
+          windowEndsAt: claim.windowEndsAt,
+          distributedAt: claim.distributedAt,
+          verification: claim.verification,
+        }
+      : null,
+    secondsToReviewEnd:
+      claim && claim.status === "review" && claim.reviewEndsAt
+        ? Math.max(0, Math.floor((new Date(claim.reviewEndsAt).getTime() - Date.now()) / 1000))
+        : null,
+    secondsToWindowEnd:
+      claim && claim.status === "window" && claim.windowEndsAt
+        ? Math.max(0, Math.floor((new Date(claim.windowEndsAt).getTime() - Date.now()) / 1000))
+        : null,
+    trail: [...doc.events].reverse().slice(0, 8).map((e) => ({
+      id: e.id,
+      title: e.title,
+      body: e.body,
+      createdAt: e.createdAt,
+    })),
+  };
+}
+
+/**
+ * What one beneficiary is allowed to know. Their own entitlement exists only
+ * after a verified claim clears the full 14-day window — before that, even the
+ * amount is absent from this shape.
+ */
+export interface BeneficiaryView {
+  ownerName: string;
+  ownerFirstName: string;
+  person: { id: number; name: string; email: string; relationship: string };
+  phase: "idle" | "window" | "released";
+  verifiedAt: string | null;
+  windowEndsAt: string | null;
+  distributedAt: string | null;
+  secondsToWindowEnd: number | null;
+  daysRemaining: number | null;
+  entitlement: {
+    amountCents: number;
+    share: number;
+    assets: { id: number; label: string; kind: AssetKind; provider: string; amountCents: number }[];
+    note: string;
+    documents: { id: number; name: string; kind: string; sizeKb: number; relatedTo: string }[];
+  } | null;
+}
+
+export function beneficiaryView(doc: StateDoc): BeneficiaryView {
+  const claim = latestClaim(doc);
+  const released = claim?.status === "distributed";
+  const distributions = claim ? doc.distributions.filter((d) => d.claimId === claim.id) : [];
+  const primary = doc.beneficiaries.find((b) => b.role === "primary");
+  const paidPrimary = primary && distributions.some((d) => d.beneficiaryId === primary.id);
+  const focusId = released && !paidPrimary ? distributions[0]?.beneficiaryId : primary?.id;
+  const person = doc.beneficiaries.find((b) => b.id === focusId) ?? doc.beneficiaries[0];
+
+  const distribution = released
+    ? distributions.find((d) => d.beneficiaryId === person?.id)
+    : undefined;
+
+  const secondsToWindowEnd =
+    claim && claim.status === "window" && claim.windowEndsAt
+      ? Math.max(0, Math.floor((new Date(claim.windowEndsAt).getTime() - Date.now()) / 1000))
+      : null;
+
+  const total = totalCents(doc) || 1;
+
+  return {
+    ownerName: doc.user.name,
+    ownerFirstName: doc.user.name.split(" ")[0],
+    person: {
+      id: person?.id ?? 0,
+      name: person?.name ?? "Beneficiary",
+      email: person?.email ?? "",
+      relationship: person?.relationship ?? "",
+    },
+    phase: released && distribution ? "released" : claim?.status === "window" ? "window" : "idle",
+    verifiedAt: claim?.verifiedAt ?? null,
+    windowEndsAt: claim?.windowEndsAt ?? null,
+    distributedAt: claim?.distributedAt ?? null,
+    secondsToWindowEnd,
+    daysRemaining: secondsToWindowEnd !== null ? Math.ceil(secondsToWindowEnd / 86400) : null,
+    entitlement:
+      released && distribution
+        ? {
+            amountCents: distribution.amountCents,
+            share: distribution.share,
+            assets: doc.assets.map((a) => ({
+              id: a.id,
+              label: a.label,
+              kind: a.kind,
+              provider: a.provider,
+              amountCents: Math.round((a.balanceCents * distribution.amountCents) / total),
+            })),
+            note: person?.note ?? "",
+            documents: (doc.documents ?? [])
+              .filter((d) => d.access === "beneficiaries")
+              .map((d) => ({ id: d.id, name: d.name, kind: d.kind, sizeKb: d.sizeKb, relatedTo: d.relatedTo })),
+          }
+        : null,
+  };
 }

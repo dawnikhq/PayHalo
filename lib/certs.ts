@@ -342,7 +342,6 @@ export async function verifyCertificate(input: VerifyInput): Promise<CertReport>
 
   const T = upper(text);
   const pairs = pairsFromText(text);
-  const flat = ` ${T.replace(/\s+/g, " ")} `;
 
   /* 3 — is it a death certificate at all? */
   if (kind === "unknown") {

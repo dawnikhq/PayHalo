@@ -7,6 +7,7 @@ export function CopyButton({ value, label = "Copy" }: { value: string; label?: s
 
   return (
     <button
+      type="button"
       onClick={async () => {
         try {
           await navigator.clipboard.writeText(value);
@@ -16,9 +17,9 @@ export function CopyButton({ value, label = "Copy" }: { value: string; label?: s
         setCopied(true);
         setTimeout(() => setCopied(false), 1600);
       }}
-      className="text-[10.5px] uppercase tracking-[0.12em] text-muted transition hover:text-brass"
+      className="rounded-full px-2.5 py-1 text-[11px] font-semibold text-[var(--color-brand)] transition hover:bg-[var(--color-mint)]"
     >
-      {copied ? "copied" : label}
+      {copied ? "Copied" : label}
     </button>
   );
 }

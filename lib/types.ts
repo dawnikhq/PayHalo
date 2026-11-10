@@ -13,6 +13,8 @@ export interface User {
   id: number;
   name: string;
   email: string;
+  phone?: string;
+  timezone?: string;
 }
 
 export interface Asset {
@@ -24,6 +26,29 @@ export interface Asset {
   balanceCents: number;
   detail: string;
   connected: number;
+  /** Where the account lives, for the handover instructions. */
+  url?: string | null;
+  /** What should be passed on. */
+  handoverNote?: string | null;
+  /** Free-text note, never a password or seed phrase. */
+  accessNote?: string | null;
+  /** Storefront metrics, only meaningful for a digital business. */
+  monthlyCents?: number | null;
+  customers?: number | null;
+  /** Has the owner reviewed the recovery instructions for this asset? */
+  reviewed?: number;
+}
+
+export interface DocumentRow {
+  id: number;
+  userId: number;
+  name: string;
+  kind: string;
+  sizeKb: number;
+  relatedTo: string;
+  access: "owner" | "beneficiaries";
+  updatedAt: string;
+  createdAt: string;
 }
 
 export interface Beneficiary {
@@ -54,6 +79,13 @@ export interface Plan {
   status: PlanStatus;
   sealedAt: string | null;
   updatedAt: string;
+}
+
+/** The five things the My Plan checklist counts. */
+export interface PlanStep {
+  key: "assets" | "beneficiaries" | "charity" | "keyholder" | "review";
+  label: string;
+  done: boolean;
 }
 
 export interface ExtractedField {
@@ -112,6 +144,8 @@ export interface Snapshot {
   keyholder: Keyholder | null;
   claim: Claim | null;
   distributions: (Distribution & { name: string; role: Role })[];
+  documents: DocumentRow[];
+  steps: PlanStep[];
   events: EventRow[];
   totalCents: number;
   secondsToReviewEnd: number | null;

@@ -1,22 +1,26 @@
 import type { Metadata } from "next";
-import "@fontsource/instrument-serif/400.css";
-import "@fontsource/instrument-serif/400-italic.css";
 import "@fontsource-variable/inter";
+import "@fontsource-variable/manrope";
 import "./globals.css";
-import { TopNav } from "@/components/TopNav";
 import { DemoDock } from "@/components/DemoDock";
 
 export const metadata: Metadata = {
-  title: "Hack1 — A plan for your digital life",
+  title: "VIVO — Your legacy, considered.",
   description:
-    "The automated handover for the Dormant Billion. Decide where your digital wealth goes, name a trusted keyholder, and give your family a plan instead of a puzzle.",
+    "VIVO is the calm handover for your digital estate. Decide where your digital wealth goes, name a trusted keyholder, and give your family a plan instead of a puzzle.",
+  applicationName: "VIVO",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className="antialiased">
-        <TopNav />
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-[var(--color-forest)] focus:px-4 focus:py-2 focus:text-white"
+        >
+          Skip to content
+        </a>
         {children}
         <DemoDock />
       </body>

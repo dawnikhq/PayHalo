@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { money } from "@/lib/format";
+import { Field } from "@/components/ui";
 
 type AssetChoice = {
   kind: "paypal" | "crypto" | "business";
@@ -50,14 +51,26 @@ const CAUSES = [
 ];
 
 const STEPS = [
-  { kicker: "Before we begin", title: "Four minutes now. Years of clarity later.", note: "No passwords leave your hands, and nothing transfers while you're alive." },
-  { kicker: "Step one", title: "Whose plan is this?", note: "We only use this to match the certificate later." },
-  { kicker: "Step two", title: "What would you be leaving behind?", note: "Connect is simulated — these are demo balances." },
-  { kicker: "Step three", title: "Who inherits first?", note: "Your first choice. The person you'd want it to reach without hesitation." },
-  { kicker: "Step four", title: "And if they can't?", note: "A plan needs a second path. Split it however you feel is fair." },
-  { kicker: "Step five", title: "If there's nobody left to carry it.", note: "The final cause. Your legacy keeps working even without heirs." },
+  {
+    kicker: "Before we begin",
+    title: "Four minutes now. Years of clarity later.",
+    note: "No passwords leave your hands, and nothing transfers while you are alive.",
+  },
+  { kicker: "Step one", title: "Whose plan is this?", note: "We only use this to match a certificate later." },
+  {
+    kicker: "Step two",
+    title: "What would you be leaving behind?",
+    note: "Connections are simulated — these are demo balances.",
+  },
+  { kicker: "Step three", title: "Who inherits first?", note: "The person you would want it to reach without hesitation." },
+  { kicker: "Step four", title: "And if they can't?", note: "A plan needs a second path. Split it however feels fair." },
+  {
+    kicker: "Step five",
+    title: "If there is nobody left to carry it.",
+    note: "The final cause. Your legacy keeps working even without heirs.",
+  },
   { kicker: "Step six", title: "Who holds your key?", note: "They can start the process. They can never see your money." },
-  { kicker: "Last look", title: "Seal it.", note: "A sealed plan is written once, and follows your order exactly." },
+  { kicker: "Last look", title: "Seal it.", note: "A sealed plan follows your order exactly, and only you can stop it." },
 ];
 
 export default function OnboardingPage() {
@@ -70,18 +83,14 @@ export default function OnboardingPage() {
   const [email, setEmail] = useState("");
   const [assets, setAssets] = useState<AssetChoice[]>(ASSET_LIBRARY);
   const [primary, setPrimary] = useState({ name: "", email: "", relationship: "", note: "" });
-  const [backups, setBackups] = useState<Backup[]>([
-    { name: "", email: "", relationship: "", note: "" },
-  ]);
+  const [backups, setBackups] = useState<Backup[]>([{ name: "", email: "", relationship: "", note: "" }]);
   const [split, setSplit] = useState(60);
   const [charity, setCharity] = useState({ name: CAUSES[0].name, email: CAUSES[0].email, note: "" });
   const [keyholder, setKeyholder] = useState({ name: "", email: "", relationship: "" });
-  const [code] = useState(
-    () => `KEY-${Math.floor(1000 + Math.random() * 8999)}`,
-  );
+  const [code] = useState(() => `KEY-${Math.floor(1000 + Math.random() * 8999)}`);
 
   const connected = assets.filter((a) => a.connected);
-  const total = connected.reduce((s, a) => s + a.balanceCents, 0);
+  const total = connected.reduce((sum, a) => sum + a.balanceCents, 0);
 
   const canAdvance = useMemo(() => {
     if (step === 2) return connected.length > 0;
@@ -145,110 +154,114 @@ export default function OnboardingPage() {
   const progress = ((step + 1) / STEPS.length) * 100;
 
   return (
-    <main className="min-h-[calc(100vh-4rem)]">
-      <div className="shell grid gap-10 py-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16 lg:py-16">
-        {/* narrative rail */}
-        <aside className="lg:sticky lg:top-24 lg:self-start">
-          <Link href="/" className="text-[11.5px] text-muted transition hover:text-ivory">
-            ← Leave without saving
+    <div className="min-h-screen bg-[var(--color-canvas)]">
+      <header className="border-b border-[var(--color-line)] bg-[var(--color-surface)]">
+        <div className="mx-auto flex h-[64px] w-full max-w-[1120px] items-center justify-between px-5 sm:px-8">
+          <Link href="/" className="flex items-baseline gap-2">
+            <span className="font-[var(--font-display)] text-[24px] font-extrabold tracking-[-0.055em] text-[var(--color-brand)]">
+              vivo
+            </span>
+            <span className="hidden text-[9.5px] font-semibold uppercase tracking-[0.13em] text-[#94a29a] sm:block">
+              New plan
+            </span>
           </Link>
+          <div className="flex items-center gap-4">
+            <span className="t-meta">Step {Math.min(step + 1, STEPS.length)} of {STEPS.length}</span>
+            <Link href="/" className="text-[12.5px] font-medium text-[var(--color-muted)] hover:text-[var(--color-ink)]">
+              Leave without saving
+            </Link>
+          </div>
+        </div>
+        <div className="h-0.5 w-full bg-[#edf2ed]">
+          <div
+            className="h-full bg-[var(--color-brand)] transition-all duration-500"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </header>
 
-          <p className="eyebrow mt-8">
-            <span className="h-px w-8 bg-brass/60" />
-            {meta.kicker}
-          </p>
-          <h1 className="display mt-4 text-[clamp(2.1rem,3.6vw,2.9rem)]">{meta.title}</h1>
-          <p className="mt-4 max-w-[36ch] text-[13.5px] leading-relaxed text-muted">{meta.note}</p>
+      <main className="mx-auto grid w-full max-w-[1120px] gap-8 px-5 py-9 sm:px-8 lg:grid-cols-[0.82fr_1.18fr] lg:gap-14 lg:py-12">
+        <aside className="lg:sticky lg:top-8 lg:self-start">
+          <p className="eyebrow">{meta.kicker}</p>
+          <h1 className="h1 mt-3">{meta.title}</h1>
+          <p className="t-body mt-3 max-w-[38ch]">{meta.note}</p>
 
-          <div className="mt-10 max-w-[300px]">
-            <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.2em] text-muted/60">
-              <span>Progress</span>
-              <span className="mono">{Math.round(progress)}%</span>
-            </div>
-            <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/8">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-brass-deep to-brass transition-all duration-500"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <div className="mt-6 space-y-1.5">
-              {STEPS.slice(1).map((s, i) => {
-                const idx = i + 1;
-                const done = idx < step;
-                const current = idx === step;
-                return (
-                  <button
-                    key={s.kicker}
-                    onClick={() => idx <= step && setStep(idx)}
-                    disabled={idx > step}
-                    className={`flex w-full items-center gap-2.5 rounded-lg px-1 py-1 text-left text-[11.5px] transition ${
-                      current ? "text-brass" : done ? "text-muted hover:text-ivory" : "text-muted/30"
+          <nav aria-label="Plan steps" className="mt-8 max-w-[300px]">
+            {STEPS.slice(1).map((s, i) => {
+              const idx = i + 1;
+              const done = idx < step;
+              const current = idx === step;
+              return (
+                <button
+                  key={s.kicker}
+                  onClick={() => idx <= step && setStep(idx)}
+                  disabled={idx > step}
+                  className={`flex w-full items-center gap-2.5 rounded-[8px] px-1 py-1.5 text-left text-[11.5px] transition ${
+                    current
+                      ? "font-semibold text-[var(--color-forest)]"
+                      : done
+                        ? "text-[var(--color-muted)] hover:text-[var(--color-ink)]"
+                        : "text-[#b6c1ba]"
+                  }`}
+                >
+                  <span
+                    className={`grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full text-[9px] ${
+                      done
+                        ? "bg-[var(--color-mint)] text-[var(--color-forest)]"
+                        : current
+                          ? "bg-[var(--color-forest)] text-[var(--color-lime)]"
+                          : "border border-[var(--color-line-strong)]"
                     }`}
                   >
-                    <span
-                      className={`grid h-4 w-4 shrink-0 place-items-center rounded-full border text-[8px] ${
-                        done
-                          ? "border-sage/40 bg-sage/15 text-sage"
-                          : current
-                            ? "border-brass/50 bg-brass/15 text-brass"
-                            : "border-white/10"
-                      }`}
-                    >
-                      {done ? "✓" : idx}
-                    </span>
-                    {s.kicker}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+                    {done ? "✓" : idx}
+                  </span>
+                  {s.kicker}
+                </button>
+              );
+            })}
+          </nav>
         </aside>
 
-        {/* form panel */}
-        <section className="card p-6 md:p-9">
+        <section className="card p-6 md:p-8">
           <div key={step} className="rise">
             {step === 0 && (
               <div>
-                <p className="font-serif text-[26px] leading-snug text-ivory">
-                  Most people never write anything down.
-                </p>
-                <div className="mt-5 space-y-3.5 text-[13.5px] leading-relaxed text-muted">
-                  <p>
-                    Not because they don&apos;t care — because it feels morbid, expensive, or like
-                    something you&apos;ll do later. Then one day the accounts stay open, the wallet
-                    stays locked, and the family inherits a spreadsheet of guesses.
+                <p className="h2">Most people never write anything down.</p>
+                <div className="mt-4 space-y-3">
+                  <p className="t-body">
+                    Not because they don&apos;t care — because it feels morbid, expensive, or like something
+                    you&apos;ll do later. Then one day the accounts stay open, the wallet stays locked, and the
+                    family inherits a spreadsheet of guesses.
                   </p>
-                  <p>
-                    What follows isn&apos;t a will and it isn&apos;t legal advice. It&apos;s the
-                    instruction sheet your family would otherwise never have.
+                  <p className="t-body">
+                    What follows isn&apos;t a will and it isn&apos;t legal advice. It&apos;s the instruction sheet
+                    your family would otherwise never have.
                   </p>
                 </div>
 
-                <div className="mt-7 grid gap-2.5 sm:grid-cols-3">
+                <div className="mt-6 grid gap-3 sm:grid-cols-3">
                   {[
                     ["01", "Instructions", "Who gets what, in order"],
                     ["02", "A keyholder", "Someone who can start it"],
                     ["03", "14 days", "Time to stop a mistake"],
-                  ].map(([n, t, d]) => (
-                    <div key={n} className="card-flat p-3.5">
-                      <p className="mono text-[10px] text-brass/70">{n}</p>
-                      <p className="mt-1.5 text-[12.5px] text-ivory">{t}</p>
-                      <p className="mt-0.5 text-[11px] leading-snug text-muted/80">{d}</p>
+                  ].map(([n, title, body]) => (
+                    <div key={n} className="rounded-[14px] bg-[#f6f9f6] p-4">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--color-brand)]">{n}</p>
+                      <p className="mt-1.5 text-[12.5px] font-medium text-[var(--color-ink)]">{title}</p>
+                      <p className="t-meta mt-0.5">{body}</p>
                     </div>
                   ))}
                 </div>
 
-                <button onClick={next} className="btn btn-brass mt-8 w-full sm:w-auto">
-                  Begin
-                  <span aria-hidden>→</span>
+                <button onClick={next} className="btn btn-primary mt-7 w-full sm:w-auto">
+                  Begin <span aria-hidden>→</span>
                 </button>
               </div>
             )}
 
             {step === 1 && (
-              <div className="space-y-5">
-                <div>
-                  <label className="label" htmlFor="owner-name">Full legal name</label>
+              <div className="space-y-4">
+                <Field label="Full legal name" htmlFor="owner-name" help="This is the name matched against a certificate later.">
                   <input
                     id="owner-name"
                     className="input"
@@ -257,12 +270,8 @@ export default function OnboardingPage() {
                     onChange={(e) => setName(e.target.value)}
                     autoFocus
                   />
-                  <p className="mt-2 text-[11px] text-muted/70">
-                    This is the name that will be matched against a death certificate later.
-                  </p>
-                </div>
-                <div>
-                  <label className="label" htmlFor="owner-email">Email</label>
+                </Field>
+                <Field label="Email" htmlFor="owner-email" help="Where a safety notice would reach you.">
                   <input
                     id="owner-email"
                     className="input"
@@ -270,7 +279,7 @@ export default function OnboardingPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
-                </div>
+                </Field>
               </div>
             )}
 
@@ -281,34 +290,32 @@ export default function OnboardingPage() {
                     <button
                       key={a.kind}
                       onClick={() =>
-                        setAssets((prev) =>
-                          prev.map((p, j) => (j === i ? { ...p, connected: !p.connected } : p)),
-                        )
+                        setAssets((prev) => prev.map((p, j) => (j === i ? { ...p, connected: !p.connected } : p)))
                       }
-                      className={`flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition ${
+                      aria-pressed={a.connected}
+                      className={`flex w-full items-center gap-4 rounded-[14px] border p-4 text-left transition ${
                         a.connected
-                          ? "border-brass/35 bg-brass/[0.07]"
-                          : "border-white/8 bg-white/[0.015] hover:border-white/16"
+                          ? "border-[var(--color-brand)] bg-[var(--color-mint)]"
+                          : "border-[var(--color-line)] bg-white hover:border-[var(--color-line-strong)]"
                       }`}
                     >
-                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/10 bg-black/30 font-serif text-[16px] text-brass">
+                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-white text-[13px] font-semibold text-[var(--color-forest)]">
                         {a.kind === "paypal" ? "P" : a.kind === "crypto" ? "₿" : "◫"}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block text-[13.5px] text-ivory">{a.label}</span>
-                        <span className="block truncate text-[11px] text-muted/80">
+                        <span className="block text-[13.5px] font-medium text-[var(--color-ink)]">{a.label}</span>
+                        <span className="block truncate text-[11.5px] text-[var(--color-muted)]">
                           {a.provider} · {a.detail}
                         </span>
                       </span>
-                      <span className="mono hidden text-[12.5px] text-ivory sm:block">
-                        {money(a.balanceCents)}
-                      </span>
+                      <span className="t-num hidden text-[12.5px] sm:block">{money(a.balanceCents)}</span>
                       <span
-                        className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border text-[10px] ${
+                        className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] ${
                           a.connected
-                            ? "border-sage/50 bg-sage/20 text-sage"
-                            : "border-white/15 text-transparent"
+                            ? "bg-[var(--color-forest)] text-[var(--color-lime)]"
+                            : "border border-[var(--color-line-strong)] text-transparent"
                         }`}
+                        aria-hidden
                       >
                         ✓
                       </span>
@@ -316,23 +323,22 @@ export default function OnboardingPage() {
                   ))}
                 </div>
 
-                <div className="mt-6 flex items-end justify-between rounded-2xl border border-brass/20 bg-brass/[0.05] p-4">
+                <div className="mt-5 flex items-end justify-between rounded-[14px] bg-[#f6f9f6] p-4">
                   <div>
-                    <p className="label !mb-1">Connected total</p>
-                    <p className="mono text-[26px] leading-none text-ivory">{money(total)}</p>
+                    <p className="label">Included total</p>
+                    <p className="t-num mt-1 text-[26px] leading-none">{money(total)}</p>
                   </div>
-                  <p className="text-[11px] text-muted">
-                    {connected.length} of {assets.length} connected
+                  <p className="t-meta">
+                    {connected.length} of {assets.length} included · simulated
                   </p>
                 </div>
               </div>
             )}
 
             {step === 3 && (
-              <div className="space-y-5">
+              <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="label" htmlFor="p-name">Their name</label>
+                  <Field label="Their name" htmlFor="p-name">
                     <input
                       id="p-name"
                       className="input"
@@ -341,9 +347,8 @@ export default function OnboardingPage() {
                       onChange={(e) => setPrimary({ ...primary, name: e.target.value })}
                       autoFocus
                     />
-                  </div>
-                  <div>
-                    <label className="label" htmlFor="p-rel">Relationship</label>
+                  </Field>
+                  <Field label="Relationship" htmlFor="p-rel">
                     <input
                       id="p-rel"
                       className="input"
@@ -351,10 +356,9 @@ export default function OnboardingPage() {
                       value={primary.relationship}
                       onChange={(e) => setPrimary({ ...primary, relationship: e.target.value })}
                     />
-                  </div>
+                  </Field>
                 </div>
-                <div>
-                  <label className="label" htmlFor="p-email">Email</label>
+                <Field label="Email" htmlFor="p-email">
                   <input
                     id="p-email"
                     className="input"
@@ -362,22 +366,23 @@ export default function OnboardingPage() {
                     value={primary.email}
                     onChange={(e) => setPrimary({ ...primary, email: e.target.value })}
                   />
-                </div>
-                <div>
-                  <label className="label" htmlFor="p-note">A note for them (optional)</label>
+                </Field>
+                <Field
+                  label="A note for them"
+                  htmlFor="p-note"
+                  optional
+                  help="Beneficiaries see this with their entitlement. Never include passwords."
+                >
                   <textarea
                     id="p-note"
-                    className="input min-h-[92px] resize-none"
+                    className="textarea"
                     placeholder="Something they should read when the time comes…"
                     value={primary.note}
                     onChange={(e) => setPrimary({ ...primary, note: e.target.value })}
                   />
-                  <p className="mt-2 text-[11px] text-muted/70">
-                    Beneficiaries see this on their portal. It travels with the money.
-                  </p>
-                </div>
-                <p className="rounded-xl border border-white/8 bg-white/[0.02] p-3 text-[11.5px] leading-relaxed text-muted">
-                  First choice receives the full estate unless you add backups with a split.
+                </Field>
+                <p className="card-mint p-3.5 text-[12px] leading-relaxed text-[#3c5a4e]">
+                  The first choice receives the full estate unless you add backups with a split.
                 </p>
               </div>
             )}
@@ -385,15 +390,15 @@ export default function OnboardingPage() {
             {step === 4 && (
               <div className="space-y-4">
                 {backups.map((b, i) => (
-                  <div key={i} className="rounded-2xl border border-white/8 bg-white/[0.015] p-4">
+                  <div key={i} className="rounded-[14px] border border-[var(--color-line)] p-4">
                     <div className="mb-3 flex items-center justify-between">
-                      <p className="text-[11px] uppercase tracking-[0.16em] text-muted">
+                      <p className="label">
                         Backup {i + 1} · {backups.length === 1 ? 100 : i === 0 ? split : 100 - split}%
                       </p>
                       {backups.length > 1 && (
                         <button
                           onClick={() => setBackups((prev) => prev.filter((_, j) => j !== i))}
-                          className="text-[11px] text-muted/70 transition hover:text-ember"
+                          className="text-[11px] font-medium text-[var(--color-muted)] hover:text-[var(--color-ember)]"
                         >
                           Remove
                         </button>
@@ -403,16 +408,16 @@ export default function OnboardingPage() {
                       <input
                         className="input"
                         placeholder="Name"
+                        aria-label={`Backup ${i + 1} name`}
                         value={b.name}
                         onChange={(e) =>
-                          setBackups((prev) =>
-                            prev.map((p, j) => (j === i ? { ...p, name: e.target.value } : p)),
-                          )
+                          setBackups((prev) => prev.map((p, j) => (j === i ? { ...p, name: e.target.value } : p)))
                         }
                       />
                       <input
                         className="input"
                         placeholder="Relationship"
+                        aria-label={`Backup ${i + 1} relationship`}
                         value={b.relationship}
                         onChange={(e) =>
                           setBackups((prev) =>
@@ -423,11 +428,10 @@ export default function OnboardingPage() {
                       <input
                         className="input sm:col-span-2"
                         placeholder="Email"
+                        aria-label={`Backup ${i + 1} email`}
                         value={b.email}
                         onChange={(e) =>
-                          setBackups((prev) =>
-                            prev.map((p, j) => (j === i ? { ...p, email: e.target.value } : p)),
-                          )
+                          setBackups((prev) => prev.map((p, j) => (j === i ? { ...p, email: e.target.value } : p)))
                         }
                       />
                     </div>
@@ -436,20 +440,18 @@ export default function OnboardingPage() {
 
                 {backups.length < 2 && (
                   <button
-                    onClick={() =>
-                      setBackups((prev) => [...prev, { name: "", email: "", relationship: "", note: "" }])
-                    }
-                    className="btn btn-ghost w-full !justify-start !text-[12.5px]"
+                    onClick={() => setBackups((prev) => [...prev, { name: "", email: "", relationship: "", note: "" }])}
+                    className="btn btn-secondary w-full"
                   >
                     + Add a second backup
                   </button>
                 )}
 
                 {backups.length === 2 && (
-                  <div className="rounded-2xl border border-white/8 bg-white/[0.015] p-4">
+                  <div className="rounded-[14px] border border-[var(--color-line)] p-4">
                     <div className="flex items-center justify-between">
-                      <p className="label !mb-0">How the backup share splits</p>
-                      <p className="mono text-[12px] text-brass">
+                      <p className="label">How the backup share splits</p>
+                      <p className="t-num text-[12.5px]">
                         {split}% / {100 - split}%
                       </p>
                     </div>
@@ -459,10 +461,10 @@ export default function OnboardingPage() {
                       max={90}
                       value={split}
                       onChange={(e) => setSplit(Number(e.target.value))}
-                      className="mt-4 w-full accent-[#d9b070]"
+                      className="mt-4 w-full accent-[var(--color-brand)]"
                       aria-label="Backup split"
                     />
-                    <div className="mt-2 flex justify-between text-[11px] text-muted/80">
+                    <div className="mt-2 flex justify-between text-[11px] text-[var(--color-muted)]">
                       <span>{backups[0].name || "Backup 1"}</span>
                       <span>{backups[1].name || "Backup 2"}</span>
                     </div>
@@ -480,28 +482,29 @@ export default function OnboardingPage() {
                       <button
                         key={c.name}
                         onClick={() => setCharity({ ...c, note: charity.note })}
-                        className={`flex items-center justify-between rounded-2xl border p-4 text-left transition ${
+                        aria-pressed={active}
+                        className={`flex items-center justify-between rounded-[14px] border p-4 text-left transition ${
                           active
-                            ? "border-sage/40 bg-sage/[0.07]"
-                            : "border-white/8 bg-white/[0.015] hover:border-white/16"
+                            ? "border-[var(--color-brand)] bg-[var(--color-mint)]"
+                            : "border-[var(--color-line)] bg-white hover:border-[var(--color-line-strong)]"
                         }`}
                       >
                         <span>
-                          <span className="block text-[13.5px] text-ivory">{c.name}</span>
-                          <span className="block text-[11px] text-muted/80">{c.email}</span>
+                          <span className="block text-[13.5px] font-medium text-[var(--color-ink)]">{c.name}</span>
+                          <span className="block text-[11.5px] text-[var(--color-muted)]">{c.email}</span>
                         </span>
                         <span
-                          className={`h-3 w-3 rounded-full border ${
-                            active ? "border-sage bg-sage" : "border-white/20"
+                          className={`h-3.5 w-3.5 rounded-full border ${
+                            active ? "border-[var(--color-brand)] bg-[var(--color-brand)]" : "border-[var(--color-line-strong)]"
                           }`}
+                          aria-hidden
                         />
                       </button>
                     );
                   })}
                 </div>
 
-                <div>
-                  <label className="label" htmlFor="cause-custom">Or name your own cause</label>
+                <Field label="Or name your own cause" htmlFor="cause-custom">
                   <input
                     id="cause-custom"
                     className="input"
@@ -509,33 +512,30 @@ export default function OnboardingPage() {
                     value={CAUSES.some((c) => c.name === charity.name) ? "" : charity.name}
                     onChange={(e) => setCharity({ name: e.target.value, email: "", note: charity.note })}
                   />
-                </div>
-
-                <div>
-                  <label className="label" htmlFor="cause-note">Why this one? (optional)</label>
+                </Field>
+                <Field label="Why this one?" htmlFor="cause-note" optional>
                   <textarea
                     id="cause-note"
-                    className="input min-h-[80px] resize-none"
+                    className="textarea"
                     placeholder="They taught me to build…"
                     value={charity.note}
                     onChange={(e) => setCharity({ ...charity, note: e.target.value })}
                   />
-                </div>
+                </Field>
               </div>
             )}
 
             {step === 6 && (
-              <div className="space-y-5">
-                <div className="rounded-2xl border border-brass/20 bg-brass/[0.05] p-4">
-                  <p className="text-[12px] leading-relaxed text-ivory/90">
-                    A keyholder can begin the handover by submitting proof of death. They{" "}
-                    <span className="text-brass">cannot</span> view balances, change your split, or
-                    move anything while you&apos;re alive.
+              <div className="space-y-4">
+                <div className="card-mint p-4">
+                  <p className="text-[12.5px] leading-relaxed text-[#3c5a4e]">
+                    A keyholder can begin a handover by submitting proof of death. They{" "}
+                    <span className="font-semibold text-[var(--color-forest)]">cannot</span> view balances,
+                    change your split, or move anything while you are alive.
                   </p>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="label" htmlFor="k-name">Their name</label>
+                  <Field label="Their name" htmlFor="k-name">
                     <input
                       id="k-name"
                       className="input"
@@ -544,9 +544,8 @@ export default function OnboardingPage() {
                       onChange={(e) => setKeyholder({ ...keyholder, name: e.target.value })}
                       autoFocus
                     />
-                  </div>
-                  <div>
-                    <label className="label" htmlFor="k-rel">Relationship</label>
+                  </Field>
+                  <Field label="Relationship" htmlFor="k-rel">
                     <input
                       id="k-rel"
                       className="input"
@@ -554,10 +553,9 @@ export default function OnboardingPage() {
                       value={keyholder.relationship}
                       onChange={(e) => setKeyholder({ ...keyholder, relationship: e.target.value })}
                     />
-                  </div>
+                  </Field>
                 </div>
-                <div>
-                  <label className="label" htmlFor="k-email">Email</label>
+                <Field label="Email" htmlFor="k-email">
                   <input
                     id="k-email"
                     className="input"
@@ -565,13 +563,13 @@ export default function OnboardingPage() {
                     value={keyholder.email}
                     onChange={(e) => setKeyholder({ ...keyholder, email: e.target.value })}
                   />
-                </div>
-                <div className="flex items-center justify-between rounded-2xl border border-white/8 bg-black/25 p-4">
+                </Field>
+                <div className="flex items-center justify-between gap-4 rounded-[14px] bg-[#f6f9f6] p-4">
                   <div>
-                    <p className="label !mb-1">Their access code</p>
-                    <p className="mono text-[18px] tracking-[0.14em] text-brass">{code}</p>
+                    <p className="label">Their access code</p>
+                    <p className="t-num mt-1 text-[18px] tracking-[0.14em] text-[var(--color-forest)]">{code}</p>
                   </div>
-                  <p className="max-w-[22ch] text-[11px] leading-snug text-muted/80">
+                  <p className="max-w-[22ch] text-[11px] leading-snug text-[var(--color-muted)]">
                     Share this privately. It only unlocks the claim form.
                   </p>
                 </div>
@@ -580,20 +578,18 @@ export default function OnboardingPage() {
 
             {step === 7 && (
               <div>
-                <div className="rounded-2xl border border-white/8 bg-white/[0.015] p-5">
-                  <div className="flex items-start justify-between">
+                <div className="rounded-[14px] bg-[#f6f9f6] p-5">
+                  <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="label !mb-1">Estate value</p>
-                      <p className="mono text-[30px] leading-none text-ivory">{money(total)}</p>
+                      <p className="label">Estate value</p>
+                      <p className="t-num mt-1 text-[30px] leading-none">{money(total)}</p>
                     </div>
-                    <span className="pill border-sage/30 bg-sage/10 text-[9.5px] text-sage">
-                      Ready to seal
-                    </span>
+                    <span className="pill badge-mint">Ready to seal</span>
                   </div>
 
-                  <div className="mt-5 space-y-2.5 text-[12.5px]">
+                  <dl className="mt-5 space-y-2.5">
                     {[
-                      ["Owner", name || "—"],
+                      ["Account holder", name || "—"],
                       ["Primary", primary.name || "—"],
                       [
                         "Backups",
@@ -607,34 +603,28 @@ export default function OnboardingPage() {
                       ["Final cause", charity.name || "—"],
                       ["Keyholder", keyholder.name || "—"],
                     ].map(([k, v]) => (
-                      <div key={k} className="flex items-start justify-between gap-6 border-b border-white/5 pb-2.5 last:border-0">
-                        <span className="text-muted">{k}</span>
-                        <span className="max-w-[60%] text-right text-ivory">{v}</span>
+                      <div
+                        key={k}
+                        className="flex items-start justify-between gap-6 border-b border-[var(--color-line)] pb-2.5 last:border-0 last:pb-0"
+                      >
+                        <dt className="t-meta">{k}</dt>
+                        <dd className="max-w-[62%] text-right text-[12.5px] text-[var(--color-ink)]">{v}</dd>
                       </div>
                     ))}
-                  </div>
+                  </dl>
                 </div>
 
-                {error && (
-                  <p className="mt-4 rounded-xl border border-ember/30 bg-ember/10 p-3 text-[12.5px] text-ember">
-                    {error}
-                  </p>
-                )}
+                {error && <p className="field-error mt-4">{error}</p>}
 
                 <div className="mt-6 flex items-center gap-2">
-                  <button onClick={back} className="btn btn-quiet shrink-0">
+                  <button onClick={back} className="btn btn-secondary shrink-0">
                     ← Back
                   </button>
-                  <button
-                    onClick={seal}
-                    disabled={submitting}
-                    className="btn btn-brass flex-1"
-                  >
+                  <button onClick={seal} disabled={submitting} className="btn btn-primary flex-1">
                     {submitting ? "Sealing…" : "Seal my plan"}
-                    {!submitting && <span aria-hidden>◆</span>}
                   </button>
                 </div>
-                <p className="mt-3 text-center text-[10.5px] leading-relaxed text-muted/60">
+                <p className="t-meta mt-3 text-center">
                   Prototype only. Sealing simulates the process; no legal instrument is created.
                 </p>
               </div>
@@ -642,18 +632,26 @@ export default function OnboardingPage() {
           </div>
 
           {step > 0 && step < STEPS.length - 1 && (
-            <div className="mt-8 flex items-center justify-between border-t border-white/6 pt-5">
-              <button onClick={back} className="btn btn-quiet">
+            <div className="mt-7 flex items-center justify-between border-t border-[var(--color-line)] pt-5">
+              <button onClick={back} className="btn btn-secondary">
                 ← Back
               </button>
-              <button onClick={next} disabled={!canAdvance} className="btn btn-brass">
-                Continue
-                <span aria-hidden>→</span>
+              <button onClick={next} disabled={!canAdvance} className="btn btn-primary">
+                Continue <span aria-hidden>→</span>
               </button>
             </div>
           )}
         </section>
-      </div>
-    </main>
+      </main>
+
+      <footer className="border-t border-[var(--color-line)] bg-[var(--color-surface)]">
+        <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-1.5 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+          <p className="t-meta">Simulation only · No live connections, notices, claims or transfers.</p>
+          <p className="font-[var(--font-display)] text-[11.5px] font-semibold text-[var(--color-forest)]">
+            VIVO / Your legacy, considered.
+          </p>
+        </div>
+      </footer>
+    </div>
   );
 }

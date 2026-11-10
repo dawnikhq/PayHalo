@@ -1,256 +1,293 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import Link from "next/link";
-import type { Snapshot } from "@/lib/types";
-import { money, shortDate } from "@/lib/format";
-import { Avatar } from "./Avatar";
-import { Timeline } from "./Timeline";
+import type { BeneficiaryView } from "@/lib/store";
+import { clockLabel, money, shortDate } from "@/lib/format";
 import { Countdown } from "./Countdown";
+import { Badge } from "./ui";
 
-const ICON: Record<string, string> = { paypal: "P", crypto: "₿", business: "◫" };
+const KIND: Record<string, string> = {
+  paypal: "Payment account",
+  crypto: "Crypto wallet",
+  business: "Digital business",
+};
 
-export function BeneficiaryPortal({ snapshot }: { snapshot: Snapshot }) {
-  const s = snapshot;
-  const released = s.claim?.status === "distributed";
-  const inWindow = s.claim?.status === "window";
+export function BeneficiaryPortal({ view }: { view: BeneficiaryView }) {
+  const { phase, entitlement } = view;
 
-  const [selected, setSelected] = useState<number | null>(
-    s.distributions[0]?.beneficiaryId ?? s.beneficiaries[0]?.id ?? null,
-  );
-  const [accepted, setAccepted] = useState(false);
-
-  const active = useMemo(() => {
-    if (released) {
-      const dist = s.distributions.find((d) => d.beneficiaryId === selected) ?? s.distributions[0];
-      const person = s.beneficiaries.find((b) => b.id === dist?.beneficiaryId);
-      return { dist, person };
-    }
-    const person = s.beneficiaries.find((b) => b.id === selected) ?? s.beneficiaries[0];
-    return { dist: undefined, person };
-  }, [released, selected, s.distributions, s.beneficiaries]);
+  const header =
+    phase === "released"
+      ? {
+          eyebrow: "Beneficiary / Completed handover",
+          title: "What was left for you.",
+          body: "Sample scenario · Verification and the full safety window are complete.",
+        }
+      : phase === "window"
+        ? {
+            eyebrow: "Beneficiary / Safety window",
+            title: "A careful step, at a time.",
+            body: `${view.person.name.split(" ")[0]}, this sample scenario is awaiting completion of the safety window.`,
+          }
+        : {
+            eyebrow: "Beneficiary",
+            title: "Nothing to collect yet.",
+            body: "This page stays quiet while the plan is active — no balances, no shares, no other recipients.",
+          };
 
   return (
-    <main className="shell py-10 md:py-14">
-      <div className="flex flex-wrap items-end justify-between gap-5">
+    <>
+      <header className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="eyebrow">
-            <span className="h-px w-8 bg-brass/60" />
-            Beneficiary portal
-          </p>
-          <h1 className="display mt-3 text-[clamp(2rem,4vw,3rem)]">
-            {released ? "What was left to you" : "Nothing to collect yet"}
-            <span className="text-brass">.</span>
-          </h1>
-          <p className="mt-3 max-w-[62ch] text-[13px] leading-relaxed text-muted">
-            {released
-              ? `${s.user.name}'s instructions were carried out on ${shortDate(s.claim?.distributedAt ?? null)}. Your allocation is below — no passwords, no paperwork chase.`
-              : `This is the read-only view ${s.user.name} has set up. It stays quiet until a verified handover completes.`}
-          </p>
+          <p className="eyebrow">{header.eyebrow}</p>
+          <h1 className="h1 mt-2.5">{header.title}</h1>
+          <p className="t-body mt-2 max-w-[62ch]">{header.body}</p>
         </div>
-        <Link href="/dashboard" className="btn btn-ghost !py-2.5 !text-[12.5px]">
-          Owner dashboard
-        </Link>
-      </div>
+        {phase === "released" ? (
+          <Badge tone="lime" dot>
+            Simulated release
+          </Badge>
+        ) : (
+          <Badge tone="warn">Simulation</Badge>
+        )}
+      </header>
 
-      {!released && (
-        <div className="mt-8 grid gap-5 lg:grid-cols-[1.3fr_1fr]">
-          <section className="card p-7">
-            <div className="flex items-center gap-3">
-              <span className="relative flex h-2 w-2">
-                <span className="breathe absolute inline-flex h-full w-full rounded-full bg-ember" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-ember" />
-              </span>
-              <p className="text-[10.5px] uppercase tracking-[0.2em] text-ember">
-                {inWindow ? "Handover in progress" : "Plan sealed · nothing released"}
-              </p>
-            </div>
-
-            <h2 className="mt-4 font-serif text-[28px] leading-tight">
-              {inWindow
-                ? "A claim has been filed. The owner has 14 days to respond."
-                : "When the time comes, this page becomes your instruction sheet."}
-            </h2>
-            <p className="mt-3 max-w-[52ch] text-[12.5px] leading-relaxed text-muted">
-              {inWindow
-                ? "No money moves during the safety window. If the owner is alive and stops the claim, nothing happens at all."
-                : "You won't need the owner's logins, a lawyer, or a search through old email. Your share, the accounts it comes from, and the note they left you all appear here the moment the handover clears."}
+      {phase === "idle" && (
+        <div className="grid gap-5 lg:grid-cols-[1.55fr_1fr]">
+          <section className="card p-6 md:p-8">
+            <h2 className="h2">You&apos;re named on {view.ownerName}&apos;s plan.</h2>
+            <p className="t-body mt-3 max-w-[56ch]">
+              While the account holder is alive, this page shows nothing about their estate. Not the balances,
+              not the other people named, not your share — by design, so nobody can be pressured.
             </p>
-
-            {inWindow && s.secondsToWindowEnd !== null && (
-              <div className="mt-6 max-w-sm">
-                <Countdown seconds={s.secondsToWindowEnd} />
-              </div>
-            )}
-
-            <div className="mt-7 space-y-3">
+            <p className="t-body mt-3 max-w-[56ch]">
+              If a verified handover ever completes, your own entitlement and the instructions left for you
+              appear here.
+            </p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
               {[
-                ["1", "Claim filed by keyholder", inWindow],
-                ["2", "Document verification", inWindow],
-                ["3", "14-day safety window", false],
-                ["4", "Assets released to recipients", false],
-              ].map(([n, t, done]) => (
-                <div key={String(n)} className="flex items-center gap-3.5">
-                  <span
-                    className={`grid h-6 w-6 place-items-center rounded-full border text-[10px] ${
-                      done
-                        ? "border-sage/40 bg-sage/15 text-sage"
-                        : "border-white/10 text-muted/50"
-                    }`}
-                  >
-                    {done ? "✓" : String(n)}
-                  </span>
-                  <span className={`text-[12.5px] ${done ? "text-ivory" : "text-muted"}`}>
-                    {String(t)}
-                  </span>
+                ["01", "A claim is filed", "The keyholder submits evidence."],
+                ["02", "It is verified", "The account holder is notified first."],
+                ["03", "14 full days pass", "Only then is anything released."],
+              ].map(([n, title, body]) => (
+                <div key={n} className="rounded-[12px] bg-[#f7faf7] p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--color-brand)]">{n}</p>
+                  <p className="mt-1.5 text-[12.5px] font-medium text-[var(--color-ink)]">{title}</p>
+                  <p className="t-meta mt-0.5">{body}</p>
                 </div>
               ))}
             </div>
           </section>
 
-          <section className="card p-7">
-            <p className="label">Named on this plan</p>
-            <ul className="mt-4 space-y-3.5">
-              {s.beneficiaries.map((b) => (
-                <li key={b.id} className="flex items-center gap-3">
-                  <Avatar name={b.name} size={34} tone={b.role === "charity" ? "sage" : selected === b.id ? "brass" : "quiet"} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[12.5px] text-ivory">{b.name}</p>
-                    <p className="text-[10.5px] uppercase tracking-[0.1em] text-muted/70">
-                      {b.role === "primary" ? "first choice" : b.role === "charity" ? "final cause" : `backup · ${b.share}%`}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-5 rounded-xl border border-white/8 bg-white/[0.02] p-3 text-[11px] leading-relaxed text-muted/80">
-              Previews are hidden from beneficiaries until a handover completes — so nobody can
-              pressure the owner while they&apos;re alive.
-            </p>
-          </section>
-        </div>
-      )}
-
-      {released && (
-        <div className="mt-8 grid gap-5 lg:grid-cols-[0.85fr_1.35fr]">
-          {/* selector */}
-          <aside className="space-y-3">
-            <p className="label">Recipients</p>
-            {s.beneficiaries.map((b) => {
-              const d = s.distributions.find((x) => x.beneficiaryId === b.id);
-              const isActive = active.person?.id === b.id;
-              return (
-                <button
-                  key={b.id}
-                  onClick={() => {
-                    setSelected(b.id);
-                    setAccepted(false);
-                  }}
-                  className={`flex w-full items-center gap-3 rounded-2xl border p-3.5 text-left transition ${
-                    isActive
-                      ? "border-brass/35 bg-brass/[0.07]"
-                      : "border-white/8 bg-white/[0.015] hover:border-white/16"
-                  }`}
-                >
-                  <Avatar name={b.name} size={34} tone={b.role === "charity" ? "sage" : isActive ? "brass" : "quiet"} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[12.5px] text-ivory">{b.name}</span>
-                    <span className="block text-[10px] uppercase tracking-[0.1em] text-muted/70">
-                      {b.role === "charity" ? "final cause" : b.role}
-                    </span>
-                  </span>
-                  <span className="mono shrink-0 text-[11.5px] text-brass">
-                    {d ? money(d.amountCents, false) : "—"}
-                  </span>
-                </button>
-              );
-            })}
-            <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-3.5">
-              <p className="text-[10.5px] leading-relaxed text-muted/75">
-                Amounts already reflect the engine&apos;s fall-through rules. Toggle reachability on
-                the owner dashboard to watch a different path resolve.
+          <aside className="space-y-5">
+            <section id="role" className="card-mint scroll-mt-24 p-6">
+              <h2 className="h2 text-[var(--color-forest)]">Your access is private.</h2>
+              <p className="t-body mt-3 text-[#3c5a4e]">
+                You cannot view the full estate, other beneficiaries or their shares — before or after a
+                handover.
               </p>
-            </div>
-          </aside>
-
-          {/* detail */}
-          {active.person && active.dist && (
-            <section key={active.person.id} className="rise space-y-5">
-              <div className="card relative overflow-hidden p-7">
-                <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-brass/10 blur-3xl" />
-                <div className="relative">
-                  <p className="text-[10.5px] uppercase tracking-[0.2em] text-brass">
-                    Your allocation · {active.dist.share}%
-                  </p>
-                  <p className="mono mt-3 text-[clamp(2.4rem,6vw,3.4rem)] leading-none tracking-tight">
-                    {money(active.dist.amountCents)}
-                  </p>
-                  <p className="mt-3 text-[12.5px] text-muted">
-                    from the plan of <span className="text-ivory">{s.user.name}</span> · released{" "}
-                    {shortDate(s.claim?.distributedAt ?? null)}
-                  </p>
-
-                  <div className="mt-6 grid gap-2 sm:grid-cols-2">
-                    {s.assets.map((a) => (
-                      <div
-                        key={a.id}
-                        className="flex items-center gap-2.5 rounded-xl border border-white/8 bg-black/25 px-3 py-2.5"
-                      >
-                        <span className="grid h-7 w-7 place-items-center rounded-lg border border-white/10 font-serif text-[11px] text-brass">
-                          {ICON[a.kind] ?? "•"}
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-[11.5px] text-ivory">{a.label}</p>
-                          <p className="text-[10px] text-muted/70">{a.provider}</p>
-                        </div>
-                        <p className="mono shrink-0 text-[11px] text-muted">
-                          {money(Math.round((a.balanceCents * active.dist!.amountCents) / (s.totalCents || 1)), false)}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="mt-6 flex flex-wrap items-center gap-3">
-                    {accepted ? (
-                      <span className="pill border-sage/35 bg-sage/10 text-[10px] text-sage">
-                        ✓ Accepted — routed to {active.person.email || "your account"}
-                      </span>
-                    ) : (
-                      <button onClick={() => setAccepted(true)} className="btn btn-brass !py-2.5 !text-[12.5px]">
-                        Accept this inheritance
-                      </button>
-                    )}
-                    <span className="text-[10.5px] text-muted/60">
-                      Simulated — no real funds move in this prototype.
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {active.person.note && (
-                <div className="card relative overflow-hidden bg-gradient-to-b from-brass/[0.06] to-transparent p-7">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-brass/80">
-                    A note from {s.user.name.split(" ")[0]}
-                  </p>
-                  <p className="mt-4 font-serif text-[22px] leading-[1.5] text-ivory/95">
-                    “{active.person.note}”
-                  </p>
-                  <p className="mt-4 text-[11px] text-muted/60">
-                    Written {shortDate(s.plan.sealedAt)} · delivered with the handover
-                  </p>
-                </div>
-              )}
-
-              <div className="card p-6">
-                <p className="label">How this was released</p>
-                <div className="mt-4">
-                  <Timeline events={s.events} dense />
-                </div>
-              </div>
             </section>
-          )}
+            <section className="card p-6">
+              <h2 className="h3">Who you are</h2>
+              <p className="mt-2 text-[13px] text-[var(--color-ink)]">{view.person.name}</p>
+              <p className="t-meta mt-0.5">
+                {view.person.relationship}
+                {view.person.email ? ` · ${view.person.email}` : ""}
+              </p>
+              <p className="t-small mt-3">Named by {view.ownerName}. No action is needed from you.</p>
+            </section>
+          </aside>
         </div>
       )}
-    </main>
+
+      {phase === "window" && (
+        <div className="grid gap-5 lg:grid-cols-[1.55fr_1fr]">
+          <div className="space-y-5">
+            <section className="card-forest relative overflow-hidden p-6 md:p-8">
+              <div className="flex flex-wrap items-start justify-between gap-6">
+                <div className="max-w-[46ch]">
+                  <p className="label">Handover for {view.ownerName}</p>
+                  <h2 className="h2 mt-3 text-[1.5rem] text-white">Protected until the time is right.</h2>
+                  <p className="t-body mt-2 text-[#b7cfbd]">
+                    Verification is complete. The 14-day safety window is still open.
+                  </p>
+                  <p className="t-body mt-2 text-[#b7cfbd]">
+                    No assets, balances or entitlement details are available yet.
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="t-num text-[64px] leading-none text-[var(--color-lime)]">
+                    {String(view.daysRemaining ?? 0).padStart(2, "0")}
+                  </p>
+                  <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#a9c4b0]">
+                    Days remaining
+                  </p>
+                </div>
+              </div>
+              <p className="mt-6 border-t border-white/10 pt-4 text-[11.5px] text-[#8fb098]">
+                Notice issued {clockLabel(view.verifiedAt)} · Earliest eligibility {clockLabel(view.windowEndsAt)}
+              </p>
+            </section>
+
+            <section className="card p-6 md:p-7">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="h2">Where things stand</h2>
+                <div className="w-full max-w-[220px]">
+                  <Countdown seconds={view.secondsToWindowEnd ?? 0} compact />
+                </div>
+              </div>
+              <ol className="mt-5 space-y-5">
+                <li>
+                  <p className="text-[13px] font-semibold text-[var(--color-ink)]">
+                    <span className="mr-2 text-[var(--color-brand)]">✓</span>Claim verified
+                  </p>
+                  <p className="t-meta mt-0.5 pl-5">
+                    {shortDate(view.verifiedAt)} · account holder notified
+                  </p>
+                </li>
+                <li>
+                  <p className="text-[13px] font-semibold text-[var(--color-brand)]">02 Safety window open</p>
+                  <p className="t-meta mt-0.5">
+                    Ends {shortDate(view.windowEndsAt)} · 14 full days
+                  </p>
+                </li>
+                <li>
+                  <p className="text-[13px] font-semibold text-[var(--color-ink)]">03 Release eligibility</p>
+                  <p className="t-meta mt-0.5">
+                    Only if every safeguard is met and the account holder has not stopped the handover.
+                  </p>
+                </li>
+              </ol>
+            </section>
+          </div>
+
+          <aside className="space-y-5">
+            <section id="role" className="card-mint scroll-mt-24 p-6">
+              <h2 className="h2 text-[var(--color-forest)]">Your access is private.</h2>
+              <p className="t-body mt-3 text-[#3c5a4e]">
+                You cannot view the full estate, other beneficiaries or their shares.
+              </p>
+              <p className="t-body mt-3 text-[#3c5a4e]">
+                After a completed handover, only your own entitlement and the instructions left for you become
+                available.
+              </p>
+            </section>
+            <section className="card p-6">
+              <h2 className="h3">You do not need to do anything right now.</h2>
+              <p className="t-small mt-1.5">
+                This is a simulated waiting state. No real claim, clock or transfer is running.
+              </p>
+              <Link href="/help" className="btn btn-secondary btn-sm mt-3">
+                Questions? Get support
+              </Link>
+            </section>
+          </aside>
+        </div>
+      )}
+
+      {phase === "released" && entitlement && (
+        <div className="grid gap-5 lg:grid-cols-[1.55fr_1fr]">
+          <div className="space-y-5">
+            <section className="card-forest p-6 md:p-8">
+              <p className="label">Your entitlement from {view.ownerName}</p>
+              <p className="t-num mt-3 text-[clamp(2.2rem,5vw,3rem)] leading-none text-white">
+                {money(entitlement.amountCents)}
+              </p>
+              <p className="mt-3 text-[12.5px] text-[#b7cfbd]">
+                {entitlement.share}% primary share · Sample USD equivalent
+              </p>
+              <p className="mt-6 border-t border-white/10 pt-4 text-[11.5px] text-[#8fb098]">
+                Visible to you only · Other recipients are not shown
+              </p>
+            </section>
+
+            <section className="card p-6 md:p-7">
+              <h2 className="h2">Included in your entitlement</h2>
+              <ul className="mt-4 divide-y divide-[var(--color-line)]">
+                {entitlement.assets.map((a) => (
+                  <li key={a.id} className="flex items-start justify-between gap-4 py-3.5 first:pt-0 last:pb-0">
+                    <div className="min-w-0">
+                      <p className="truncate text-[13.5px] font-medium text-[var(--color-ink)]">{a.label}</p>
+                      <p className="t-meta mt-0.5">{KIND[a.kind] ?? "Asset"}</p>
+                    </div>
+                    <p className="t-num shrink-0 text-[13px] text-[var(--color-ink)]">{money(a.amountCents)}</p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            <section id="instructions" className="card p-6 md:p-7">
+              <h2 className="h2">Instructions left for you</h2>
+              {entitlement.documents.length ? (
+                <ul className="mt-3 divide-y divide-[var(--color-line)]">
+                  {entitlement.documents.map((d) => (
+                    <li key={d.id} className="py-3 first:pt-0">
+                      <p className="text-[13.5px] font-medium text-[var(--color-ink)]">{d.name}</p>
+                      <p className="t-meta mt-0.5">
+                        {d.kind} · {(d.sizeKb / 1024).toFixed(1)} MB · guidance for {d.relatedTo}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="t-body mt-2">No documents were shared with beneficiaries.</p>
+              )}
+              <p className="t-meta mt-4 border-t border-[var(--color-line)] pt-3">
+                Sample documents only. No real downloads are connected, and VIVO never holds passwords, keys or
+                recovery phrases.
+              </p>
+            </section>
+
+            {entitlement.note && (
+              <section className="card-mint p-6">
+                <p className="label text-[var(--color-brand)]">A note from {view.ownerFirstName}</p>
+                <p className="mt-3 font-[var(--font-display)] text-[18px] leading-relaxed text-[var(--color-forest)]">
+                  “{entitlement.note}”
+                </p>
+              </section>
+            )}
+          </div>
+
+          <aside className="space-y-5">
+            <section className="card-lime p-6">
+              <h2 className="h2 text-[var(--color-forest)]">Safeguards complete.</h2>
+              <ul className="mt-4 space-y-2.5">
+                {["Claim verified", "14 full days elapsed", "No owner stop recorded"].map((item) => (
+                  <li key={item} className="flex items-center gap-2 text-[12.5px] text-[#35502f]">
+                    <span aria-hidden>✓</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            <section className="card p-6">
+              <h2 className="h2">Your next steps</h2>
+              <p className="t-body mt-2">
+                Review the recovery instructions for the assets included in your share.
+              </p>
+              <a href="#instructions" className="btn btn-primary btn-sm mt-4 w-full">
+                View instructions
+              </a>
+              <p className="t-meta mt-3">
+                Any transfer or provider recovery shown here is simulated, not executed.
+              </p>
+            </section>
+
+            <section className="card p-6">
+              <h2 className="h3">How this happened</h2>
+              <ol className="mt-3 space-y-2">
+                <li className="t-small">Verified {clockLabel(view.verifiedAt)}</li>
+                <li className="t-small">Safety window: 14 full days</li>
+                <li className="t-small">Eligible {clockLabel(view.distributedAt)}</li>
+              </ol>
+              <p className="t-meta mt-3">
+                Example handover completed: {shortDate(view.distributedAt)}. This simulation shows only your own
+                share.
+              </p>
+            </section>
+          </aside>
+        </div>
+      )}
+    </>
   );
 }

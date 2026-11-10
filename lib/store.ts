@@ -1,16 +1,30 @@
 import { getDriver } from "./storage";
 import {
+  addAsset,
+  beneficiaryView,
+  addBeneficiary,
+  addDocument,
   applyPlan,
   cancelClaim,
   fastForward,
+  removeAsset,
+  removeBeneficiary,
+  sealPlan,
+  setAllocations,
   latestClaim,
   seedDoc,
   setAvailability,
   settle,
   snapshotOf,
   submitClaim,
+  updateAsset,
+  updateBeneficiary,
+  updateProfile,
+  keyholderView,
   verifyClaim,
+  type AssetInput,
   type Audience,
+  type BeneficiaryInput,
   type PlanInput,
   type StateDoc,
 } from "./model";
@@ -20,6 +34,7 @@ import type { Snapshot } from "./types";
 export { SAFETY_WINDOW_DAYS, REVIEW_HOURS } from "./model";
 export type { Audience } from "./model";
 export type { PlanInput } from "./model";
+export type { BeneficiaryView, KeyholderView } from "./model";
 
 type MutationResult = { ok: boolean; error?: string };
 
@@ -123,3 +138,80 @@ export async function storageKind() {
 }
 
 export { latestClaim };
+
+
+/* ------------------------------------------------------- owner-side actions -- */
+
+export async function addAssetAction(input: AssetInput) {
+  return mutate((doc) => addAsset(doc, input));
+}
+
+export async function updateAssetAction(id: number, patch: Partial<AssetInput>) {
+  return mutate((doc) => updateAsset(doc, id, patch));
+}
+
+export async function removeAssetAction(id: number) {
+  return mutate((doc) => removeAsset(doc, id));
+}
+
+export async function addBeneficiaryAction(input: BeneficiaryInput) {
+  return mutate((doc) => addBeneficiary(doc, input));
+}
+
+export async function setAllocationsAction(shares: { id: number; share: number }[]) {
+  return mutate((doc) => setAllocations(doc, shares));
+}
+
+export async function updateBeneficiaryAction(
+  id: number,
+  patch: { name?: string; email?: string; relationship?: string; note?: string; share?: number },
+) {
+  return mutate((doc) => updateBeneficiary(doc, id, patch));
+}
+
+export async function removeBeneficiaryAction(id: number) {
+  return mutate((doc) => removeBeneficiary(doc, id));
+}
+
+export async function addDocumentAction(input: {
+  name: string;
+  sizeKb: number;
+  relatedTo: string;
+  access: "owner" | "beneficiaries";
+}) {
+  return mutate((doc) => addDocument(doc, input));
+}
+
+export async function updateProfileAction(input: {
+  name?: string;
+  email?: string;
+  phone?: string;
+  timezone?: string;
+}) {
+  return mutate((doc) => updateProfile(doc, input));
+}
+
+export async function sealPlanAction() {
+  return mutate((doc) => sealPlan(doc));
+}
+
+
+/** Keyholder-scoped read: no balances, assets, recipient names or shares. */
+export async function getKeyholderView() {
+  const { doc } = await withDoc();
+  if (settle(doc)) {
+    const driver = await getDriver();
+    await driver.save(doc);
+  }
+  return keyholderView(doc);
+}
+
+/** Beneficiary-scoped read: only their own entitlement, and only after release. */
+export async function getBeneficiaryView() {
+  const { doc } = await withDoc();
+  if (settle(doc)) {
+    const driver = await getDriver();
+    await driver.save(doc);
+  }
+  return beneficiaryView(doc);
+}

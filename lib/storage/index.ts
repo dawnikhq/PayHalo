@@ -7,7 +7,6 @@ import type { Driver } from "./types";
 export type { Driver, StoreKind } from "./types";
 
 declare global {
-  // eslint-disable-next-line no-var
   var __hack1Driver: Driver | undefined;
 }
 

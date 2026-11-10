@@ -1,28 +1,31 @@
 {
-  "name": "hack1",
+  "name": "vivo",
   "version": "1.0.0",
   "private": true,
-  "description": "Hack1 — a digital inheritance plan for the Dormant Billion.",
+  "description": "VIVO \u2014 your legacy, considered. A calm, verified handover for your digital estate.",
   "scripts": {
     "dev": "next dev -H 0.0.0.0 -p 3000",
     "build": "next build",
     "start": "next start -H 0.0.0.0 -p 3000",
-    "lint": "next lint",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@fontsource-variable/inter": "^5.2.5",
-    "@fontsource/instrument-serif": "^5.2.5",
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/manrope": "^5.3.0",
     "next": "^15.5.28",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "unpdf": "^2.1.0"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.7",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^15.5.29",
     "postcss": "^8",
     "tailwindcss": "^4",
     "typescript": "^5"

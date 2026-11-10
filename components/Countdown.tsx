@@ -7,10 +7,12 @@ export function Countdown({
   seconds,
   onExpire,
   compact = false,
+  tone = "light",
 }: {
   seconds: number;
   onExpire?: () => void;
   compact?: boolean;
+  tone?: "light" | "forest";
 }) {
   const [left, setLeft] = useState(seconds);
 
@@ -34,7 +36,7 @@ export function Countdown({
 
   if (compact) {
     return (
-      <span className="mono text-ivory">
+      <span className="t-num text-[13px] text-[var(--color-forest)]">
         {days}d {String(hours).padStart(2, "0")}h {String(minutes).padStart(2, "0")}m
       </span>
     );
@@ -50,11 +52,14 @@ export function Countdown({
   return (
     <div className="grid grid-cols-4 gap-2">
       {cells.map((c) => (
-        <div key={c.l} className="rounded-xl border border-white/8 bg-black/25 px-1 py-2.5 text-center">
-          <div className="mono text-[20px] font-medium leading-none text-ivory">
-            {String(c.v).padStart(2, "0")}
-          </div>
-          <div className="mt-1.5 text-[9px] uppercase tracking-[0.16em] text-muted">{c.l}</div>
+        <div
+          key={c.l}
+          className={`rounded-[12px] px-1 py-2.5 text-center ${
+            tone === "forest" ? "bg-white/10 text-white" : "bg-white text-[var(--color-forest)]"
+          }`}
+        >
+          <div className="t-num text-[20px] leading-none">{String(c.v).padStart(2, "0")}</div>
+          <div className="mt-1.5 text-[9px] font-semibold uppercase tracking-[0.16em] opacity-60">{c.l}</div>
         </div>
       ))}
     </div>

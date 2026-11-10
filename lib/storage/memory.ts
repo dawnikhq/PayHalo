@@ -2,7 +2,6 @@ import type { StateDoc } from "@/lib/model";
 import type { Driver } from "./types";
 
 declare global {
-  // eslint-disable-next-line no-var
   var __hack1Memory: StateDoc | null | undefined;
 }
 

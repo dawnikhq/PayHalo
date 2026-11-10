@@ -2,16 +2,13 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export function DemoDock() {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
-  const [storage, setStorage] = useState<{
-    label: string;
-    durable: boolean;
-    ok?: boolean;
-  } | null>(null);
+  const [storage, setStorage] = useState<{ label: string; durable: boolean; ok?: boolean } | null>(null);
   const router = useRouter();
 
   async function toggle() {
@@ -43,34 +40,34 @@ export function DemoDock() {
   return (
     <div className="fixed bottom-4 right-4 z-[80] print:hidden">
       {open && (
-        <div className="rise mb-2 w-[248px] rounded-2xl border border-white/10 bg-[#101016]/95 p-3 shadow-2xl backdrop-blur-xl">
-          <p className="mb-2 px-1 text-[10px] uppercase tracking-[0.2em] text-brass/80">Demo controls</p>
+        <div className="rise mb-2 w-[262px] rounded-[18px] border border-[var(--color-line)] bg-[var(--color-surface)] p-3 shadow-[0_24px_50px_-24px_rgba(23,45,41,0.45)]">
+          <p className="label mb-2 px-1">Demo controls</p>
           <button
             onClick={reset}
             disabled={pending}
-            className="mb-1.5 w-full rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-left text-[12.5px] text-ivory transition hover:border-white/16 hover:bg-white/[0.07] disabled:opacity-50"
+            className="mb-1.5 w-full rounded-[12px] border border-[var(--color-line)] px-3 py-2 text-left text-[12.5px] font-medium text-[var(--color-ink)] transition hover:border-[var(--color-line-strong)] hover:bg-[#f8fbf8] disabled:opacity-50"
           >
             ↺ Reset demo household
           </button>
-          <a
+          <Link
             href="/keyholder"
-            className="mb-1.5 block w-full rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-left text-[12.5px] text-ivory transition hover:border-white/16 hover:bg-white/[0.07]"
+            className="mb-1.5 block rounded-[12px] border border-[var(--color-line)] px-3 py-2 text-[12.5px] font-medium text-[var(--color-ink)] transition hover:border-[var(--color-line-strong)] hover:bg-[#f8fbf8]"
           >
             ⚿ Open keyholder portal
-          </a>
-          <a
+          </Link>
+          <Link
             href="/onboarding"
-            className="block w-full rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-left text-[12.5px] text-ivory transition hover:border-white/16 hover:bg-white/[0.07]"
+            className="block rounded-[12px] border border-[var(--color-line)] px-3 py-2 text-[12.5px] font-medium text-[var(--color-ink)] transition hover:border-[var(--color-line-strong)] hover:bg-[#f8fbf8]"
           >
             ✎ Build a plan from scratch
-          </a>
-          <p className="mt-2 px-1 text-[10.5px] leading-relaxed text-muted/70">
+          </Link>
+          <p className="mt-2.5 px-1 text-[10.5px] leading-relaxed text-[var(--color-muted)]">
             All balances, certificates and transfers are simulated.
           </p>
-          <p className="mt-2 flex items-start gap-1.5 border-t border-white/6 px-1 pt-2 text-[10px] leading-relaxed text-muted/50">
+          <p className="mt-2 flex items-start gap-1.5 border-t border-[var(--color-line)] px-1 pt-2 text-[10px] leading-relaxed text-[var(--color-muted)]">
             <span
               className={`mt-[3px] h-1.5 w-1.5 shrink-0 rounded-full ${
-                storage?.ok === false || !storage?.durable ? "bg-ember/70" : "bg-sage"
+                storage?.ok === false || !storage?.durable ? "bg-[var(--color-ember)]" : "bg-[var(--color-sage)]"
               }`}
             />
             <span>
@@ -89,11 +86,11 @@ export function DemoDock() {
       )}
       <button
         onClick={toggle}
-        className="ml-auto flex items-center gap-2 rounded-full border border-white/12 bg-[#101016]/90 px-3.5 py-2 text-[11.5px] text-muted shadow-xl backdrop-blur-xl transition hover:text-ivory"
+        className="ml-auto flex items-center gap-2 rounded-full border border-[var(--color-line)] bg-[var(--color-surface)] px-3.5 py-2 text-[11.5px] font-semibold text-[var(--color-ink)] shadow-[0_10px_30px_-16px_rgba(23,45,41,0.6)] transition hover:border-[var(--color-line-strong)]"
       >
         <span className="relative flex h-1.5 w-1.5">
-          <span className="breathe absolute inline-flex h-full w-full rounded-full bg-brass" />
-          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brass" />
+          <span className="breathe absolute inline-flex h-full w-full rounded-full bg-[var(--color-brand)]" />
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--color-brand)]" />
         </span>
         {msg ?? "Demo"}
       </button>
