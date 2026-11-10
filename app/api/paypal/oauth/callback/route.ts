@@ -3,10 +3,11 @@ import { exchangeCode, paypalMode, paypalConfigured, userInfo, verifyState, PayP
 import { PAYPAL_COOKIE, cookieOptions, mintSid, readSid } from "@/lib/paypal-session";
 import { savePayPalConnection } from "@/lib/paypal-store";
 import { requireOwner } from "@/lib/scope";
+import { guarded } from "@/lib/route-guard";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   const url = new URL(request.url);
   const fail = (reason: string) =>
     NextResponse.redirect(new URL(`/settings?paypal=error&reason=${encodeURIComponent(reason)}`, request.url));
@@ -49,3 +50,5 @@ export async function GET(request: Request) {
     return fail(reason);
   }
 }
+
+export const GET = guarded(handleGET);

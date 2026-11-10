@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { getSnapshot, savePlan } from "@/lib/store";
+import { guarded } from "@/lib/route-guard";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const body = await request.json();
 
   if (!body?.name || !body?.primary?.name || !body?.charity?.name || !body?.keyholder?.accessCode) {
@@ -47,3 +48,5 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ ok: true, snapshot: await getSnapshot() });
 }
+
+export const POST = guarded(handlePOST);

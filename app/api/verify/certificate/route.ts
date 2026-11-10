@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { MAX_BYTES, verifyCertificate, verifierStatus } from "@/lib/certs";
 import { existingHashes, getSnapshot } from "@/lib/store";
+import { guarded } from "@/lib/route-guard";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
 /** GET — is the verifier wired up in this runtime? */
-export async function GET() {
+async function handleGET() {
   return NextResponse.json(await verifierStatus());
 }
 
@@ -18,7 +19,7 @@ export async function GET() {
  * the SHA-256 of the document. Nothing about the plan changes here — this is
  * the "is this really a death certificate?" endpoint.
  */
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   let form: FormData | null = null;
   try {
     form = await request.formData();
@@ -49,3 +50,6 @@ export async function POST(request: Request) {
 
   return NextResponse.json(report);
 }
+
+export const GET = guarded(handleGET);
+export const POST = guarded(handlePOST);

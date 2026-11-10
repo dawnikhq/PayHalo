@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { addAssetAction, removeAssetAction, updateAssetAction } from "@/lib/store";
 import type { AssetKind } from "@/lib/types";
+import { guarded } from "@/lib/route-guard";
 
 export const dynamic = "force-dynamic";
 
 const KINDS: AssetKind[] = ["paypal", "crypto", "business"];
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const kind = KINDS.includes(body?.kind) ? (body.kind as AssetKind) : "paypal";
   const result = await addAssetAction({
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
   return NextResponse.json(result);
 }
 
-export async function PATCH(request: Request) {
+async function handlePATCH(request: Request) {
   const body = await request.json().catch(() => ({}));
   const id = Number(body?.id);
   if (!Number.isFinite(id)) return NextResponse.json({ ok: false, error: "Missing asset id." }, { status: 400 });
@@ -45,9 +46,13 @@ export async function PATCH(request: Request) {
   return NextResponse.json(result);
 }
 
-export async function DELETE(request: Request) {
+async function handleDELETE(request: Request) {
   const body = await request.json().catch(() => ({}));
   const result = await removeAssetAction(Number(body?.id));
   if (!result.ok) return NextResponse.json(result, { status: 400 });
   return NextResponse.json(result);
 }
+
+export const POST = guarded(handlePOST);
+export const PATCH = guarded(handlePATCH);
+export const DELETE = guarded(handleDELETE);

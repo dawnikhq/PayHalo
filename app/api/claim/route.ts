@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { MAX_BYTES, verifyCertificate, type StoredReport } from "@/lib/certs";
 import { existingHashes, getSnapshot, submitClaimAction } from "@/lib/store";
+import { guarded } from "@/lib/route-guard";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -15,7 +16,7 @@ export const maxDuration = 30;
  * A claim that passes starts in `review`: 72 hours of registry checking before
  * the owner is notified.
  */
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   let form: FormData | null = null;
   try {
     form = await request.formData();
@@ -66,3 +67,5 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ ...result, report });
 }
+
+export const POST = guarded(handlePOST);

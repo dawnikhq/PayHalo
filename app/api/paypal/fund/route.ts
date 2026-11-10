@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createDepositOrder, paypalConfigured, paypalMode, PayPalError } from "@/lib/paypal";
 import { requireOwner } from "@/lib/scope";
+import { guarded } from "@/lib/route-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,7 @@ function sameOrigin(request: NextRequest): boolean {
  * account. Nothing is captured here — the payer approves at PayPal, and the
  * return URL captures it.
  */
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
     await requireOwner();
   } catch {
@@ -72,3 +73,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = guarded(handlePOST);

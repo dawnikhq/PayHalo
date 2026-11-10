@@ -12,6 +12,7 @@ import { readSid } from "@/lib/paypal-session";
 import { requireOwner } from "@/lib/scope";
 import { getPayPalConnection, listPayPalPayouts } from "@/lib/paypal-store";
 import { getReleaseLedger } from "@/lib/store";
+import { guarded } from "@/lib/route-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,7 @@ export const dynamic = "force-dynamic";
  * deliberately not part of this payload — the browser learns that an account
  * is connected, never how to act as it.
  */
-export async function GET() {
+async function handleGET() {
   const owner = await requireOwner();
   const sid = await readSid();
   const mode = paypalMode();
@@ -95,3 +96,5 @@ export async function GET() {
       : null,
   });
 }
+
+export const GET = guarded(handleGET);

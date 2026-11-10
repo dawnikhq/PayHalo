@@ -13,6 +13,7 @@ import { clearFailures, clientKey, isLockedOut, registerFailure } from "@/lib/pa
 import { listPayPalPayouts, recordPayPalPayout } from "@/lib/paypal-store";
 import { getReleaseLedger } from "@/lib/store";
 import { requireOwner } from "@/lib/scope";
+import { guarded } from "@/lib/route-guard";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -28,7 +29,7 @@ export const maxDuration = 30;
  *   4. Recipients already paid for this claim are skipped, so a retry after a
  *      timeout cannot double-pay.
  */
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   if (!paypalConfigured()) {
     return NextResponse.json({ error: "PayPal is not configured on this deployment." }, { status: 503 });
   }
@@ -158,3 +159,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message, recorded: pending.length }, { status: 502 });
   }
 }
+
+export const POST = guarded(handlePOST);

@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { updateProfileAction } from "@/lib/store";
+import { guarded } from "@/lib/route-guard";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const result = await updateProfileAction({
     name: body?.name !== undefined ? String(body.name) : undefined,
@@ -14,3 +15,5 @@ export async function POST(request: Request) {
   if (!result.ok) return NextResponse.json(result, { status: 400 });
   return NextResponse.json(result);
 }
+
+export const POST = guarded(handlePOST);

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { captureDepositOrder, PayPalError } from "@/lib/paypal";
 import { requireOwner } from "@/lib/scope";
+import { guarded } from "@/lib/route-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,7 @@ const FUND_COOKIE = "vivo_fund";
  * httpOnly cookie we set when the flow started — never from the query string,
  * so a visitor cannot make us capture somebody else's order.
  */
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   const origin = request.nextUrl.origin;
 
   try {
@@ -39,3 +40,5 @@ export async function GET(request: NextRequest) {
     return res;
   }
 }
+
+export const GET = guarded(handleGET);
