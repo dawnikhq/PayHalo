@@ -29,7 +29,7 @@ export default async function SheetPage() {
   const ref = `VIVO-${String(s.plan.id).padStart(4, "0")}-${String(s.user.id).padStart(3, "0")}`;
 
   return (
-    <main className="mx-auto max-w-[816px] px-4 py-8 print:max-w-none print:p-0">
+    <main className="mx-auto max-w-[816px] px-4 pb-24 pt-8 print:max-w-none print:p-0">
       <div className="mb-4 flex items-center justify-between print:hidden">
         <Link href="/dashboard" className="text-[12px] font-medium text-[var(--color-muted)] hover:text-[var(--color-ink)]">
           ← Back to the dashboard
