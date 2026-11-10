@@ -58,8 +58,8 @@ export default async function SheetPage() {
         </header>
 
         <p className="mt-6 max-w-[64ch] text-[13px] leading-[1.75] text-[#3a4c45]">
-          This sheet records what {s.user.name.split(" ")[0]} decided should happen to their digital wealth.
-          Reading it gives you no access to any account, and you will never need one of their passwords. It
+          This sheet records what {s.user.name.split(" ")[0]} decided should happen to the estate.
+          Reading it gives you no access to any account, and you will never need a password. It
           tells you <em>who</em> is entitled to what, <em>in which order</em>, and <em>who may start the
           process</em>.
         </p>

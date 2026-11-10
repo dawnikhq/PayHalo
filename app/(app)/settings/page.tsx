@@ -45,8 +45,8 @@ export default async function SettingsPage() {
             <p className="t-small mt-1">
               Role visibility is enforced in the data each portal is given — not just hidden in the interface.
             </p>
-            <div className="mt-5 overflow-hidden rounded-[14px] border border-[var(--color-line)]">
-              <table className="w-full text-left">
+            <div className="mt-5 overflow-x-auto rounded-[14px] border border-[var(--color-line)]">
+              <table className="w-full min-w-[520px] text-left">
                 <thead className="bg-[#f8faf7]">
                   <tr>
                     <th className="label px-4 py-2.5">Role</th>
