@@ -12,6 +12,7 @@ import type {
   Keyholder,
   Plan,
   PlanStatus,
+  PayPalState,
   PlanStep,
   Role,
   Snapshot,
@@ -45,6 +46,11 @@ export interface StateDoc {
   documents: DocumentRow[];
   events: EventRow[];
   seq: number;
+  /**
+   * PayPal connections and payout attempts. Optional so documents written
+   * before the integration existed keep loading.
+   */
+  paypal?: PayPalState;
 }
 
 const now = () => new Date().toISOString();

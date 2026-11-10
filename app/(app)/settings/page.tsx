@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getSnapshot } from "@/lib/store";
 import { Page } from "@/components/ui";
 import { ProfileForm } from "@/components/account/ProfileForm";
+import { PayPalCard } from "@/components/account/PayPalCard";
 import { CopyButton } from "@/components/CopyButton";
 import { Avatar } from "@/components/Avatar";
 
@@ -25,8 +26,13 @@ const ROLES = [
   },
 ];
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ paypal?: string; reason?: string }>;
+}) {
   const s = await getSnapshot();
+  const { paypal, reason } = await searchParams;
 
   return (
     <Page>
@@ -36,9 +42,27 @@ export default async function SettingsPage() {
         <p className="t-body mt-2">Who you are, who can act, and what is never shared.</p>
       </header>
 
+      {paypal && (
+        <div
+          className={`rise mb-5 rounded-[14px] border p-4 text-[12.5px] ${
+            paypal === "connected"
+              ? "border-[#cbea92] bg-[var(--color-lime)] text-[var(--color-forest)]"
+              : "border-[#f0cfc6] bg-[#fdf1ee] text-[var(--color-ember)]"
+          }`}
+        >
+          {paypal === "connected"
+            ? "PayPal connected. Only the account you signed in with was linked — no balances or permissions were requested."
+            : paypal === "unconfigured"
+              ? "PayPal is not configured on this deployment yet."
+              : `PayPal could not be connected. ${reason ?? ""}`.trim()}
+        </div>
+      )}
+
       <div className="grid gap-5 lg:grid-cols-[1.55fr_1fr]">
         <div className="space-y-5">
           <ProfileForm user={s.user} />
+
+          <PayPalCard />
 
           <section className="card p-6 md:p-7">
             <h2 className="h2">Who can see what</h2>

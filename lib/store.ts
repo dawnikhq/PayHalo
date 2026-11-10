@@ -215,3 +215,57 @@ export async function getBeneficiaryView() {
   }
   return beneficiaryView(doc);
 }
+
+/* ------------------------------------------------------- paypal release -- */
+
+export interface ReleaseRow {
+  beneficiaryId: number;
+  name: string;
+  email: string;
+  role: string;
+  share: number;
+  amountCents: number;
+}
+
+export interface ReleaseLedger {
+  claimId: number;
+  distributedAt: string;
+  totalCents: number;
+  rows: ReleaseRow[];
+}
+
+/**
+ * What a completed handover owes each recipient, joined to the email PayPal
+ * needs. Returns null until the 14-day window has actually closed — the
+ * payout run cannot be started early by calling the API directly.
+ */
+export async function getReleaseLedger(): Promise<ReleaseLedger | null> {
+  const driver = await getDriver();
+  const doc = await loadDoc();
+  if (settle(doc)) await driver.save(doc);
+
+  const claim = latestClaim(doc);
+  if (!claim || claim.status !== "distributed" || !claim.distributedAt) return null;
+
+  const rows: ReleaseRow[] = doc.distributions
+    .filter((d) => d.claimId === claim.id)
+    .map((d) => {
+      const person = doc.beneficiaries.find((b) => b.id === d.beneficiaryId);
+      return {
+        beneficiaryId: d.beneficiaryId,
+        name: person?.name ?? "Unknown recipient",
+        email: person?.email ?? "",
+        role: person?.role ?? "primary",
+        share: d.share,
+        amountCents: d.amountCents,
+      };
+    })
+    .filter((row) => Boolean(row.email));
+
+  return {
+    claimId: claim.id,
+    distributedAt: claim.distributedAt,
+    totalCents: rows.reduce((sum, row) => sum + row.amountCents, 0),
+    rows,
+  };
+}

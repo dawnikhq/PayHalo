@@ -200,8 +200,47 @@ per press; a live system waits for the registrar.
 | POST | `/api/plan` | Seal the plan (refuses while checklist items are open) |
 | POST | `/api/demo/reset` | Restore the seeded household |
 | GET | `/api/meta` | Which storage driver is live + a health probe |
+| GET | `/api/paypal/status` | Connection state, payout-account balance, release ledger (never a token) |
+| GET | `/api/paypal/oauth/start` | Begin "Log in with PayPal" — sets an opaque `vivo_paypal_sid` cookie |
+| GET | `/api/paypal/oauth/callback` | Verify signed state, exchange the code, store the connection |
+| POST | `/api/paypal/disconnect` | Forget this browser's PayPal connection |
+| POST | `/api/paypal/payout` | Release the estate via PayPal. `{confirm:true}`, same-origin, window must be closed |
 
 ---
+
+## PayPal (sandbox)
+
+The one place VIVO leaves the building. Three capabilities, three trust levels:
+
+| Capability | How | What it proves |
+|---|---|---|
+| Connect an account | "Log in with PayPal" (`openid profile email`) | Which PayPal account belongs to this browser |
+| Read the payout balance | `GET /v1/reporting/balances` on the app's own business account | The pot that would fund a release — needs the app's `reporting/balances` scope |
+| Release the estate | `POST /v1/payments/payouts` | Real (sandbox) transfers to each beneficiary's email |
+
+Set up, once:
+
+1. Create a REST app at [developer.paypal.com](https://developer.paypal.com/dashboard/applications) in
+   **Sandbox** mode. Copy the Client ID and Secret.
+2. Add `PAYPAL_ENV=sandbox`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` to the deployment (Vercel → Settings
+   → Environment Variables), plus `PAYPAL_REDIRECT_URI=https://<your-domain>/api/paypal/callback`.
+3. Register that same URL as the app's **Return URL** and enable *Log in with PayPal* on the app.
+4. Optional: enable `PAYPAL_PAYOUTS_ENABLED=true` to let the release button actually pay out. Without it the
+   ledger still renders, and every attempt explains why it is blocked.
+
+How the release behaves:
+
+- Before the 14-day window closes, `getReleaseLedger()` returns `null`, so `/api/paypal/payout` answers `409`.
+  The payout path cannot be reached early, even by calling the API directly.
+- Each recipient is paid exactly once per claim: rows already recorded for that claim are skipped, and
+  PayPal's `sender_batch_id` is derived from the claim id, so a retry is rejected rather than paid twice.
+- The Settings card shows the ledger, the batch id and per-recipient state. Tokens live server-side only and
+  are never serialised into a page; `/api/paypal/status` returns identity, never credentials.
+- The footer sentence changes when PayPal is configured, so the app never claims "no live connections"
+  while holding a live one.
+
+Sandbox test accounts: create a **Business** account (payer) and **Personal** accounts (beneficiaries) under
+*Sandbox → Accounts*, and use their emails on the plan.
 
 ## Storage
 
@@ -224,8 +263,11 @@ JSON document, so `POST /api/demo/reset` restores the seed.
   sits in a 72-hour review before the owner is told. It is document processing, not legal proof of death.
 - Uploaded files are checked in memory and never stored — the claim keeps the SHA-256, the extracted
   fields and the transcript, not the document itself. Document rows in the UI are records, not files.
-- No real platform integration: PayPal, wallets and storefronts would require their own cooperation,
-  security controls and compliance work.
+- PayPal is the one real integration, and only in sandbox. Wallets and storefronts remain records.
+- Payouts move money from the app's **own** PayPal business account — PayPal authorises payouts from an
+  account you control, not from a beneficiary's. Sandbox funds are fake; live payouts are locked behind
+  `PAYPAL_ALLOW_LIVE_PAYOUTS=true` and should never be switched on while the demo has no login in front
+  of the release button.
 - There are no accounts or logins. Role separation is real in the data each portal is given, but the
   demo is a single shared household, so anyone with the link can press "Reset demo household".
 - Platform terms and inheritance law still apply. VIVO makes the process preparable, not bypassable.

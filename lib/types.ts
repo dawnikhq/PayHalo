@@ -136,6 +136,43 @@ export interface EventRow {
   ownerVisible: number;
 }
 
+/**
+ * A PayPal account a visitor connected with "Log in with PayPal". Identity is
+ * app-wide; the token stays server-side and is never serialised to a page.
+ */
+export interface PayPalConnection {
+  /** Opaque browser id from the httpOnly cookie — one connection per visitor. */
+  sid: string;
+  payerId: string;
+  email: string;
+  name: string | null;
+  mode: "sandbox" | "live";
+  accessToken: string;
+  scope: string | null;
+  connectedAt: string;
+  expiresAt: string | null;
+}
+
+/** One recipient of one release. `sent` rows carry PayPal's own batch id. */
+export interface PayPalPayout {
+  id: number;
+  claimId: number;
+  beneficiaryId: number | null;
+  email: string;
+  amountCents: number;
+  currency: string;
+  status: string;
+  batchId: string | null;
+  mode: "sandbox" | "live";
+  error: string | null;
+  createdAt: string;
+}
+
+export interface PayPalState {
+  connections: PayPalConnection[];
+  payouts: PayPalPayout[];
+}
+
 export interface Snapshot {
   user: User;
   plan: Plan;

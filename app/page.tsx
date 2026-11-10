@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { footerNote } from "@/lib/paypal";
 
 export const metadata = {
   title: "VIVO — Your legacy, considered.",
@@ -166,7 +167,7 @@ export default function LandingPage() {
 
       <footer className="border-t border-[var(--color-line)] bg-[var(--color-surface)]">
         <div className="mx-auto flex w-full max-w-[1180px] flex-col gap-2 px-5 pb-24 pt-6 sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:pb-20">
-          <p className="t-meta">Simulation only · No live connections, notices, claims or transfers.</p>
+          <p className="t-meta">{footerNote()}</p>
           <p className="font-[var(--font-display)] text-[12.5px] font-semibold tracking-[0.02em] text-[var(--color-forest)]">
             VIVO / Your legacy, considered.
           </p>
