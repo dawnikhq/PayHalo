@@ -65,15 +65,7 @@ export default async function SignInPage({
           )}
 
           <p className="mt-5 text-[11px] leading-relaxed text-[var(--color-muted)]">
-            By signing in you agree to our{" "}
-            <Link href="/terms" className="font-semibold text-[var(--color-ink)]">
-              terms
-            </Link>{" "}
-            and{" "}
-            <Link href="/privacy" className="font-semibold text-[var(--color-ink)]">
-              privacy notice
-            </Link>
-            .
+            We keep your email to sign you in and nothing else. Your plan is never shown to another account holder.
           </p>
         </div>
       </main>
