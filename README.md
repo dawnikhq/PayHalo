@@ -202,6 +202,8 @@ per press; a live system waits for the registrar.
 | GET | `/api/paypal/oauth/start` | Begin "Log in with PayPal" — sets an opaque `vivo_paypal_sid` cookie |
 | GET | `/api/paypal/oauth/callback` | Verify signed state, exchange the code, store the connection |
 | POST | `/api/paypal/disconnect` | Forget this browser's PayPal connection |
+| POST | `/api/paypal/fund` | Open a PayPal order to add money to the release account |
+| GET | `/api/paypal/fund/return` | Capture that order (id comes from an httpOnly cookie) and return to Settings |
 | POST | `/api/paypal/payout` | Release the estate via PayPal. `{confirm:true}`, same-origin, window must be closed |
 
 ---
@@ -213,6 +215,7 @@ The one place VIVO leaves the building. Three capabilities, three trust levels:
 | Capability | How | What it proves |
 |---|---|---|
 | Connect an account | "Log in with PayPal" (`openid profile email`) | Which PayPal account belongs to this browser |
+| Add money | `POST /v2/checkout/orders` → payer approves at PayPal → `…/capture` | A real payment into the app's own business account, which is what a release spends |
 | Read the payout balance | `GET /v1/reporting/balances` on the app's own business account | The pot that would fund a release — needs the app's `reporting/balances` scope |
 | Release the estate | `POST /v1/payments/payouts` | Real (sandbox) transfers to each beneficiary's email |
 

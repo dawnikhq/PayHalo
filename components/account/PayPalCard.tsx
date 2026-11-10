@@ -27,6 +27,7 @@ export function PayPalCard() {
   const [busy, setBusy] = useState<string | null>(null);
   const [passcode, setPasscode] = useState("");
   const [note, setNote] = useState<{ tone: "ok" | "bad"; body: string } | null>(null);
+  const [amount, setAmount] = useState("50");
 
   const load = useCallback(async () => {
     try {
@@ -41,6 +42,20 @@ export function PayPalCard() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    const funded = new URLSearchParams(window.location.search).get("funded");
+    if (!funded) return;
+    if (funded === "cancelled") {
+      setNote({ tone: "bad", body: "Payment cancelled. Nothing was added." });
+    } else if (funded === "expired") {
+      setNote({ tone: "bad", body: "That payment link had expired. Start again." });
+    } else if (funded === "failed") {
+      setNote({ tone: "bad", body: "PayPal did not complete the payment." });
+    } else {
+      setNote({ tone: "ok", body: `Added ${funded} USD to the release account.` });
+    }
+  }, []);
+
   async function disconnect() {
     setBusy("disconnect");
     setNote(null);
@@ -52,6 +67,24 @@ export function PayPalCard() {
     } catch {
       setNote({ tone: "bad", body: "Could not disconnect. Try again." });
     } finally {
+      setBusy(null);
+    }
+  }
+
+  async function fund() {
+    setBusy("fund");
+    setNote(null);
+    try {
+      const res = await fetch("/api/paypal/fund", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount }),
+      });
+      const data = (await res.json()) as { approveUrl?: string; error?: string };
+      if (!res.ok || !data.approveUrl) throw new Error(data.error ?? "PayPal could not start the payment.");
+      window.location.href = data.approveUrl;
+    } catch (error) {
+      setNote({ tone: "bad", body: error instanceof Error ? error.message : "Could not start the payment." });
       setBusy(null);
     }
   }
@@ -233,6 +266,35 @@ export function PayPalCard() {
               ) : (
                 <p className="t-small mt-2">{status.payouts.blockedReason ?? "Payouts are switched off."}</p>
               )}
+            </div>
+          </div>
+
+          <div className="rounded-[14px] border border-[var(--color-line)] p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="label">Add money</p>
+                <p className="t-small mt-1.5 max-w-[46ch]">
+                  A release is paid out of this PayPal business account. Top it up with a real PayPal payment — VIVO
+                  cannot hold a balance of its own, so the money sits with PayPal until a handover clears.
+                </p>
+              </div>
+              <div className="flex items-end gap-2">
+                <div>
+                  <label htmlFor="fund-amount" className="block text-[11px] font-semibold text-[var(--color-muted)]">
+                    Amount (USD)
+                  </label>
+                  <input
+                    id="fund-amount"
+                    inputMode="decimal"
+                    value={amount}
+                    onChange={(event) => setAmount(event.target.value.replace(/[^0-9.]/g, ""))}
+                    className="mt-1 h-9 w-[110px] rounded-[10px] border border-[var(--color-line-strong)] bg-white px-2.5 text-[12.5px] tabular-nums text-[var(--color-ink)] focus:border-[var(--color-brand)] focus:outline-none"
+                  />
+                </div>
+                <button onClick={fund} disabled={busy !== null} className="btn btn-primary btn-sm">
+                  {busy === "fund" ? "Opening…" : "Add money"}
+                </button>
+              </div>
             </div>
           </div>
 

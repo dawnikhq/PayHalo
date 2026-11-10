@@ -252,7 +252,9 @@ export async function sendPayoutBatch(
         sender_batch_id: senderBatchId,
         email_subject: "A planned handover from VIVO",
         email_message:
-          "Someone left instructions for this. This transfer was made from a VIVO sandbox account and is not a real payment.",
+          paypalMode() === "live"
+            ? "Someone left instructions for this. The transfer is on its way."
+            : "This transfer ran in PayPal's sandbox and is not a real payment.",
       },
       items: items.map((item) => ({
         recipient_type: "EMAIL",
@@ -278,6 +280,116 @@ export async function sendPayoutBatch(
     batchId: json?.batch_header?.payout_batch_id ?? null,
     status: json?.batch_header?.batch_status ?? "PENDING",
     itemCount: items.length,
+  };
+}
+
+/* ----------------------------------------------------------------- funding */
+
+/**
+ * Money in. PayPal has no "top up" API and is not a bank, so the honest way to
+ * fund a release account is a real payment: the owner pays the app's own
+ * PayPal business account through an Orders v2 checkout, and the payout run
+ * later spends that balance. Sandbox currency, real API calls.
+ */
+export interface DepositOrder {
+  id: string;
+  approveUrl: string;
+}
+
+export async function createDepositOrder(
+  amount: string,
+  currency: string,
+  returnUrl: string,
+  cancelUrl: string,
+): Promise<DepositOrder> {
+  const token = await appAccessToken();
+
+  const res = await fetch(`${API[paypalMode()]}/v2/checkout/orders`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      intent: "CAPTURE",
+      purchase_units: [
+        {
+          description: "VIVO release account",
+          amount: { currency_code: currency, value: amount },
+        },
+      ],
+      application_context: {
+        brand_name: "VIVO",
+        user_action: "PAY_NOW",
+        shipping_preference: "NO_SHIPPING",
+        return_url: returnUrl,
+        cancel_url: cancelUrl,
+      },
+    }),
+    cache: "no-store",
+  });
+
+  const json = (await res.json().catch(() => null)) as
+    | { id?: string; links?: { rel?: string; href?: string }[]; message?: string; name?: string }
+    | null;
+
+  if (!res.ok || !json?.id) {
+    const message = json?.message ?? json?.name ?? `PayPal could not open an order (${res.status})`;
+    throw new PayPalError(message, res.ok ? 502 : res.status);
+  }
+
+  const approveUrl = json.links?.find((l) => l.rel === "approve" || l.rel === "payer-action")?.href;
+  if (!approveUrl) throw new PayPalError("PayPal returned no approval link", 502);
+
+  return { id: json.id, approveUrl };
+}
+
+export interface DepositCapture {
+  status: string;
+  amount: string | null;
+  currency: string | null;
+  captureId: string | null;
+}
+
+export async function captureDepositOrder(orderId: string): Promise<DepositCapture> {
+  const token = await appAccessToken();
+
+  const res = await fetch(`${API[paypalMode()]}/v2/checkout/orders/${encodeURIComponent(orderId)}/capture`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: "{}",
+    cache: "no-store",
+  });
+
+  const json = (await res.json().catch(() => null)) as
+    | {
+        status?: string;
+        purchase_units?: {
+          payments?: {
+            captures?: { id?: string; amount?: { value?: string; currency_code?: string } }[];
+          };
+        }[];
+        message?: string;
+        name?: string;
+      }
+    | null;
+
+  if (!res.ok) {
+    const message = json?.message ?? json?.name ?? `PayPal could not capture the payment (${res.status})`;
+    throw new PayPalError(message, res.status);
+  }
+
+  const capture = json?.purchase_units?.[0]?.payments?.captures?.[0];
+  return {
+    status: json?.status ?? "UNKNOWN",
+    amount: capture?.amount?.value ?? null,
+    currency: capture?.amount?.currency_code ?? null,
+    captureId: capture?.id ?? null,
   };
 }
 
@@ -361,10 +473,10 @@ export function verifyState(state: string): string | null {
  */
 export function footerNote(): string {
   if (!paypalConfigured()) {
-    return "Simulation only · No live connections, notices, claims or transfers.";
+    return "Your plan is private. Balances are what you record; no provider is connected.";
   }
   if (paypalMode() === "live") {
-    return "PayPal lives connected · Estate figures, documents and notices are simulated.";
+    return "PayPal Live connected · A release moves real money, once the passcode is given.";
   }
-  return "PayPal sandbox connected · Figures and notices are simulated; transfers run in PayPal's sandbox.";
+  return "PayPal Sandbox connected · Transfers run against PayPal's sandbox account.";
 }

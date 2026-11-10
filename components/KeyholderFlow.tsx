@@ -131,8 +131,8 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
             <p className="eyebrow">Trusted keyholder</p>
             <h1 className="h1 mt-2.5">A little trust. A clear role.</h1>
             <p className="t-body mt-2">
-              Welcome, {view.keyholder?.name.split(" ")[0] ?? "there"}. This is an illustrative sealed-plan
-              scenario.
+              Welcome, {view.keyholder?.name.split(" ")[0] ?? "there"}. You are the trusted contact on{" "}
+              {view.ownerFirstName ? `${view.ownerFirstName}'s` : "this"} plan.
             </p>
           </div>
           <Badge tone="mint" dot>
