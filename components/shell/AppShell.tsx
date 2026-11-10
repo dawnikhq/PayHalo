@@ -165,7 +165,7 @@ export function AppShell({
   const person = { name, role: ROLE_LABEL[role] };
 
   const sidebar = (
-    <div className="flex h-full flex-col gap-6 px-4 py-6">
+    <div className="flex min-h-full flex-col gap-6 px-4 py-6">
       <Link href="/dashboard" className="flex px-1" onClick={() => setOpen(false)} aria-label="VIVO home">
         <Wordmark />
       </Link>
@@ -219,7 +219,7 @@ export function AppShell({
   return (
     <div className="min-h-screen bg-[var(--color-canvas)]">
       {/* desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[264px] border-r border-[var(--color-line)] bg-[var(--color-surface)] lg:block">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[264px] overflow-y-auto overscroll-contain border-r border-[var(--color-line)] bg-[var(--color-surface)] [scrollbar-width:thin] lg:block">
         {sidebar}
       </aside>
 
@@ -279,7 +279,7 @@ export function AppShell({
 
         <main id="main">{children}</main>
 
-        <footer className="mt-6 border-t border-[var(--color-line)] px-5 py-5 text-[11.5px] text-[var(--color-muted)] sm:px-8">
+        <footer className="mt-6 border-t border-[var(--color-line)] px-5 pb-24 pt-5 text-[11.5px] text-[var(--color-muted)] sm:px-8 sm:pb-20">
           <div className="mx-auto flex max-w-[1180px] flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
             <p>Simulation only · No live connections, notices, claims or transfers.</p>
             <p className="font-[var(--font-display)] font-semibold tracking-[0.02em] text-[var(--color-forest)]">
