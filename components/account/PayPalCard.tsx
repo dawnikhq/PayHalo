@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 interface StatusPayload {
   configured: boolean;
   mode: "sandbox" | "live";
-  payouts: { enabled: boolean; blockedReason: string | null };
+  payouts: { enabled: boolean; blockedReason: string | null; passcodeRequired: boolean };
   connection: { email: string; name: string | null; payerId: string; connectedAt: string; expired: boolean } | null;
   payoutAccount:
     | { ok: true; balances: { currency: string; total: string; available: string; primary: boolean }[] }
@@ -25,6 +25,7 @@ export function PayPalCard() {
   const router = useRouter();
   const [status, setStatus] = useState<StatusPayload | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [passcode, setPasscode] = useState("");
   const [note, setNote] = useState<{ tone: "ok" | "bad"; body: string } | null>(null);
 
   const load = useCallback(async () => {
@@ -71,11 +72,12 @@ export function PayPalCard() {
       const res = await fetch("/api/paypal/payout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ confirm: true }),
+        body: JSON.stringify({ confirm: true, passcode }),
       });
       const json = (await res.json()) as { ok?: boolean; batchId?: string; sent?: number; error?: string; alreadySent?: boolean };
       if (!res.ok) {
         setNote({ tone: "bad", body: json.error ?? "PayPal rejected the payout." });
+        setPasscode("");
       } else if (json.alreadySent) {
         setNote({ tone: "ok", body: "Already released — nothing was sent twice." });
       } else {
@@ -196,13 +198,32 @@ export function PayPalCard() {
                     Enabled in {modeLabel.toLowerCase()} mode. A payout only runs after the 14-day window closes.
                   </p>
                   {status.ledger ? (
-                    <button onClick={release} disabled={busy !== null || !unpaid.length} className="btn btn-primary btn-sm mt-3">
-                      {busy === "release"
-                        ? "Sending…"
-                        : unpaid.length
-                          ? `Release ${money(unpaid.reduce((sum, r) => sum + r.amountCents, 0))}`
-                          : "Already released"}
-                    </button>
+                    <div className="mt-3 space-y-2">
+                      <label htmlFor="release-passcode" className="block text-[11px] font-semibold text-[var(--color-muted)]">
+                        Release passcode
+                      </label>
+                      <input
+                        id="release-passcode"
+                        type="password"
+                        value={passcode}
+                        onChange={(event) => setPasscode(event.target.value)}
+                        autoComplete="off"
+                        spellCheck={false}
+                        placeholder="Required to release"
+                        className="h-9 w-full rounded-[10px] border border-[var(--color-line-strong)] bg-white px-2.5 text-[12.5px] text-[var(--color-ink)] placeholder:text-[#94a29a] focus:border-[var(--color-brand)] focus:outline-none"
+                      />
+                      <button
+                        onClick={release}
+                        disabled={busy !== null || !unpaid.length || !passcode.trim()}
+                        className="btn btn-primary btn-sm"
+                      >
+                        {busy === "release"
+                          ? "Sending…"
+                          : unpaid.length
+                            ? `Release ${money(unpaid.reduce((sum, r) => sum + r.amountCents, 0))}`
+                            : "Already released"}
+                      </button>
+                    </div>
                   ) : (
                     <p className="mt-2 text-[11.5px] font-semibold text-[var(--color-muted)]">
                       No completed handover yet.

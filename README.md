@@ -225,8 +225,13 @@ Set up, once:
 2. Add `PAYPAL_ENV=sandbox`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` to the deployment (Vercel → Settings
    → Environment Variables), plus `PAYPAL_REDIRECT_URI=https://<your-domain>/api/paypal/callback`.
 3. Register that same URL as the app's **Return URL** and enable *Log in with PayPal* on the app.
-4. Optional: enable `PAYPAL_PAYOUTS_ENABLED=true` to let the release button actually pay out. Without it the
-   ledger still renders, and every attempt explains why it is blocked.
+4. Enable `PAYPAL_PAYOUTS_ENABLED=true` **and** set `PAYPAL_PAYOUT_PASSCODE` to a phrase you are willing to
+   rotate. Both are required: with either missing the release button never renders and the endpoint fails
+   closed with the reason.
+
+The release is behind a passcode on purpose. This demo has no login, so without it "window closed" would be
+the only thing standing between a stranger and a payout. The passcode is compared in constant time, wrong
+answers are limited to five per IP per ten minutes, and the value is only ever read on the server.
 
 How the release behaves:
 

@@ -1,5 +1,13 @@
 import { NextResponse } from "next/server";
-import { getAppBalances, paypalConfigured, paypalMode, payoutsBlockedReason, payoutsEnabled, PayPalError } from "@/lib/paypal";
+import {
+  getAppBalances,
+  paypalConfigured,
+  paypalMode,
+  payoutsBlockedReason,
+  payoutsEnabled,
+  releasePasscodeConfigured,
+  PayPalError,
+} from "@/lib/paypal";
 import { readSid } from "@/lib/paypal-session";
 import { getPayPalConnection, listPayPalPayouts } from "@/lib/paypal-store";
 import { getReleaseLedger } from "@/lib/store";
@@ -49,7 +57,11 @@ export async function GET() {
   return NextResponse.json({
     configured,
     mode,
-    payouts: { enabled: payoutsEnabled(), blockedReason: payoutsBlockedReason() },
+    payouts: {
+      enabled: payoutsEnabled(),
+      blockedReason: payoutsBlockedReason(),
+      passcodeRequired: releasePasscodeConfigured(),
+    },
     connection:
       connection && sid
         ? {

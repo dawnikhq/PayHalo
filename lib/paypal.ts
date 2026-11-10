@@ -50,6 +50,24 @@ function clientSecret(): string {
   return process.env.PAYPAL_CLIENT_SECRET?.trim() ?? "";
 }
 
+/**
+ * The release passcode. Deliberately not optional: if it is missing, payouts
+ * stay off. A demo with no login in front of it must not be one env var away
+ * from moving money, so "not configured" has to fail closed, not open.
+ */
+export function releasePasscodeConfigured(): boolean {
+  return Boolean(process.env.PAYPAL_PAYOUT_PASSCODE?.trim());
+}
+
+const digest = (value: string) => crypto.createHash("sha256").update(value, "utf8").digest();
+
+/** Constant-time comparison; both sides are hashed so length never leaks. */
+export function checkReleasePasscode(candidate: string): boolean {
+  const expected = process.env.PAYPAL_PAYOUT_PASSCODE?.trim();
+  if (!expected || !candidate) return false;
+  return crypto.timingSafeEqual(digest(candidate.trim()), digest(expected));
+}
+
 export function paypalConfigured(): boolean {
   return Boolean(clientId() && clientSecret());
 }
@@ -64,6 +82,7 @@ export function payoutsEnabled(): boolean {
   if (!paypalConfigured()) return false;
   if (process.env.PAYPAL_PAYOUTS_ENABLED?.toLowerCase() !== "true") return false;
   if (paypalMode() === "live" && process.env.PAYPAL_ALLOW_LIVE_PAYOUTS?.toLowerCase() !== "true") return false;
+  if (!releasePasscodeConfigured()) return false;
   return true;
 }
 
@@ -74,6 +93,9 @@ export function payoutsBlockedReason(): string | null {
   }
   if (paypalMode() === "live" && process.env.PAYPAL_ALLOW_LIVE_PAYOUTS?.toLowerCase() !== "true") {
     return "Live payouts are locked. Set PAYPAL_ALLOW_LIVE_PAYOUTS=true only when you mean it.";
+  }
+  if (!releasePasscodeConfigured()) {
+    return "No release passcode is set. Add PAYPAL_PAYOUT_PASSCODE to the environment to enable the release button.";
   }
   return null;
 }

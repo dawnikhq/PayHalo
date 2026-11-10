@@ -1,5 +1,15 @@
 import { NextResponse } from "next/server";
-import { paypalConfigured, paypalMode, payoutsBlockedReason, payoutsEnabled, sendPayoutBatch, PayPalError } from "@/lib/paypal";
+import {
+  checkReleasePasscode,
+  paypalConfigured,
+  paypalMode,
+  payoutsBlockedReason,
+  payoutsEnabled,
+  releasePasscodeConfigured,
+  sendPayoutBatch,
+  PayPalError,
+} from "@/lib/paypal";
+import { clearFailures, clientKey, isLockedOut, registerFailure } from "@/lib/paypal-guard";
 import { listPayPalPayouts, recordPayPalPayout } from "@/lib/paypal-store";
 import { getReleaseLedger } from "@/lib/store";
 
@@ -34,15 +44,42 @@ export async function POST(request: Request) {
     }
   }
 
-  let body: { confirm?: boolean } = {};
+  let body: { confirm?: boolean; passcode?: string } = {};
   try {
-    body = (await request.json()) as { confirm?: boolean };
+    body = (await request.json()) as { confirm?: boolean; passcode?: string };
   } catch {
     body = {};
   }
   if (body.confirm !== true) {
     return NextResponse.json({ error: "Send { confirm: true } to start a release." }, { status: 428 });
   }
+
+  /* The release passcode: fail closed, constant-time, rate limited. */
+  if (!releasePasscodeConfigured()) {
+    return NextResponse.json({ error: "No release passcode is configured for this deployment." }, { status: 503 });
+  }
+
+  const who = clientKey(request);
+  const lock = isLockedOut(who);
+  if (lock.locked) {
+    return NextResponse.json(
+      { error: `Too many attempts. Try again in ${Math.ceil(lock.retryInMs / 60000)} minutes.` },
+      { status: 429 },
+    );
+  }
+
+  if (!checkReleasePasscode(String(body.passcode ?? ""))) {
+    const attempt = registerFailure(who);
+    return NextResponse.json(
+      {
+        error: attempt.allowed
+          ? "That release passcode is not correct."
+          : "Too many attempts. The release is locked for ten minutes.",
+      },
+      { status: 403 },
+    );
+  }
+  clearFailures(who);
 
   const ledger = await getReleaseLedger();
   if (!ledger) {
