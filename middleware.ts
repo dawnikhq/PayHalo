@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createServerClient } from "@supabase/ssr";
 
 /**
  * Two jobs:
@@ -15,6 +14,7 @@ import { createServerClient } from "@supabase/ssr";
  */
 
 const SHARE_COOKIE = "vivo_share";
+const SESSION_COOKIE = "vivo_session";
 
 const OWNER_PATHS = [
   "/dashboard",
@@ -64,30 +64,25 @@ export async function middleware(request: NextRequest) {
 
   if (!isOwnerRoute(url.pathname)) return response;
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
-  if (!supabaseUrl || !anon) {
-    /* Auth is not configured: send people to the sign-in screen, which explains it. */
+  const storeConfigured = Boolean(
+    (process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim() ||
+      process.env.HACK1_STORE?.trim() === "sqlite" ||
+      process.env.VIVO_AUTH_STORE?.trim() === "sqlite",
+  );
+  if (!storeConfigured) {
+    /* No account store: send people to the sign-in screen, which explains it. */
     if (url.pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Accounts are not configured on this deployment." }, { status: 503 });
     }
     return NextResponse.redirect(new URL("/signin?unconfigured=1", url));
   }
 
-  const client = createServerClient(supabaseUrl, anon, {
-    cookies: {
-      getAll: () => request.cookies.getAll(),
-      setAll: (list) => {
-        for (const { name, value, options } of list) response.cookies.set(name, value, options);
-      },
-    },
-  });
-
-  const {
-    data: { user },
-  } = await client.auth.getUser();
-
-  if (!user) {
+  /*
+   * Presence check only. Whether the token is real, unexpired and still in the
+   * database is decided on the server by requireOwner() — the edge runtime has
+   * no business opening a database connection on every request.
+   */
+  if (!request.cookies.get(SESSION_COOKIE)?.value) {
     if (url.pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Sign in to continue." }, { status: 401 });
     }

@@ -13,10 +13,12 @@ document has been verified **and** the account holder has had **14 full days** t
 **Live: <https://hack1-weld.vercel.app>** — sign in with an emailed link and you get your own empty plan.
 No shared household, no sample data, nothing visible to anyone else.
 
-Sign-in is by **Supabase magic link**. Each account owns exactly one plan, stored as one row in
-`public.vivo_docs` keyed by `auth.users.id`; the server never reads across owners. Keyholders and
-beneficiaries are given **signed links** (HMAC, `VIVO_SHARE_SECRET`) rather than accounts, and each
-link is scoped to one audience on the server.
+Sign-in is VIVO's own: an email and password (scrypt), or a one-time emailed link, stored in
+`vivo_users` / `vivo_sessions` / `vivo_login_tokens`. Supabase is the database, not the identity
+provider. Each account owns exactly one plan, stored as one row in `public.vivo_docs` keyed by
+`vivo_users.id`; the server never reads across owners. Keyholders and beneficiaries are given
+**signed links** (HMAC, `VIVO_SHARE_SECRET`) rather than accounts, and each link is scoped to one
+audience on the server.
 
 ---
 
@@ -117,8 +119,8 @@ The rules the product will not break:
 
 ## A walkthrough
 
-1. **`/`** → *Get started* → **`/signin`**. Enter your email; Supabase sends a magic link; the callback
-   lands on `/dashboard` with a brand-new, empty plan.
+1. **`/`** → *Get started* → **`/signup`**. Name, email, password. You land in `/onboarding` with a
+   brand-new, empty plan. `/signin` takes either the password or a one-time emailed link.
 2. **`/onboarding`** (or *Add an asset* from the dashboard) — name what you hold, who gets it, and the
    instructions a keyholder would need. Balances are figures you type, not figures VIVO reads.
 3. **`/settings` → Sharing** — copy the keyholder link to the person you trust, and the beneficiary link
@@ -277,8 +279,9 @@ instead of returning a 500. Each owner's plan is one JSON document under its own
   account you control, not from a beneficiary's. PayPal is not a bank and VIVO does not hold customer
   balances. Live payouts need `PAYPAL_ENV=live` **and** `PAYPAL_ALLOW_LIVE_PAYOUTS=true`, and the release
   still requires the passcode.
-- Accounts are real, but **email delivery is Supabase's default SMTP**: outside the project team it is
-  rate-limited hard. Add custom SMTP in Supabase Auth before inviting anyone.
+- Accounts are real and self-hosted. The **emailed link needs `RESEND_API_KEY` and `MAIL_FROM`**; until
+  both are set the link tab says delivery is off and passwords are the only way in. There is no
+  "forgot password" flow yet — that is the next thing to build.
 - A signed share link is a bearer credential. Anyone holding it sees that audience's view until the
   secret is rotated — which invalidates every link at once. There is no per-link revocation yet.
 - Terms, privacy, data-export and account-deletion pages are **not built** (deliberately deferred).

@@ -1,20 +1,21 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SignInForm } from "@/components/auth/SignInForm";
-import { currentUser, supabaseConfigured } from "@/lib/auth";
+import { currentUser } from "@/lib/auth";
+import { accountsAvailable } from "@/lib/accounts";
 
 export const dynamic = "force-dynamic";
 
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; unconfigured?: string }>;
+  searchParams: Promise<{ next?: string; unconfigured?: string; link?: string }>;
 }) {
-  const { next, unconfigured } = await searchParams;
+  const { next, unconfigured, link } = await searchParams;
   const user = await currentUser();
   if (user) redirect(next && next.startsWith("/") ? next : "/dashboard");
 
-  const configured = supabaseConfigured();
+  const configured = await accountsAvailable();
 
   return (
     <div className="min-h-screen bg-[var(--color-canvas)]">
@@ -32,7 +33,8 @@ export default async function SignInPage({
           <p className="eyebrow">Your account</p>
           <h1 className="h1 mt-3">Sign in to your plan.</h1>
           <p className="t-body mt-3 max-w-[46ch]">
-            One link by email, no password. Your plan is private to your account until you choose to share it.
+            A password, or a one-time link by email. Either way the plan is yours alone until you choose to
+            share it.
           </p>
 
           <ul className="mt-8 space-y-3">
@@ -55,13 +57,20 @@ export default async function SignInPage({
               <p className="label text-[var(--color-ember)]">Not configured</p>
               <p className="h2 mt-2">Accounts are switched off.</p>
               <p className="t-small mt-2">
-                This deployment has no Supabase URL or publishable key, so nobody can sign in. Set{" "}
-                <code className="rounded bg-white px-1">NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
-                <code className="rounded bg-white px-1">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> and redeploy.
+                This deployment has no account store, so nobody can sign in. Set{" "}
+                <code className="rounded bg-white px-1">SUPABASE_URL</code> and{" "}
+                <code className="rounded bg-white px-1">SUPABASE_SERVICE_KEY</code> and redeploy.
               </p>
             </div>
           ) : (
-            <SignInForm next={next && next.startsWith("/") ? next : "/dashboard"} />
+            <>
+              {link === "invalid" && (
+                <p className="mb-4 rounded-[12px] bg-[#fdf1ee] px-3 py-2 text-[12px] text-[var(--color-ember)]">
+                  That link has expired or was already used. Ask for a new one.
+                </p>
+              )}
+              <SignInForm next={next && next.startsWith("/") ? next : "/dashboard"} />
+            </>
           )}
 
           <p className="mt-5 text-[11px] leading-relaxed text-[var(--color-muted)]">

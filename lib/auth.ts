@@ -1,5 +1,7 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import { accountById, sessionAccount } from "./accounts";
+import { readSessionToken } from "./session";
 
 /**
  * Supabase auth, server side. The anon key is public by design; the service
@@ -43,7 +45,31 @@ function displayName(email: string, meta: Record<string, unknown> | undefined): 
     .trim();
 }
 
+/**
+ * The signed-in owner, from VIVO's own session cookie.
+ *
+ * Supabase stores the data; it is not the identity provider. The Supabase Auth
+ * path below is kept dormant (VIVO_AUTH=supabase) in case it is ever wanted
+ * back, but the product's sign-in is `/signin` → `vivo_users` + `vivo_sessions`.
+ */
 export async function currentUser(): Promise<SessionUser | null> {
+  if (process.env.VIVO_AUTH?.trim() === "supabase") return supabaseUser();
+
+  const token = await readSessionToken();
+  if (!token) return null;
+
+  const account = await sessionAccount(token);
+  if (!account) return null;
+
+  const fresh = account.name ? account : await accountById(account.id);
+  return {
+    id: account.id,
+    email: account.email,
+    name: fresh?.name?.trim() || displayName(account.email, undefined),
+  };
+}
+
+export async function supabaseUser(): Promise<SessionUser | null> {
   const client = await supabaseServer();
   if (!client) return null;
   const { data, error } = await client.auth.getUser();
