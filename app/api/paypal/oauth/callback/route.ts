@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { exchangeCode, paypalMode, paypalConfigured, userInfo, verifyState, PayPalError } from "@/lib/paypal";
 import { PAYPAL_COOKIE, cookieOptions, mintSid, readSid } from "@/lib/paypal-session";
 import { savePayPalConnection } from "@/lib/paypal-store";
+import { requireOwner } from "@/lib/scope";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,8 @@ export async function GET(request: Request) {
     const tokens = await exchangeCode(code, redirectUri);
     const identity = await userInfo(tokens.accessToken);
 
-    await savePayPalConnection({
+    const owner = await requireOwner();
+    await savePayPalConnection(owner.id, {
       sid,
       payerId: identity.payerId,
       email: identity.email,

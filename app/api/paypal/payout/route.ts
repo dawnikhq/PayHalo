@@ -12,6 +12,7 @@ import {
 import { clearFailures, clientKey, isLockedOut, registerFailure } from "@/lib/paypal-guard";
 import { listPayPalPayouts, recordPayPalPayout } from "@/lib/paypal-store";
 import { getReleaseLedger } from "@/lib/store";
+import { requireOwner } from "@/lib/scope";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -81,6 +82,7 @@ export async function POST(request: Request) {
   }
   clearFailures(who);
 
+  const owner = await requireOwner();
   const ledger = await getReleaseLedger();
   if (!ledger) {
     return NextResponse.json(
@@ -89,7 +91,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const existing = await listPayPalPayouts(ledger.claimId);
+  const existing = await listPayPalPayouts(owner.id, ledger.claimId);
   const settled = new Set(existing.filter((p) => p.status !== "failed").map((p) => p.beneficiaryId));
   const pending = ledger.rows.filter((row) => !settled.has(row.beneficiaryId));
 
@@ -114,7 +116,7 @@ export async function POST(request: Request) {
     );
 
     for (const row of pending) {
-      await recordPayPalPayout({
+      await recordPayPalPayout(owner.id, {
         claimId: ledger.claimId,
         beneficiaryId: row.beneficiaryId,
         email: row.email,
@@ -139,7 +141,7 @@ export async function POST(request: Request) {
     const message = error instanceof PayPalError ? error.message : error instanceof Error ? error.message : "Payout failed.";
 
     for (const row of pending) {
-      await recordPayPalPayout({
+      await recordPayPalPayout(owner.id, {
         claimId: ledger.claimId,
         beneficiaryId: row.beneficiaryId,
         email: row.email,

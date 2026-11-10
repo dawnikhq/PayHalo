@@ -1,18 +1,14 @@
 import type { StateDoc } from "@/lib/model";
 import type { Driver } from "./types";
 
-const TABLE = "hack1_state";
-const ID = "hack1";
+const TABLE = "vivo_docs";
 
 /**
  * Supabase Postgres driver — talks to PostgREST directly, no SDK.
  *
- * The whole document lives in one row (`id = 'hack1'`) as jsonb. Row level
- * security is on and no policies are defined, so only the service key (used
- * server-side only, never shipped to the browser) can read or write it.
- *
- * Expected env: SUPABASE_URL + SUPABASE_SERVICE_KEY (or the legacy
- * SUPABASE_SERVICE_ROLE_KEY name).
+ * One row per owner (`user_id`), the whole plan document as jsonb. Row level
+ * security is on with no policies, so only the service key — used server-side
+ * only, never shipped to the browser — can read or write a row.
  */
 export function supabaseDriver(): Driver | null {
   const url = (process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? "")
@@ -38,23 +34,23 @@ export function supabaseDriver(): Driver | null {
     kind: "supabase",
     label: "Supabase Postgres",
     durable: true,
-    async load() {
-      const res = await fetch(`${endpoint}?id=eq.${ID}&select=data`, {
+    async load(ownerId: string) {
+      const res = await fetch(`${endpoint}?user_id=eq.${encodeURIComponent(ownerId)}&select=doc`, {
         headers: baseHeaders,
         cache: "no-store",
       });
       if (!res.ok) throw new Error(`Supabase read failed (${res.status})`);
-      const rows = (await res.json()) as { data: StateDoc }[];
-      return rows[0]?.data ?? null;
+      const rows = (await res.json()) as { doc: StateDoc }[];
+      return rows[0]?.doc ?? null;
     },
-    async save(doc: StateDoc) {
-      const res = await fetch(`${endpoint}?on_conflict=id`, {
+    async save(ownerId: string, doc: StateDoc) {
+      const res = await fetch(`${endpoint}?on_conflict=user_id`, {
         method: "POST",
         headers: {
           ...baseHeaders,
           Prefer: "resolution=merge-duplicates,return=minimal",
         },
-        body: JSON.stringify([{ id: ID, data: doc, updated_at: new Date().toISOString() }]),
+        body: JSON.stringify([{ user_id: ownerId, doc, updated_at: new Date().toISOString() }]),
         cache: "no-store",
       });
       if (!res.ok) {

@@ -1,5 +1,5 @@
 import { getDriver } from "./storage";
-import { settle, seedDoc, type StateDoc } from "./model";
+import { emptyDoc, settle, type StateDoc } from "./model";
 import type { PayPalConnection, PayPalPayout, PayPalState } from "./types";
 
 /**
@@ -15,29 +15,29 @@ function paypalOf(doc: StateDoc): PayPalState {
   return doc.paypal;
 }
 
-async function read<T>(fn: (doc: StateDoc) => T): Promise<T> {
+async function read<T>(ownerId: string, fn: (doc: StateDoc) => T): Promise<T> {
   const driver = await getDriver();
-  const doc = (await driver.load()) ?? seedDoc();
+  const doc = (await driver.load(ownerId)) ?? emptyDoc({ id: ownerId, name: "", email: "" });
   return fn(doc);
 }
 
-async function write<T>(fn: (doc: StateDoc) => T): Promise<T> {
+async function write<T>(ownerId: string, fn: (doc: StateDoc) => T): Promise<T> {
   const driver = await getDriver();
-  const doc = (await driver.load()) ?? seedDoc();
+  const doc = (await driver.load(ownerId)) ?? emptyDoc({ id: ownerId, name: "", email: "" });
   /* keep the claim clock honest before we persist anything */
   settle(doc);
   const result = fn(doc);
-  await driver.save(doc);
+  await driver.save(ownerId, doc);
   return result;
 }
 
-export async function getPayPalConnection(sid: string | null): Promise<PayPalConnection | null> {
+export async function getPayPalConnection(ownerId: string, sid: string | null): Promise<PayPalConnection | null> {
   if (!sid) return null;
-  return read((doc) => paypalOf(doc).connections.find((c) => c.sid === sid) ?? null);
+  return read(ownerId, (doc) => paypalOf(doc).connections.find((c) => c.sid === sid) ?? null);
 }
 
-export async function savePayPalConnection(connection: PayPalConnection): Promise<void> {
-  await write((doc) => {
+export async function savePayPalConnection(ownerId: string, connection: PayPalConnection): Promise<void> {
+  await write(ownerId, (doc) => {
     const state = paypalOf(doc);
     state.connections = state.connections.filter((c) => c.sid !== connection.sid);
     state.connections.push(connection);
@@ -46,23 +46,23 @@ export async function savePayPalConnection(connection: PayPalConnection): Promis
   });
 }
 
-export async function clearPayPalConnection(sid: string): Promise<void> {
-  await write((doc) => {
+export async function clearPayPalConnection(ownerId: string, sid: string): Promise<void> {
+  await write(ownerId, (doc) => {
     const state = paypalOf(doc);
     state.connections = state.connections.filter((c) => c.sid !== sid);
   });
 }
 
-export async function listPayPalPayouts(claimId?: number): Promise<PayPalPayout[]> {
-  return read((doc) => {
+export async function listPayPalPayouts(ownerId: string, claimId?: number): Promise<PayPalPayout[]> {
+  return read(ownerId, (doc) => {
     const rows = paypalOf(doc).payouts;
     const scoped = claimId === undefined ? rows : rows.filter((p) => p.claimId === claimId);
     return [...scoped].sort((a, b) => b.id - a.id);
   });
 }
 
-export async function recordPayPalPayout(row: Omit<PayPalPayout, "id">): Promise<PayPalPayout> {
-  return write((doc) => {
+export async function recordPayPalPayout(ownerId: string, row: Omit<PayPalPayout, "id">): Promise<PayPalPayout> {
+  return write(ownerId, (doc) => {
     const state = paypalOf(doc);
     doc.seq += 1;
     const stored: PayPalPayout = { ...row, id: doc.seq };

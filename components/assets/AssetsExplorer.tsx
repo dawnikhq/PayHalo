@@ -62,7 +62,7 @@ export function AssetsExplorer({ assets }: { assets: Asset[] }) {
       <div className="mt-6 hidden grid-cols-[1.6fr_1fr_1fr_1fr_24px] gap-4 border-b border-[var(--color-line)] pb-2 md:grid">
         <p className="label">Account</p>
         <p className="label">Category</p>
-        <p className="label">Sample value</p>
+        <p className="label">Value</p>
         <p className="label">Plan status</p>
         <span />
       </div>

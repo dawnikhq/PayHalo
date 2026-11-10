@@ -6,13 +6,12 @@ import {
   addDocument,
   applyPlan,
   cancelClaim,
-  fastForward,
+  emptyDoc,
   removeAsset,
   removeBeneficiary,
   sealPlan,
   setAllocations,
   latestClaim,
-  seedDoc,
   setAvailability,
   settle,
   snapshotOf,
@@ -30,37 +29,64 @@ import {
 } from "./model";
 import type { StoredReport } from "./certs";
 import type { Snapshot } from "./types";
+import { currentUser, requireOwner, sharedOwner } from "./scope";
 
 export { SAFETY_WINDOW_DAYS, REVIEW_HOURS } from "./model";
 export type { Audience } from "./model";
 export type { PlanInput } from "./model";
 export type { BeneficiaryView, KeyholderView } from "./model";
 
+/**
+ * Every read is scoped to one owner's document. The owner id is the auth user
+ * id; a keyholder or beneficiary never gets an owner id — they present a signed
+ * share link, and only the redacted view builders run against it.
+ */
+
 type MutationResult = { ok: boolean; error?: string };
 
-async function loadDoc(): Promise<StateDoc> {
+async function loadDoc(ownerId: string, identity?: { name: string; email: string }): Promise<StateDoc> {
   const driver = await getDriver();
-  const existing = await driver.load();
+  const existing = await driver.load(ownerId);
   if (existing) return existing;
-  const seeded = seedDoc();
-  await driver.save(seeded);
-  return seeded;
+  return emptyDoc({ id: ownerId, name: identity?.name ?? "", email: identity?.email ?? "" });
 }
 
-async function withDoc(): Promise<{ doc: StateDoc; storage: Snapshot["storage"] }> {
-  const driver = await getDriver();
-  return { doc: await loadDoc(), storage: driver.kind };
+/** Owner-scoped load: the signed-in account, or a fresh empty plan. */
+async function ownerDoc(): Promise<{ ownerId: string; doc: StateDoc }> {
+  const user = await requireOwner();
+  return { ownerId: user.id, doc: await loadDoc(user.id, { name: user.name, email: user.email }) };
 }
 
 /**
- * Read the world, moving any elapsed clock first (the 72-hour registry check,
- * then the 14-day window). The owner's view never includes events they haven't
- * been notified about yet.
+ * The actor may be the signed-in owner or a keyholder holding a valid link.
+ * Only the keyholder flow uses this: filing and verifying a claim.
  */
+async function actorDoc(): Promise<{ ownerId: string; doc: StateDoc }> {
+  const user = await currentUser();
+  if (user) return { ownerId: user.id, doc: await loadDoc(user.id) };
+  const shared = await sharedOwner("keyholder");
+  if (shared) return { ownerId: shared, doc: await loadDoc(shared) };
+  throw new Error("This link is not valid.");
+}
+
+/** Share-link load: somebody else's plan, read-only, audience-checked. */
+async function sharedDoc(audience: Audience): Promise<StateDoc | null> {
+  if (audience === "owner") return null;
+  const ownerId = await sharedOwner(audience);
+  if (!ownerId) return null;
+  return loadDoc(ownerId);
+}
+
 export async function getSnapshot(audience: Audience = "owner"): Promise<Snapshot> {
+  if (audience !== "owner") {
+    const doc = await sharedDoc(audience);
+    if (!doc) throw new Error("This link is not valid.");
+    return { ...snapshotOf(doc, audience), storage: (await getDriver()).kind };
+  }
+
   const driver = await getDriver();
-  const doc = await loadDoc();
-  if (settle(doc)) await driver.save(doc);
+  const { ownerId, doc } = await ownerDoc();
+  if (settle(doc)) await driver.save(ownerId, doc);
   return { ...snapshotOf(doc, audience), storage: driver.kind };
 }
 
@@ -69,23 +95,24 @@ async function mutate(
   audience: Audience = "owner",
 ): Promise<MutationResult & { snapshot: Snapshot }> {
   const driver = await getDriver();
-  const doc = await loadDoc();
-  if (settle(doc)) await driver.save(doc);
+  const { ownerId, doc } = audience === "keyholder" ? await actorDoc() : await ownerDoc();
+  if (settle(doc)) await driver.save(ownerId, doc);
   const result = fn(doc);
-  if (result.ok) await driver.save(doc);
+  if (result.ok) await driver.save(ownerId, doc);
   return { ...result, snapshot: { ...snapshotOf(doc, audience), storage: driver.kind } };
 }
 
 export async function savePlan(input: PlanInput): Promise<Snapshot> {
   const driver = await getDriver();
+  const user = await requireOwner();
   const doc = applyPlan(input);
-  await driver.save(doc);
+  await driver.save(user.id, doc);
   return { ...snapshotOf(doc), storage: driver.kind };
 }
 
 /** Every document hash already filed on this plan — used to catch duplicates. */
 export async function existingHashes(): Promise<string[]> {
-  const doc = await loadDoc();
+  const { doc } = await ownerDoc();
   return doc.claims.map((c) => c.documentHash).filter(Boolean);
 }
 
@@ -104,32 +131,20 @@ export async function cancelClaimAction() {
   return mutate((doc) => cancelClaim(doc));
 }
 
-export async function fastForwardAction() {
-  return mutate((doc) => fastForward(doc), "keyholder");
-}
-
 export async function setAvailabilityAction(id: number, available: boolean) {
   return mutate((doc) => setAvailability(doc, id, available));
 }
 
-export async function resetDemo(): Promise<Snapshot> {
-  const driver = await getDriver();
-  const doc = seedDoc();
-  await driver.save(doc);
-  return { ...snapshotOf(doc), storage: driver.kind };
-}
-
 /**
- * Small convenience for the UI, and a real health check: it asks the driver
- * for the document so a misconfigured durable store is visible immediately
- * instead of failing on the first page load.
+ * Storage health for the sign-in screen: asks the driver for a document and
+ * reports whether the durable store answered.
  */
 export async function storageKind() {
   const driver = await getDriver();
   let ok = true;
   let error: string | undefined;
   try {
-    await driver.load();
+    await driver.load("00000000-0000-0000-0000-000000000000");
   } catch (e) {
     ok = false;
     error = e instanceof Error ? e.message : String(e);
@@ -138,7 +153,6 @@ export async function storageKind() {
 }
 
 export { latestClaim };
-
 
 /* ------------------------------------------------------- owner-side actions -- */
 
@@ -195,23 +209,28 @@ export async function sealPlanAction() {
   return mutate((doc) => sealPlan(doc));
 }
 
+/* ------------------------------------------------------------ shared views -- */
 
 /** Keyholder-scoped read: no balances, assets, recipient names or shares. */
 export async function getKeyholderView() {
-  const { doc } = await withDoc();
+  const doc = await sharedDoc("keyholder");
+  if (!doc) return null;
   if (settle(doc)) {
     const driver = await getDriver();
-    await driver.save(doc);
+    const ownerId = await sharedOwner("keyholder");
+    if (ownerId) await driver.save(ownerId, doc);
   }
   return keyholderView(doc);
 }
 
 /** Beneficiary-scoped read: only their own entitlement, and only after release. */
 export async function getBeneficiaryView() {
-  const { doc } = await withDoc();
+  const doc = await sharedDoc("beneficiary");
+  if (!doc) return null;
   if (settle(doc)) {
     const driver = await getDriver();
-    await driver.save(doc);
+    const ownerId = await sharedOwner("beneficiary");
+    if (ownerId) await driver.save(ownerId, doc);
   }
   return beneficiaryView(doc);
 }
@@ -236,13 +255,13 @@ export interface ReleaseLedger {
 
 /**
  * What a completed handover owes each recipient, joined to the email PayPal
- * needs. Returns null until the 14-day window has actually closed — the
- * payout run cannot be started early by calling the API directly.
+ * needs. Returns null until the 14-day window has actually closed — the payout
+ * run cannot be started early by calling the API directly.
  */
 export async function getReleaseLedger(): Promise<ReleaseLedger | null> {
   const driver = await getDriver();
-  const doc = await loadDoc();
-  if (settle(doc)) await driver.save(doc);
+  const { ownerId, doc } = await ownerDoc();
+  if (settle(doc)) await driver.save(ownerId, doc);
 
   const claim = latestClaim(doc);
   if (!claim || claim.status !== "distributed" || !claim.distributedAt) return null;

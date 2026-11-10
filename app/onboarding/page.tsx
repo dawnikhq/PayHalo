@@ -60,7 +60,7 @@ const STEPS = [
   {
     kicker: "Step two",
     title: "What would you be leaving behind?",
-    note: "Connections are simulated — these are demo balances.",
+    note: "You enter these figures yourself — VIVO never reads a provider balance.",
   },
   { kicker: "Step three", title: "Who inherits first?", note: "The person you would want it to reach without hesitation." },
   { kicker: "Step four", title: "And if they can't?", note: "A plan needs a second path. Split it however feels fair." },
@@ -329,7 +329,7 @@ export default function OnboardingPage() {
                     <p className="t-num mt-1 text-[26px] leading-none">{money(total)}</p>
                   </div>
                   <p className="t-meta">
-                    {connected.length} of {assets.length} included · simulated
+                    {connected.length} of {assets.length} included
                   </p>
                 </div>
               </div>
@@ -625,7 +625,7 @@ export default function OnboardingPage() {
                   </button>
                 </div>
                 <p className="t-meta mt-3 text-center">
-                  Prototype only. Sealing simulates the process; no legal instrument is created.
+                  Sealing records your instructions and starts the safety clock. It is not a will.
                 </p>
               </div>
             )}
@@ -646,7 +646,7 @@ export default function OnboardingPage() {
 
       <footer className="border-t border-[var(--color-line)] bg-[var(--color-surface)]">
         <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-1.5 px-5 pb-24 pt-5 sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:pb-20">
-          <p className="t-meta">Prototype flow · This walkthrough builds a demo plan. No legal document, notice or transfer is involved.</p>
+          <p className="t-meta">VIVO records instructions. It is not a will and does not replace legal advice.</p>
           <p className="font-[var(--font-display)] text-[11.5px] font-semibold text-[var(--color-forest)]">
             VIVO / Your legacy, considered.
           </p>

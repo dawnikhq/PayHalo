@@ -39,7 +39,7 @@ export function ProfileForm({ user }: { user: User }) {
     <form onSubmit={submit} className="card p-6 md:p-7">
       <h2 className="h2">Your details</h2>
       <p className="t-small mt-1">
-        Kept current so a safety notice can reach you — in this concept, notices are simulated.
+        Kept current so a safety notice can reach you. Never shown to a keyholder or beneficiary.
       </p>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2">

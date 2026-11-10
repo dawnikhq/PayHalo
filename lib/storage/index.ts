@@ -36,22 +36,22 @@ function guarded(primary: Driver): Driver {
     get durable() {
       return degraded ? false : primary.durable;
     },
-    async load() {
-      if (degraded) return backup.load();
+    async load(key) {
+      if (degraded) return backup.load(key);
       try {
-        return await primary.load();
+        return await primary.load(key);
       } catch (err) {
         degrade(err);
-        return backup.load();
+        return backup.load(key);
       }
     },
-    async save(doc) {
-      if (degraded) return backup.save(doc);
+    async save(key, doc) {
+      if (degraded) return backup.save(key, doc);
       try {
-        await primary.save(doc);
+        await primary.save(key, doc);
       } catch (err) {
         degrade(err);
-        await backup.save(doc);
+        await backup.save(key, doc);
       }
     },
   };

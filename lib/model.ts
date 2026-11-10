@@ -55,6 +55,26 @@ export interface StateDoc {
 
 const now = () => new Date().toISOString();
 
+/**
+ * A brand-new account: no assets, no people, no keyholder, nothing sealed.
+ * The app is empty until the owner puts something in it.
+ */
+export function emptyDoc(user: { id: string; name: string; email: string }): StateDoc {
+  const stamp = now();
+  return {
+    user: { id: 1, name: user.name || "New account", email: user.email || "" },
+    plan: { id: 2, userId: 1, status: "draft", sealedAt: null, updatedAt: stamp },
+    assets: [],
+    beneficiaries: [],
+    keyholder: null,
+    claims: [],
+    distributions: [],
+    documents: [],
+    events: [],
+    seq: 3,
+  };
+}
+
 export function totalCents(doc: StateDoc): number {
   return totalOf(doc.assets);
 }
@@ -82,7 +102,7 @@ export function orderedBeneficiaries(doc: StateDoc): Beneficiary[] {
   );
 }
 
-export type Audience = "owner" | "keyholder";
+export type Audience = "owner" | "keyholder" | "beneficiary";
 
 export function snapshotOf(
   doc: StateDoc,

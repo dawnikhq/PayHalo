@@ -9,6 +9,7 @@ import {
   PayPalError,
 } from "@/lib/paypal";
 import { readSid } from "@/lib/paypal-session";
+import { requireOwner } from "@/lib/scope";
 import { getPayPalConnection, listPayPalPayouts } from "@/lib/paypal-store";
 import { getReleaseLedger } from "@/lib/store";
 
@@ -20,11 +21,12 @@ export const dynamic = "force-dynamic";
  * is connected, never how to act as it.
  */
 export async function GET() {
+  const owner = await requireOwner();
   const sid = await readSid();
   const mode = paypalMode();
   const configured = paypalConfigured();
 
-  const connection = await getPayPalConnection(sid);
+  const connection = await getPayPalConnection(owner.id, sid);
   const expired = connection?.expiresAt ? Date.parse(connection.expiresAt) <= Date.now() : false;
 
   let payoutAccount:
@@ -52,7 +54,7 @@ export async function GET() {
   }
 
   const ledger = await getReleaseLedger();
-  const ledgerPayouts = ledger ? await listPayPalPayouts(ledger.claimId) : [];
+  const ledgerPayouts = ledger ? await listPayPalPayouts(owner.id, ledger.claimId) : [];
 
   return NextResponse.json({
     configured,

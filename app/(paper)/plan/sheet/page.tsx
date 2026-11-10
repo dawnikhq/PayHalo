@@ -53,7 +53,7 @@ export default async function SheetPage() {
           <div className="text-right text-[11px] leading-relaxed text-[var(--color-muted)]">
             <p>Ref {ref}</p>
             <p>Sealed {shortDate(s.plan.sealedAt)}</p>
-            <p>Sample total {money(s.totalCents)}</p>
+            <p>Total {money(s.totalCents)}</p>
           </div>
         </header>
 
@@ -179,7 +179,7 @@ export default async function SheetPage() {
               <tr className="border-b border-[var(--color-line)]">
                 <th className="label py-2">Account</th>
                 <th className="label py-2">Held with</th>
-                <th className="label py-2 text-right">Sample balance</th>
+                <th className="label py-2 text-right">Balance</th>
               </tr>
             </thead>
             <tbody>
@@ -214,8 +214,8 @@ export default async function SheetPage() {
         </div>
 
         <p className="mt-6 border-t border-[var(--color-line)] pt-4 text-[10px] leading-relaxed text-[var(--color-muted)]">
-          Simulation only · This document is a design artifact, not a legal instrument. No live connections,
-          notices, claims or transfers. VIVO never asks for passwords, private keys or recovery phrases.
+          This sheet records instructions, not a legal instrument. It is not a will and does not replace legal
+          advice. VIVO never asks for passwords, private keys or recovery phrases.
         </p>
       </article>
 

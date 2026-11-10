@@ -59,7 +59,7 @@ export default async function BeneficiariesPage() {
                 </div>
                 <p className="mt-5 border-t border-white/10 pt-4 text-[12px] text-[#b7cfbd]">
                   Primary beneficiary receives the full share if able to inherit, worth{" "}
-                  {money(Math.round((s.totalCents * primary.share) / 100))} in this simulation.
+                  {money(Math.round((s.totalCents * primary.share) / 100))} at today&apos;s recorded value.
                 </p>
               </>
             ) : (

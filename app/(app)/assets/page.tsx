@@ -63,8 +63,8 @@ export default async function AssetsPage() {
           </p>
         </div>
         <div className="card p-6">
-          <h2 className="h3">Connections are simulated</h2>
-          <p className="t-small mt-2">Balances, account links and access instructions use sample data in this concept.</p>
+          <h2 className="h3">You record what you hold</h2>
+          <p className="t-small mt-2">Balances are the figures you enter, so nothing is claimed on your behalf. Connect PayPal in Settings for a live payout account.</p>
         </div>
       </div>
     </Page>

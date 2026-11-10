@@ -1,7 +1,7 @@
 import type { StateDoc } from "@/lib/model";
 import type { Driver } from "./types";
 
-const KEY = "hack1:state";
+const PREFIX = "vivo:doc:";
 
 /**
  * Upstash Redis / Vercel KV REST driver (no SDK, no bundling surprises).
@@ -32,8 +32,8 @@ export function kvDriver(): Driver | null {
     kind: "kv",
     label: "Vercel KV / Upstash Redis",
     durable: true,
-    async load() {
-      const raw = await command(["GET", KEY]);
+    async load(ownerId: string) {
+      const raw = await command(["GET", `${PREFIX}${ownerId}`]);
       if (typeof raw !== "string" || !raw) return null;
       try {
         return JSON.parse(raw) as StateDoc;
@@ -41,8 +41,8 @@ export function kvDriver(): Driver | null {
         return null;
       }
     },
-    async save(doc: StateDoc) {
-      await command(["SET", KEY, JSON.stringify(doc)]);
+    async save(ownerId: string, doc: StateDoc) {
+      await command(["SET", `${PREFIX}${ownerId}`, JSON.stringify(doc)]);
     },
   };
 }

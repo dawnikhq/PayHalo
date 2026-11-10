@@ -20,7 +20,7 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
 
   const metrics: { label: string; value: string }[] = [];
   if (asset.kind === "business") {
-    if (asset.monthlyCents) metrics.push({ label: "Sample monthly revenue", value: money(asset.monthlyCents, false) });
+    if (asset.monthlyCents) metrics.push({ label: "Monthly revenue", value: money(asset.monthlyCents, false) });
     if (asset.customers) metrics.push({ label: "Customers", value: String(asset.customers) });
   } else if (asset.kind === "crypto") {
     metrics.push({ label: "Holdings", value: asset.detail || "—" });
@@ -63,7 +63,7 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
             {money(asset.balanceCents)}
           </p>
           <p className="mt-2 text-[12.5px] text-[#b7cfbd]">
-            Sample asset value · {share} of your digital estate
+            Recorded value · {share} of your digital estate
           </p>
 
           {metrics.length > 0 && (
@@ -142,7 +142,7 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
                 <li key={d.id} className="py-3 first:pt-0">
                   <p className="text-[13.5px] font-medium text-[var(--color-ink)]">{d.name}</p>
                   <p className="t-meta mt-0.5">
-                    {d.kind} · {(d.sizeKb / 1024).toFixed(1)} MB · Sample document
+                    {d.kind} · {(d.sizeKb / 1024).toFixed(1)} MB · Document
                   </p>
                 </li>
               ))}

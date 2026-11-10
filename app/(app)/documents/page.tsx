@@ -24,8 +24,7 @@ export default async function DocumentsPage() {
       <section className="card-mint mb-5 p-6">
         <h2 className="h3 text-[var(--color-forest)]">Guidance belongs here. Secrets do not.</h2>
         <p className="t-body mt-2 text-[#3c5a4e]">
-          Never upload passwords, private keys or wallet recovery phrases. All uploads in this concept are
-          simulated.
+          Never upload passwords, private keys or wallet recovery phrases. Documents are stored as records against your plan, never as credentials.
         </p>
       </section>
 
@@ -45,7 +44,7 @@ export default async function DocumentsPage() {
         <div className="card-forest p-6">
           <h2 className="h2 text-white">{s.documents.length} sample documents</h2>
           <p className="t-body mt-2 text-[#b7cfbd]">
-            No real uploads or downloads are connected. Sample records illustrate the intended experience.
+            Documents stay private while you are alive. Only what you mark for handover is ever released.
           </p>
         </div>
       </div>

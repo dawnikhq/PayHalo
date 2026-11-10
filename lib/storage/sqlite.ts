@@ -14,23 +14,23 @@ export async function sqliteDriver(): Promise<Driver | null> {
     fs.mkdirSync(dir, { recursive: true });
     const db = new DatabaseSync(path.join(dir, "hack1.db"));
     db.exec(
-      "CREATE TABLE IF NOT EXISTS state (id INTEGER PRIMARY KEY CHECK (id = 1), doc TEXT NOT NULL);",
+      "CREATE TABLE IF NOT EXISTS docs (owner TEXT PRIMARY KEY, doc TEXT NOT NULL);",
     );
 
-    const read = db.prepare("SELECT doc FROM state WHERE id = 1");
-    const write = db.prepare("INSERT OR REPLACE INTO state (id, doc) VALUES (1, ?)");
+    const read = db.prepare("SELECT doc FROM docs WHERE owner = ?");
+    const write = db.prepare("INSERT OR REPLACE INTO docs (owner, doc) VALUES (?, ?)");
 
     return {
       kind: "sqlite",
       label: "SQLite (local file)",
       durable: true,
-      async load() {
-        const row = read.get() as { doc?: string } | undefined;
+      async load(ownerId: string) {
+        const row = read.get(ownerId) as { doc?: string } | undefined;
         if (!row?.doc) return null;
         return JSON.parse(row.doc) as StateDoc;
       },
-      async save(doc: StateDoc) {
-        write.run(JSON.stringify(doc));
+      async save(ownerId: string, doc: StateDoc) {
+        write.run(ownerId, JSON.stringify(doc));
       },
     };
   } catch {

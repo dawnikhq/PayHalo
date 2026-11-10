@@ -266,10 +266,18 @@ export function AppShell({
               <span className="hidden text-[10.5px] font-semibold uppercase tracking-[0.18em] text-[#9aa8a2] sm:block">
                 Private by design
               </span>
-              <span className="pill badge-lime !h-[30px] gap-2 !text-[11.5px]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#7fb02a]" />
-                Simulated workspace
+              <span className="hidden items-center gap-2 text-[12px] text-[var(--color-muted)] sm:flex">
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-sage)]" />
+                Private workspace
               </span>
+              <form action="/auth/signout" method="post">
+                <button
+                  type="submit"
+                  className="rounded-full border border-[var(--color-line)] px-3 py-1.5 text-[11.5px] font-semibold text-[var(--color-muted)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink)]"
+                >
+                  Sign out
+                </button>
+              </form>
               <Link
                 href={role === "owner" ? "/help" : role === "keyholder" ? "/keyholder/support" : "/beneficiary/support"}
                 className="hidden items-center gap-1 text-[12.5px] font-semibold text-[var(--color-ink)] transition hover:text-[var(--color-brand)] sm:inline-flex"
@@ -284,7 +292,7 @@ export function AppShell({
 
         <footer className="mt-6 border-t border-[var(--color-line)] px-5 pb-24 pt-5 text-[11.5px] text-[var(--color-muted)] sm:px-8 sm:pb-20">
           <div className="mx-auto flex max-w-[1180px] flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
-            <p>{note ?? "Simulation only · No live connections, notices, claims or transfers."}</p>
+            <p>{note ?? "Your plan is private. Only you, and the people you invite with a link, can see any of it."}</p>
             <p className="font-[var(--font-display)] font-semibold tracking-[0.02em] text-[var(--color-forest)]">
               VIVO / Your legacy, considered.
             </p>

@@ -161,7 +161,7 @@ export function PayPalCard() {
           ) : (
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-dashed border-[var(--color-line-strong)] p-4">
               <p className="t-small max-w-[46ch]">
-                Connect the account that should be able to see this plan. Sandbox credentials only in this demo.
+                Connect the PayPal account this plan should pay from. VIVO asks for no password and no permissions over your money.
               </p>
               <a href="/api/paypal/oauth/start" className="btn btn-primary btn-sm">
                 Connect PayPal <span aria-hidden>→</span>

@@ -85,23 +85,8 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
       const blob = await res.blob();
       await checkFile(new File([blob], name, { type: blob.type || "application/pdf" }));
     } catch {
-      setError("Couldn't load the sample document.");
+      setError("Couldn't load that document.");
       setChecking(false);
-    }
-  }
-
-  async function post(url: string) {
-    setBusy(true);
-    setError(null);
-    try {
-      const res = await fetch(url, { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? "Something went wrong.");
-      await refresh();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
-    } finally {
-      setBusy(false);
     }
   }
 
@@ -213,9 +198,9 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
               A claim requires evidence and verification. It never releases assets immediately.
             </p>
             <button onClick={() => setIntake(true)} className="btn btn-primary mt-5 w-full">
-              Start a simulated claim
+              Start a claim
             </button>
-            <p className="t-meta mt-2.5">No real claim or notice will be sent.</p>
+            <p className="t-meta mt-2.5">Filing tells the account holder. Nothing is transferred.</p>
           </section>
         </div>
 
@@ -265,7 +250,7 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
                   : "Your part is complete."}
           </h1>
           <p className="t-body mt-2">
-            Simulation only · No real claim, verification or notification is created.
+            A claim notifies the account holder and starts a 72-hour registry check. Nothing is transferred by filing it.
           </p>
         </div>
         {stage === "none" && (
@@ -305,11 +290,11 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
                   onClick={() => setCode(view.keyholder?.accessCode ?? "")}
                   className="btn btn-secondary mb-[22px] shrink-0"
                 >
-                  Use demo code
+                  Use my access code
                 </button>
               </div>
               <p className="t-meta">
-                Demo key: <span className="font-semibold text-[var(--color-forest)]">{view.keyholder?.accessCode}</span>
+                Your access code: <span className="font-semibold text-[var(--color-forest)]">{view.keyholder?.accessCode}</span>
               </p>
 
               <h2 className="h3 mt-7">02 Supporting evidence</h2>
@@ -350,7 +335,7 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
                   }}
                 />
                 <p className="text-[13.5px] font-medium text-[var(--color-forest)]">
-                  {checking ? "Reading the document…" : file ? file.name : "Add sample supporting document"}
+                  {checking ? "Reading the document…" : file ? file.name : "Attach supporting document"}
                 </p>
                 <p className="t-meta mt-1">PDF, PNG or JPG · up to 4 MB · checked in memory, never stored</p>
               </div>
@@ -358,11 +343,11 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
               <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
                 <button
                   onClick={() =>
-                    void loadSample("/documents/ada-okafor-death-certificate.pdf", "ada-okafor-death-certificate.pdf")
+                    void loadSample("/documents/ada-okafor-death-certificate.pdf", "death-certificate.pdf")
                   }
                   className="text-[12px] font-semibold text-[var(--color-brand)] hover:underline"
                 >
-                  Use the sample certificate →
+                  Use a test certificate →
                 </button>
                 <button
                   onClick={() => void loadSample("/documents/gumroad-payout-receipt.pdf", "gumroad-payout-receipt.pdf")}
@@ -400,7 +385,7 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
                   disabled={!report || report.verdict === "rejected" || checking || busy}
                   className="btn btn-primary"
                 >
-                  {busy ? "Filing…" : "Simulate submission"}
+                  {busy ? "Filing…" : "File the claim"}
                 </button>
                 <p className="t-meta">No real service is connected.</p>
               </div>
@@ -466,16 +451,13 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
                 {error && <p className="field-error mt-4">{error}</p>}
 
                 <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-                  <button onClick={() => post("/api/claim/fast-forward")} disabled={busy} className="btn btn-primary flex-1">
-                    {busy ? "Working…" : "Fast-forward the 72 hours (demo)"}
+                  <button onClick={() => void refresh()} disabled={busy} className="btn btn-secondary flex-1">
+                    {busy ? "Checking…" : "Check the status again"}
                   </button>
-                  <Link href="/dashboard" className="btn btn-secondary flex-1">
-                    View owner side
-                  </Link>
                 </div>
                 <p className="t-meta mt-3">
-                  In the demo this skips the registry check. A live system would wait for the registrar, and the
-                  keyholder could never hurry it along.
+                  The registry check runs for 72 hours and cannot be hurried — not by you, and not by VIVO. You will see
+                  the result here.
                 </p>
               </div>
             </section>
@@ -530,15 +512,13 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
                 {error && <p className="field-error mt-4">{error}</p>}
 
                 <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-                  <button onClick={() => post("/api/claim/fast-forward")} disabled={busy} className="btn btn-primary flex-1">
-                    {busy ? "Releasing…" : "Fast-forward to day 14 (demo)"}
+                  <button onClick={() => void refresh()} disabled={busy} className="btn btn-secondary flex-1">
+                    {busy ? "Checking…" : "Check the status again"}
                   </button>
-                  <Link href="/dashboard" className="btn btn-secondary flex-1">
-                    View owner side
-                  </Link>
                 </div>
                 <p className="t-meta mt-3">
-                  In the demo, fast-forward jumps the clock. A live system would never allow this.
+                  The window runs for 14 full days and nothing can shorten it, including VIVO. If the account holder
+                  responds, this page changes to say so.
                 </p>
               </div>
             </section>

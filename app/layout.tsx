@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import "@fontsource-variable/inter";
 import "@fontsource-variable/manrope";
 import "./globals.css";
-import { DemoDock } from "@/components/DemoDock";
 
 export const metadata: Metadata = {
   title: "VIVO — Your legacy, considered.",
@@ -22,7 +21,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Skip to content
         </a>
         {children}
-        <DemoDock />
       </body>
     </html>
   );

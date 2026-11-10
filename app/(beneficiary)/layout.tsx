@@ -8,7 +8,7 @@ export default async function BeneficiaryLayout({ children }: { children: React.
   // Only this beneficiary's own view reaches this layout.
   const view = await getBeneficiaryView();
   return (
-    <AppShell role="beneficiary" name={view.person.name} note={footerNote()}>
+    <AppShell role="beneficiary" name={view?.person.name ?? "Beneficiary"} note={footerNote()}>
       {children}
     </AppShell>
   );

@@ -100,7 +100,7 @@ export default async function DashboardPage({
             {money(s.totalCents)}
           </p>
           <p className="mt-2 text-[12.5px] text-[#b7cfbd]">
-            {s.assets.length} account{s.assets.length === 1 ? "" : "s"} · USD equivalent · Sample balances
+            {s.assets.length} account{s.assets.length === 1 ? "" : "s"} · USD equivalent · as you recorded them
           </p>
 
           <div className="mt-7 flex h-2.5 gap-[3px]" role="img" aria-label="Asset share of the estate">
@@ -130,7 +130,7 @@ export default async function DashboardPage({
                 {a.label.split(" ")[0]} {pct(s.totalCents ? (a.balanceCents / s.totalCents) * 100 : 0)}
               </span>
             ))}
-            <span className="t-meta ml-auto text-white/35">Simulated</span>
+            <span className="t-meta ml-auto text-white/35">Your record</span>
           </div>
         </section>
 
@@ -176,7 +176,7 @@ export default async function DashboardPage({
 
           <div className="mt-6 grid grid-cols-[1fr_auto] gap-4 border-b border-[var(--color-line)] pb-2">
             <p className="label">Account</p>
-            <p className="label">Sample value</p>
+            <p className="label">Value</p>
           </div>
           <ul className="divide-y divide-[var(--color-line)]">
             {s.assets.map((a) => (

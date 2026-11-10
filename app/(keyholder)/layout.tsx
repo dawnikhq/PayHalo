@@ -8,7 +8,7 @@ export default async function KeyholderLayout({ children }: { children: React.Re
   // Only the redacted keyholder view reaches this layout.
   const view = await getKeyholderView();
   return (
-    <AppShell role="keyholder" name={view.keyholder?.name ?? "Keyholder"} note={footerNote()}>
+    <AppShell role="keyholder" name={view?.keyholder?.name ?? "Keyholder"} note={footerNote()}>
       {children}
     </AppShell>
   );

@@ -57,7 +57,7 @@ export function DocumentsTable({ documents }: { documents: DocumentRow[] }) {
               <div className="min-w-0">
                 <p className="truncate text-[13.5px] font-medium text-[var(--color-ink)]">{d.name}</p>
                 <p className="t-meta mt-0.5">
-                  {d.kind} · {(d.sizeKb / 1024).toFixed(1)} MB · Sample document
+                  {d.kind} · {(d.sizeKb / 1024).toFixed(1)} MB · Document
                 </p>
               </div>
             </div>

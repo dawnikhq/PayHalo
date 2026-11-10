@@ -2,7 +2,7 @@ import type { StateDoc } from "@/lib/model";
 import type { Driver } from "./types";
 
 declare global {
-  var __hack1Memory: StateDoc | null | undefined;
+  var __vivoMemory: Map<string, StateDoc> | undefined;
 }
 
 /**
@@ -15,11 +15,12 @@ export function memoryDriver(): Driver {
     kind: "memory",
     label: "In-memory (resets per instance)",
     durable: false,
-    async load() {
-      return global.__hack1Memory ?? null;
+    async load(ownerId: string) {
+      return global.__vivoMemory?.get(ownerId) ?? null;
     },
-    async save(doc: StateDoc) {
-      global.__hack1Memory = doc;
+    async save(ownerId: string, doc: StateDoc) {
+      if (!global.__vivoMemory) global.__vivoMemory = new Map();
+      global.__vivoMemory.set(ownerId, doc);
     },
   };
 }

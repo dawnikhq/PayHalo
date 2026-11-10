@@ -40,7 +40,7 @@ const COPY: Record<AssetKind, { name: string; placeholder: string; provider: str
     detail: "Short description",
     detailPlaceholder: "$4,100 MRR · 612 customers",
     url: "Business URL",
-    urlPlaceholder: "https://your-business.demo",
+    urlPlaceholder: "https://your-business.com",
   },
 };
 
@@ -267,10 +267,10 @@ export function AssetForm({ asset }: { asset?: Asset }) {
         </div>
 
         <div className="card-warn p-6">
-          <h3 className="h3 text-[#6a4712]">Simulation, clearly.</h3>
+          <h3 className="h3 text-[#6a4712]">Descriptions, not credentials.</h3>
           <p className="mt-2 text-[12.5px] leading-relaxed text-[#7a5418]">
-            This concept saves sample asset details only. It does not connect to providers, validate ownership
-            or initiate transfers.
+            Record what the account is and how to find it. Never paste a password, private key or recovery phrase —
+            VIVO cannot use them and will not store them.
           </p>
         </div>
 

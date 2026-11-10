@@ -2,6 +2,9 @@ import Link from "next/link";
 import { getSnapshot } from "@/lib/store";
 import { Page } from "@/components/ui";
 import { ProfileForm } from "@/components/account/ProfileForm";
+import { ShareLinks } from "@/components/account/ShareLinks";
+import { requireOwner } from "@/lib/scope";
+import { shareToken } from "@/lib/share";
 import { PayPalCard } from "@/components/account/PayPalCard";
 import { CopyButton } from "@/components/CopyButton";
 import { Avatar } from "@/components/Avatar";
@@ -32,6 +35,7 @@ export default async function SettingsPage({
   searchParams: Promise<{ paypal?: string; reason?: string }>;
 }) {
   const s = await getSnapshot();
+  const owner = await requireOwner();
   const { paypal, reason } = await searchParams;
 
   return (
@@ -61,6 +65,22 @@ export default async function SettingsPage({
       <div className="grid gap-5 lg:grid-cols-[1.55fr_1fr]">
         <div className="space-y-5">
           <ProfileForm user={s.user} />
+
+          <section className="card p-6 md:p-7">
+            <p className="eyebrow">Account</p>
+            <h2 className="h2 mt-2">Signed in as</h2>
+            <p className="mt-2 break-all text-[13px] font-medium text-[var(--color-ink)]">{owner.email}</p>
+            <p className="t-small mt-1">
+              Sign-in is by emailed link. Nothing is shared with a keyholder or beneficiary unless you send them a link
+              below.
+            </p>
+          </section>
+
+          <ShareLinks
+            keyholderToken={shareToken(owner.id, "keyholder")}
+            beneficiaryToken={shareToken(owner.id, "beneficiary")}
+            hasKeyholder={Boolean(s.keyholder)}
+          />
 
           <PayPalCard />
 
@@ -144,10 +164,10 @@ export default async function SettingsPage({
               recovery phrase — because none are ever collected.
             </p>
             <div className="my-5 h-px bg-white/12" />
-            <h3 className="h3 text-[var(--color-lime)]">Sessions are simulated.</h3>
+            <h3 className="h3 text-[var(--color-lime)]">Sessions are real.</h3>
             <p className="t-body mt-2 text-[#b7cfbd]">
-              This workspace has no live authentication. Role separation is demonstrated through the data each
-              portal receives.
+              You are signed in with an emailed link. Each portal is scoped on the server: a keyholder link carries no
+              balances, a beneficiary link carries nothing until the window closes.
             </p>
           </section>
 
@@ -169,7 +189,7 @@ export default async function SettingsPage({
             <h2 className="h3">Storage in this build</h2>
             <p className="t-small mt-1.5">
               State is served by <span className="font-semibold text-[var(--color-ink)]">{s.storage}</span>. In
-              the demo, all records are sample data and can be reset at any time.
+              your records are yours alone and can be edited or removed at any time.
             </p>
             <Link href="/plan/sheet" className="mt-3 inline-block text-[12.5px] font-semibold text-[var(--color-brand)]">
               View the instruction sheet →

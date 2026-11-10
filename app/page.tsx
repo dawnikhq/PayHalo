@@ -49,7 +49,7 @@ export default function LandingPage() {
           </nav>
           <div className="flex items-center gap-2">
             <Link href="/dashboard" className="btn btn-secondary btn-sm hidden sm:inline-flex">
-              Open the demo
+              Open your dashboard
             </Link>
             <Link href="/onboarding" className="btn btn-primary btn-sm">
               Start a plan
@@ -107,8 +107,8 @@ export default function LandingPage() {
 
             <div className="mt-7 grid grid-cols-2 gap-3 border-t border-white/10 pt-5">
               <div>
-                <p className="t-num text-[24px] leading-none text-white">$26,330.70</p>
-                <p className="mt-1.5 text-[11px] text-[#8fb098]">Sample estate in the demo</p>
+                <p className="t-num text-[24px] leading-none text-white">0</p>
+                <p className="mt-1.5 text-[11px] text-[#8fb098]">Passwords VIVO ever asks for</p>
               </div>
               <div>
                 <p className="t-num text-[24px] leading-none text-[var(--color-lime)]">14</p>

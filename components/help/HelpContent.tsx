@@ -24,7 +24,7 @@ const FAQ = [
   },
   {
     q: "Is any of this connected to real accounts?",
-    a: "No. Balances, verification, notices and transfers are all simulated in this concept.",
+    a: "Balances are the figures you enter. Documents are verified on upload, and a release only runs through PayPal once you enable it.",
   },
 ];
 
@@ -78,8 +78,8 @@ export function HelpContent({
           <section className="card-mint p-6">
             <h2 className="h3 text-[var(--color-forest)]">About this experience</h2>
             <p className="t-body mt-2 text-[#3c5a4e]">
-              This is a high-fidelity interface for a considered digital legacy. Accounts, connections,
-              balances, claims, notices and transfers are simulated.
+              VIVO records your instructions and runs a verified handover. Balances are the figures you enter; the only live
+              connection is PayPal, and only if you enable it.
             </p>
             <p className="t-body mt-3 text-[#3c5a4e]">
               VIVO helps organise instructions. It does not execute legal documents or replace professional

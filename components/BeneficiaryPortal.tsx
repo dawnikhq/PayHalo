@@ -20,13 +20,13 @@ export function BeneficiaryPortal({ view }: { view: BeneficiaryView }) {
       ? {
           eyebrow: "Beneficiary / Completed handover",
           title: "What was left for you.",
-          body: "Sample scenario · Verification and the full safety window are complete.",
+          body: "Verified · the full safety window has closed.",
         }
       : phase === "window"
         ? {
             eyebrow: "Beneficiary / Safety window",
             title: "A careful step, at a time.",
-            body: `${view.person.name.split(" ")[0]}, this sample scenario is awaiting completion of the safety window.`,
+            body: `${view.person.name.split(" ")[0]}, this page opens only when the safety window closes without a response.`,
           }
         : {
             eyebrow: "Beneficiary",
@@ -44,10 +44,10 @@ export function BeneficiaryPortal({ view }: { view: BeneficiaryView }) {
         </div>
         {phase === "released" ? (
           <Badge tone="lime" dot>
-            Simulated release
+            Release complete
           </Badge>
         ) : (
-          <Badge tone="warn">Simulation</Badge>
+          <Badge tone="warn">Private</Badge>
         )}
       </header>
 
@@ -174,7 +174,7 @@ export function BeneficiaryPortal({ view }: { view: BeneficiaryView }) {
             <section className="card p-6">
               <h2 className="h3">You do not need to do anything right now.</h2>
               <p className="t-small mt-1.5">
-                This is a simulated waiting state. No real claim, clock or transfer is running.
+                Nothing is visible here — not the estate, not the other people named, not your share — until the window closes.
               </p>
               <Link href="/help" className="btn btn-secondary btn-sm mt-3">
                 Questions? Get support
@@ -193,7 +193,7 @@ export function BeneficiaryPortal({ view }: { view: BeneficiaryView }) {
                 {money(entitlement.amountCents)}
               </p>
               <p className="mt-3 text-[12.5px] text-[#b7cfbd]">
-                {entitlement.share}% primary share · Sample USD equivalent
+                {entitlement.share}% share · USD equivalent
               </p>
               <p className="mt-6 border-t border-white/10 pt-4 text-[11.5px] text-[#8fb098]">
                 Visible to you only · Other recipients are not shown
@@ -232,7 +232,7 @@ export function BeneficiaryPortal({ view }: { view: BeneficiaryView }) {
                 <p className="t-body mt-2">No documents were shared with beneficiaries.</p>
               )}
               <p className="t-meta mt-4 border-t border-[var(--color-line)] pt-3">
-                Sample documents only. No real downloads are connected, and VIVO never holds passwords, keys or
+                Only the documents the account holder marked for handover appear here. VIVO never holds passwords, keys or
                 recovery phrases.
               </p>
             </section>
@@ -269,7 +269,7 @@ export function BeneficiaryPortal({ view }: { view: BeneficiaryView }) {
                 View instructions
               </a>
               <p className="t-meta mt-3">
-                Any transfer or provider recovery shown here is simulated, not executed.
+                A transfer is only executed when the account holder has connected a payout account and the release has run.
               </p>
             </section>
 
@@ -281,8 +281,8 @@ export function BeneficiaryPortal({ view }: { view: BeneficiaryView }) {
                 <li className="t-small">Eligible {clockLabel(view.distributedAt)}</li>
               </ol>
               <p className="t-meta mt-3">
-                Example handover completed: {shortDate(view.distributedAt)}. This simulation shows only your own
-                share.
+                Handover completed {shortDate(view.distributedAt)}. You are seeing only your own share — never the
+                estate, and never anyone else&apos;s.
               </p>
             </section>
           </aside>
