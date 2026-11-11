@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { authorizeUrl, paypalConfigured, signState } from "@/lib/paypal";
+import { authorizeUrl, paypalConfigured, paypalRedirectUri, signState } from "@/lib/paypal";
 import { PAYPAL_COOKIE, cookieOptions, mintSid, readSid } from "@/lib/paypal-session";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   }
 
   const sid = (await readSid()) ?? mintSid();
-  const redirectUri = process.env.PAYPAL_REDIRECT_URI?.trim() || new URL("/api/paypal/callback", request.url).toString();
+  const redirectUri = paypalRedirectUri(request.url);
 
   const response = NextResponse.redirect(authorizeUrl(redirectUri, signState(sid)));
   response.cookies.set(PAYPAL_COOKIE, sid, cookieOptions());

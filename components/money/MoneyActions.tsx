@@ -12,7 +12,7 @@ const label = "block text-[11px] font-semibold uppercase tracking-[0.12em] text-
  * neither can move money without the owner's release passcode and a
  * same-origin request, and a transfer is only sent after the review step.
  */
-export function MoneyActions() {
+export function MoneyActions({ flush = false }: { flush?: boolean } = {}) {
   const [panel, setPanel] = useState<"send" | "receive" | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +36,7 @@ export function MoneyActions() {
   }
 
   return (
-    <section className="card mb-5 p-5 sm:p-6">
+    <section className={`card p-5 sm:p-6 ${flush ? "" : "mb-5"}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="h3">Money</h2>

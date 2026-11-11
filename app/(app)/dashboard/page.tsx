@@ -52,8 +52,6 @@ export default async function DashboardPage({
         </Link>
       </header>
 
-      <MoneyActions />
-
       {sealed && (
         <div className="rise card-mint mb-5 flex items-start gap-3 p-5">
           <span aria-hidden className="text-[15px] text-[var(--color-brand)]">✓</span>
@@ -98,7 +96,7 @@ export default async function DashboardPage({
       <div className="grid gap-5 lg:grid-cols-[1.55fr_1fr]">
         {/* estate */}
         <section className="card-forest p-6 md:p-7">
-          <p className="label">Assets in your plan</p>
+          <p className="label">Assets</p>
           <p className="t-num mt-2.5 text-[clamp(2.1rem,4.2vw,2.9rem)] leading-none text-white">
             {money(s.totalCents)}
           </p>
@@ -165,6 +163,10 @@ export default async function DashboardPage({
             {nextStep ? "Resume review" : "Review plan"} <span aria-hidden>→</span>
           </Link>
         </section>
+      </div>
+
+      <div className="mt-5">
+        <MoneyActions flush />
       </div>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[1.55fr_1fr]">

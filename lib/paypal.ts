@@ -587,6 +587,116 @@ export function verifyState(state: string): string | null {
  * nothing leaves the app; once it is, the sentence changes rather than quietly
  * becoming false.
  */
+
+/* --------------------------------------------------------------- diagnosis */
+
+/**
+ * The one redirect URI we send and expect back.
+ *
+ * PayPal only accepts a URI that is registered on the app for "Log in with
+ * PayPal", so this is pinned by PAYPAL_REDIRECT_URI in production and derived
+ * from the request host everywhere else. The route it points at exists at
+ * /api/paypal/callback (and /api/paypal/oauth/callback for older links).
+ */
+export function paypalRedirectUri(requestUrl: string): string {
+  const configured = process.env.PAYPAL_REDIRECT_URI?.trim();
+  if (configured) return configured;
+  return new URL("/api/paypal/callback", requestUrl).toString();
+}
+
+export interface PayPalDiagnosis {
+  mode: PayPalMode;
+  api: string;
+  configured: boolean;
+  clientIdShape: string;
+  secretShape: string;
+  redirectUri: string;
+  token: { ok: boolean; status: number; message: string };
+  balances: { ok: boolean; status: number; message: string };
+  payoutCapability: { ok: boolean; status: number; message: string };
+  verdict: string;
+}
+
+const shape = (value: string) =>
+  value ? `${value.length} chars, starts ${value.slice(0, 6)}…, ends …${value.slice(-4)}` : "missing";
+
+/**
+ * Ask PayPal, rather than guessing. This is what the "Test connection" button
+ * calls: it proves whether the stored client id and secret authenticate, and
+ * which capabilities the app actually has.
+ */
+export async function diagnosePayPal(requestUrl: string): Promise<PayPalDiagnosis> {
+  const mode = paypalMode();
+  const id = clientId();
+  const secret = clientSecret();
+
+  const result: PayPalDiagnosis = {
+    mode,
+    api: API[mode],
+    configured: Boolean(id && secret),
+    clientIdShape: shape(id),
+    secretShape: shape(secret),
+    redirectUri: paypalRedirectUri(requestUrl),
+    token: { ok: false, status: 0, message: "not attempted" },
+    balances: { ok: false, status: 0, message: "not attempted" },
+    payoutCapability: { ok: false, status: 0, message: "not attempted" },
+    verdict: "",
+  };
+
+  if (!id || !secret) {
+    result.verdict = "No client id or secret is set, so nothing can call PayPal.";
+    return result;
+  }
+
+  const tokenResult = await tokenRequest({ grant_type: "client_credentials" }).catch((error: unknown) => ({
+    ok: false as const,
+    status: 0,
+    message: error instanceof Error ? error.message : "request failed",
+  }));
+
+  result.token = { ok: tokenResult.ok, status: tokenResult.ok ? 200 : tokenResult.status, message: tokenResult.ok ? "authenticated" : tokenResult.message };
+
+  if (!tokenResult.ok) {
+    result.verdict =
+      "PayPal rejected the client id and secret pair. Regenerate the secret on the same REST app the client id belongs to, for the " +
+      mode +
+      " environment, and set both variables together.";
+    return result;
+  }
+
+  const token = tokenResult.token;
+
+  const balanceRes = await fetch(`${API[mode]}/v1/reporting/balances?currency_code=USD`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+    cache: "no-store",
+  }).catch(() => null);
+  result.balances = balanceRes
+    ? {
+        ok: balanceRes.ok,
+        status: balanceRes.status,
+        message: balanceRes.ok ? "read" : (await balanceRes.text().catch(() => "")).slice(0, 200) || `HTTP ${balanceRes.status}`,
+      }
+    : { ok: false, status: 0, message: "request failed" };
+
+  const payoutRes = await fetch(`${API[mode]}/v1/payments/payouts?page_size=1`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+    cache: "no-store",
+  }).catch(() => null);
+  result.payoutCapability = payoutRes
+    ? {
+        ok: payoutRes.ok,
+        status: payoutRes.status,
+        message: payoutRes.ok ? "payouts reachable" : (await payoutRes.text().catch(() => "")).slice(0, 200) || `HTTP ${payoutRes.status}`,
+      }
+    : { ok: false, status: 0, message: "request failed" };
+
+  result.verdict = result.payoutCapability.ok
+    ? "Credentials work and payouts are reachable."
+    : "Credentials work, but this app cannot reach payouts. Enable the Payouts capability on the REST app (and confirm the business account is verified).";
+
+  return result;
+}
+
 export function footerNote(): string {
   if (!paypalConfigured()) {
     return "Your plan is private. Balances are what you record; no provider is connected.";

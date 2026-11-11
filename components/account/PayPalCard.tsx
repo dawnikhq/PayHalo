@@ -28,6 +28,19 @@ export function PayPalCard() {
   const [passcode, setPasscode] = useState("");
   const [note, setNote] = useState<{ tone: "ok" | "bad"; body: string } | null>(null);
   const [amount, setAmount] = useState("50");
+  const [diagnosis, setDiagnosis] = useState<
+    | {
+        mode: string;
+        api: string;
+        redirectUri: string;
+        token: { ok: boolean; status: number; message: string };
+        balances: { ok: boolean; status: number; message: string };
+        payoutCapability: { ok: boolean; status: number; message: string };
+        verdict: string;
+      }
+    | { error: string }
+    | null
+  >(null);
 
   const load = useCallback(async () => {
     try {
@@ -55,6 +68,20 @@ export function PayPalCard() {
       setNote({ tone: "ok", body: `Added ${funded} USD to the release account.` });
     }
   }, []);
+
+  async function testConnection() {
+    setBusy("diagnose");
+    setDiagnosis(null);
+    try {
+      const res = await fetch("/api/paypal/diagnose", { cache: "no-store" });
+      const data = (await res.json()) as Record<string, unknown>;
+      setDiagnosis(res.ok ? (data as never) : { error: (data.error as string) ?? "PayPal did not answer." });
+    } catch {
+      setDiagnosis({ error: "Could not reach the diagnostic route." });
+    } finally {
+      setBusy(null);
+    }
+  }
 
   async function disconnect() {
     setBusy("disconnect");
@@ -138,15 +165,53 @@ export function PayPalCard() {
           <p className="eyebrow">Connected account</p>
           <h2 className="h2 mt-2">PayPal</h2>
         </div>
-        <span className={`pill ${status?.connection ? "badge-lime" : "badge-neutral"}`}>
-          {status === null ? "Checking…" : status.connection ? `Connected · ${modeLabel.toLowerCase()}` : "Not connected"}
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={`pill ${status?.connection ? "badge-lime" : "badge-neutral"}`}>
+            {status === null ? "Checking…" : status.connection ? `Connected · ${modeLabel.toLowerCase()}` : "Not connected"}
+          </span>
+          <button
+            onClick={testConnection}
+            disabled={busy !== null}
+            className="text-[12.5px] font-semibold text-[var(--color-brand)] transition hover:underline disabled:opacity-50"
+          >
+            {busy === "diagnose" ? "Testing…" : "Test connection"}
+          </button>
+        </div>
       </div>
 
       <p className="t-small mt-2 max-w-[62ch]">
         PayHalo reads nothing about your money and never asks for a password. Connecting only proves which PayPal account is
         yours; the handover payout is sent from the plan&apos;s own business account, in {modeLabel.toLowerCase()} mode.
       </p>
+
+      {diagnosis && (
+        <div className="mt-4 rounded-[14px] border border-[var(--color-line-strong)] bg-[#fbfdfb] p-4">
+          {"error" in diagnosis ? (
+            <p className="text-[12.5px] font-semibold text-[var(--color-ember)]">{diagnosis.error}</p>
+          ) : (
+            <>
+              <p className="text-[12.5px] font-semibold text-[var(--color-ink)]">{diagnosis.verdict}</p>
+              <ul className="mt-2 space-y-1 text-[11.5px] text-[var(--color-muted)]">
+                <li>
+                  <strong className="text-[var(--color-ink)]">Sign-in with PayPal:</strong>{" "}
+                  {diagnosis.token.ok ? "credentials accepted" : `rejected — ${diagnosis.token.message}`}
+                </li>
+                <li>
+                  <strong className="text-[var(--color-ink)]">Balances:</strong>{" "}
+                  {diagnosis.balances.ok ? "readable" : `not readable — ${diagnosis.balances.message}`}
+                </li>
+                <li>
+                  <strong className="text-[var(--color-ink)]">Payouts:</strong>{" "}
+                  {diagnosis.payoutCapability.ok ? "reachable" : `not reachable — ${diagnosis.payoutCapability.message}`}
+                </li>
+                <li className="break-all">
+                  <strong className="text-[var(--color-ink)]">Return URL to register:</strong> {diagnosis.redirectUri}
+                </li>
+              </ul>
+            </>
+          )}
+        </div>
+      )}
 
       {status === null && <div className="mt-5 h-16 animate-pulse rounded-[14px] bg-[#f6f9f5]" />}
 
