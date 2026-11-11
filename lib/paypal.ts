@@ -114,8 +114,9 @@ function basicAuth(): string {
 
 async function tokenRequest(
   body: Record<string, string>,
+  mode: PayPalMode = paypalMode(),
 ): Promise<{ ok: true; token: string; expiresIn: number; scope: string | null } | { ok: false; status: number; message: string }> {
-  const res = await fetch(`${API[paypalMode()]}/v1/oauth2/token`, {
+  const res = await fetch(`${API[mode]}/v1/oauth2/token`, {
     method: "POST",
     headers: {
       Authorization: basicAuth(),
@@ -614,6 +615,8 @@ export interface PayPalDiagnosis {
   token: { ok: boolean; status: number; message: string };
   balances: { ok: boolean; status: number; message: string };
   payoutCapability: { ok: boolean; status: number; message: string };
+  /** Did the same credentials work against the other PayPal environment? */
+  otherEnvironment: { mode: PayPalMode; ok: boolean; message: string } | null;
   verdict: string;
 }
 
@@ -640,6 +643,7 @@ export async function diagnosePayPal(requestUrl: string): Promise<PayPalDiagnosi
     token: { ok: false, status: 0, message: "not attempted" },
     balances: { ok: false, status: 0, message: "not attempted" },
     payoutCapability: { ok: false, status: 0, message: "not attempted" },
+    otherEnvironment: null,
     verdict: "",
   };
 
@@ -657,10 +661,29 @@ export async function diagnosePayPal(requestUrl: string): Promise<PayPalDiagnosi
   result.token = { ok: tokenResult.ok, status: tokenResult.ok ? 200 : tokenResult.status, message: tokenResult.ok ? "authenticated" : tokenResult.message };
 
   if (!tokenResult.ok) {
-    result.verdict =
-      "PayPal rejected this client id and secret for the " +
-      mode +
-      " environment. The usual cause is credentials from the other tab: a Live id pair cannot authenticate against sandbox (or the reverse), and a secret only works with the app that issued it. Copy the Client ID and Secret from one app, in one environment, at the same moment.";
+    /* The classic mistake is copying the Live pair while the app runs in
+       sandbox (or the reverse). Ask the other environment directly. */
+    const other: PayPalMode = mode === "sandbox" ? "live" : "sandbox";
+    const probe = await tokenRequest({ grant_type: "client_credentials" }, other).catch((error: unknown) => ({
+      ok: false as const,
+      status: 0,
+      message: error instanceof Error ? error.message : "request failed",
+    }));
+
+    result.otherEnvironment = {
+      mode: other,
+      ok: probe.ok,
+      message: probe.ok ? "credentials accepted" : probe.message,
+    };
+
+    result.verdict = probe.ok
+      ? `These credentials belong to the ${other} environment, but this deployment is set to ${mode}. ${
+          other === "live"
+            ? "Copy the Sandbox tab's Client ID and Secret to keep testing, or switch PAYPAL_ENV to live and go through PayPal's live review."
+            : "Switch PAYPAL_ENV to sandbox, or copy the Live tab's credentials."
+        }`
+      : `PayPal rejected this client id and secret in both environments (${mode} and ${other}). A secret only works with the app that issued it and in the tab it was issued for, so copy the pair together, from one app, once.`;
+
     return result;
   }
 

@@ -36,6 +36,7 @@ export function PayPalCard() {
         token: { ok: boolean; status: number; message: string };
         balances: { ok: boolean; status: number; message: string };
         payoutCapability: { ok: boolean; status: number; message: string };
+        otherEnvironment: { mode: string; ok: boolean; message: string } | null;
         verdict: string;
       }
     | { error: string }
@@ -209,6 +210,14 @@ export function PayPalCard() {
                   <strong className="text-[var(--color-ink)]">Payouts:</strong>{" "}
                   {diagnosis.payoutCapability.ok ? "reachable" : `not reachable — ${diagnosis.payoutCapability.message}`}
                 </li>
+                {diagnosis.otherEnvironment && !diagnosis.token.ok && (
+                  <li>
+                    <strong className="text-[var(--color-ink)]">Other environment ({diagnosis.otherEnvironment.mode}):</strong>{" "}
+                    {diagnosis.otherEnvironment.ok
+                      ? "these credentials work there, not here"
+                      : `also rejected — ${diagnosis.otherEnvironment.message}`}
+                  </li>
+                )}
                 <li className="break-all">
                   <strong className="text-[var(--color-ink)]">Return URL to register:</strong> {diagnosis.redirectUri}
                 </li>
