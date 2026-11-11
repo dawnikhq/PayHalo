@@ -252,6 +252,29 @@ How the release behaves:
 Sandbox test accounts: create a **Business** account (payer) and **Personal** accounts (beneficiaries) under
 *Sandbox → Accounts*, and use their emails on the plan.
 
+## Start a plan, the vault, and the release desk
+
+A plan without a vault is a wish. **Start a plan** (`/plan/start`) is one write and three steps: name the
+first person, open the vault, mint a key and send it to them.
+
+- **The vault** (`lib/model.ts`) holds the plan's money: `stashCents + pot allocations + the asset total`.
+  It has three states — `open`, `frozen`, `released` — and only one writer of `released`:
+  `decideRelease(..., "approved")`. There is no amount and no destination anywhere in that signature, so an
+  operator cannot pay a different person or a different sum.
+- **The key** (`lib/vault-key.ts`) is minted once, emailed to the first beneficiary, and stored only as a
+  SHA-256. Holding it is required to ask for the vault to be opened; nobody can read it back, including us.
+- **The release desk** (`/admin`) is behind `ADMIN_PASSCODE`. Operators read the documentation, hold a request
+  for research, then approve or decline. **Approve release** is the only path into a vault, and the money goes
+  to the plan's own named beneficiaries.
+- **Benefactors can see the other direction.** `/beneficiaries` carries a *Plans that name you* section, and
+  `/beneficiary` shows the same thing for a signed-in account: whose plan names you, your share, the vault
+  state, and the one button you have — *Request the assets*, with your key. A signed-in person only ever sees
+  plans where their own email is written, via `driver.scan()` filtered to that address.
+
+Env for this flow: `ADMIN_PASSCODE` (the release desk), plus `RESEND_API_KEY` and `MAIL_FROM` for the key
+email. Without the mail pair the wizard shows the key to the owner exactly once so it can be handed over by
+hand — it is never stored in clear.
+
 ## Storage
 
 | Order | Condition | Driver | Durable |
@@ -280,7 +303,8 @@ instead of returning a 500. Each owner's plan is one JSON document under its own
   balances. Live payouts need `PAYPAL_ENV=live` **and** `PAYPAL_ALLOW_LIVE_PAYOUTS=true`, and the release
   still requires the passcode.
 - Accounts are real and self-hosted. The **emailed link needs `RESEND_API_KEY` and `MAIL_FROM`**; until
-  both are set the link tab says delivery is off and passwords are the only way in. There is no
+  both are set the link tab says delivery is off and passwords are the only way in. The same two variables
+  gate the vault key email, and until they are set the key is shown to the owner once instead. There is no
   "forgot password" flow yet — that is the next thing to build.
 - A signed share link is a bearer credential. Anyone holding it sees that audience's view until the
   secret is rotated — which invalidates every link at once. There is no per-link revocation yet.
