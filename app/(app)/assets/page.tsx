@@ -26,7 +26,7 @@ export default async function AssetsPage() {
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="card-forest p-6">
-          <p className="label">Total sample value</p>
+          <p className="label">Total value</p>
           <p className="t-num mt-2.5 text-[30px] leading-none text-white">{money(s.totalCents)}</p>
           <p className="mt-2 text-[12px] text-[#b7cfbd]">USD equivalent</p>
         </div>

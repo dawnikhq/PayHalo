@@ -149,7 +149,7 @@ export default async function DashboardPage({
                 {s.vault ? s.vault.ref : "No vault yet"}
               </p>
             </div>
-            <span className="pill badge-neutral">{s.vault ? s.vault.status : "not started"}</span>
+            <span className="pill badge-neutral">{s.vault ? { open: "Open", frozen: "Paused", released: "Released" }[s.vault.status] ?? "Open" : "Not started"}</span>
           </div>
 
           {s.vault ? (

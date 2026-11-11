@@ -4,6 +4,8 @@ import { money, pct, stampLabel } from "@/lib/format";
 import { Page, ProgressTicks } from "@/components/ui";
 import { SealPlan } from "@/components/plan/SealPlan";
 
+const VAULT_LABEL: Record<string, string> = { open: "Open", frozen: "Paused", released: "Released" };
+
 export const dynamic = "force-dynamic";
 
 export default async function PlanPage() {
@@ -45,7 +47,7 @@ export default async function PlanPage() {
             href={s.vault ? "/dashboard" : "/plan/start"}
             className="btn btn-primary btn-sm mt-3 w-full"
           >
-            {(s.vault || s.steps.some((step) => step.done)) ? "Continue my plan" : "Start my plan"} <span aria-hidden>→</span>
+            {(s.vault || s.steps.some((step) => step.done)) ? "View my dashboard" : "Start my plan"} <span aria-hidden>→</span>
           </Link>
         </div>
       </section>
@@ -59,7 +61,7 @@ export default async function PlanPage() {
             </h2>
           </div>
           <span className={`pill ${s.vault?.status === "released" ? "badge-lime" : "badge-neutral"}`}>
-            {s.vault ? s.vault.status : "not started"}
+            {s.vault ? VAULT_LABEL[s.vault.status] ?? "Open" : "Not started"}
           </span>
         </div>
 
@@ -129,14 +131,14 @@ export default async function PlanPage() {
         <div className="space-y-5">
           <section className="card p-6 md:p-7">
             <div className="flex items-start justify-between gap-3">
-              <p className="eyebrow">01 / Assets</p>
+              <p className="eyebrow">What you own</p>
               <Link href="/assets" className="text-[12.5px] font-semibold text-[var(--color-brand)]">
                 Edit →
               </Link>
             </div>
             <h2 className="h2 mt-2">What you&apos;re passing on</h2>
             <p className="mt-2 text-[13px] font-medium text-[var(--color-brand)]">
-              {s.assets.length} account{s.assets.length === 1 ? "" : "s"} · {money(s.totalCents)} sample value
+              {s.assets.length} account{s.assets.length === 1 ? "" : "s"} · {money(s.totalCents)} combined
             </p>
             <p className="t-small mt-1">
               {s.assets.length ? s.assets.map((a) => a.label).join(" · ") : "No assets added yet."}
@@ -145,7 +147,7 @@ export default async function PlanPage() {
 
           <section className="card p-6 md:p-7">
             <div className="flex items-start justify-between gap-3">
-              <p className="eyebrow">02 / Beneficiaries</p>
+              <p className="eyebrow">The people</p>
               <Link href="/beneficiaries" className="text-[12.5px] font-semibold text-[var(--color-brand)]">
                 Edit →
               </Link>
@@ -163,7 +165,7 @@ export default async function PlanPage() {
 
           <section className="card p-6 md:p-7">
             <div className="flex items-start justify-between gap-3">
-              <p className="eyebrow">03 / Final cause</p>
+              <p className="eyebrow">The final cause</p>
               <Link href="/beneficiaries" className="text-[12.5px] font-semibold text-[var(--color-brand)]">
                 Edit →
               </Link>
@@ -177,7 +179,7 @@ export default async function PlanPage() {
 
           <section className="card p-6 md:p-7">
             <div className="flex items-start justify-between gap-3">
-              <p className="eyebrow">04 / Keyholder</p>
+              <p className="eyebrow">The keyholder</p>
               <Link href="/settings#keyholder" className="text-[12.5px] font-semibold text-[var(--color-brand)]">
                 {s.keyholder ? "View →" : "Assign →"}
               </Link>
@@ -232,8 +234,7 @@ export default async function PlanPage() {
           <section className="card p-6">
             <h2 className="h2">Life happens. Pause here.</h2>
             <p className="t-body mt-2">
-              Setup is optional. Leave anytime and pick it up where you left off. Nothing is ever
-              move assets.
+              Setup is optional. Leave anytime and pick it up where you left off. Nothing moves while you are here.
             </p>
             <Link href="/dashboard" className="btn btn-secondary btn-sm mt-4">
               Back to dashboard
@@ -243,8 +244,8 @@ export default async function PlanPage() {
           <section className="card p-6">
             <h2 className="h3">Guidance, not secrets.</h2>
             <p className="t-small mt-2">
-              Documents hold recovery instructions only. PayHalo never asks for a password, private key or
-              recovery phrase — and a keyholder never sees one.
+              PayHalo never asks for a password, private key or recovery phrase. A keyholder can start a claim and
+              nothing more.
             </p>
 
           </section>

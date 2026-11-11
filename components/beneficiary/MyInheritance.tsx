@@ -127,7 +127,7 @@ export function MyInheritance({ plans }: { plans: MyPlan[] }) {
           )}
 
           <p className="t-meta mt-4">
-            Vault {plan.vault?.status ?? "not started"}
+            Vault {plan.vault ? { open: "open", frozen: "paused", released: "released" }[plan.vault.status] ?? "open" : "not yet open"}
             {plan.vault?.keySentAt ? ` · key sent ${shortDate(plan.vault.keySentAt)}` : " · no key sent yet"}
           </p>
 
