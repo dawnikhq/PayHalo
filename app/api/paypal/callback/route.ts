@@ -10,8 +10,7 @@ import {
 } from "@/lib/paypal";
 import { PAYPAL_COOKIE, cookieOptions, mintSid, readSid } from "@/lib/paypal-session";
 import { savePayPalConnection } from "@/lib/paypal-store";
-import { requireOwner } from "@/lib/scope";
-import { guarded } from "@/lib/route-guard";
+import { UnauthorizedError, requireOwner } from "@/lib/scope";
 
 export const dynamic = "force-dynamic";
 
@@ -59,4 +58,18 @@ async function handleGET(request: Request) {
   }
 }
 
-export const GET = guarded(handleGET);
+/**
+ * A browser comes back here from PayPal. If the session has gone, send the
+ * person to sign in rather than showing them a JSON 401.
+ */
+export async function GET(request: Request) {
+  try {
+    return await handleGET(request);
+  } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      const next = "/settings?paypal=signed-out";
+      return NextResponse.redirect(new URL(`/signin?next=${encodeURIComponent(next)}`, request.url));
+    }
+    throw error;
+  }
+}
