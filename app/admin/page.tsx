@@ -1,8 +1,10 @@
 import { Page } from "@/components/ui";
 import { AdminGate } from "@/components/admin/AdminGate";
 import { ReleaseQueue } from "@/components/admin/ReleaseQueue";
+import { MailCheck } from "@/components/admin/MailCheck";
 import { adminConfigured, isAdmin } from "@/lib/admin";
 import { releaseQueue } from "@/lib/store";
+import { mailConfigured } from "@/lib/mailer";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Release desk — PayHalo" };
@@ -50,6 +52,8 @@ export default async function AdminPage() {
           beneficiaries: row.beneficiaries,
         }))}
       />
+
+      <MailCheck configured={mailConfigured()} />
     </Page>
   );
 }
