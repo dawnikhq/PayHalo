@@ -12,7 +12,13 @@ const label = "block text-[11px] font-semibold uppercase tracking-[0.12em] text-
  * neither can move money without the owner's release passcode and a
  * same-origin request, and a transfer is only sent after the review step.
  */
-export function MoneyActions({ flush = false }: { flush?: boolean } = {}) {
+export function MoneyActions({
+  flush = false,
+  sendBlocked = null,
+}: {
+  flush?: boolean;
+  sendBlocked?: string | null;
+} = {}) {
   const [panel, setPanel] = useState<"send" | "receive" | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +57,8 @@ export function MoneyActions({ flush = false }: { flush?: boolean } = {}) {
               setNotice(null);
             }}
             aria-expanded={panel === "send"}
+            disabled={Boolean(sendBlocked)}
+            title={sendBlocked ?? undefined}
             className={`btn btn-sm ${panel === "send" ? "btn-primary" : "btn-secondary"}`}
           >
             Send
@@ -69,6 +77,12 @@ export function MoneyActions({ flush = false }: { flush?: boolean } = {}) {
           </button>
         </div>
       </div>
+
+      {sendBlocked && (
+        <p className="mt-3 rounded-[12px] border border-[var(--color-line)] bg-[#fbfdfb] px-3.5 py-2.5 text-[11.5px] text-[var(--color-muted)]">
+          <strong className="font-semibold text-[var(--color-ink)]">Sending is locked.</strong> {sendBlocked}
+        </p>
+      )}
 
       {notice && (
         <p className="mt-4 rounded-[12px] bg-[var(--color-mint)] px-4 py-3 text-[12.5px] text-[var(--color-forest)]">
