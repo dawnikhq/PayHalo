@@ -78,11 +78,11 @@ export function HelpContent({
           <section className="card-mint p-6">
             <h2 className="h3 text-[var(--color-forest)]">About this experience</h2>
             <p className="t-body mt-2 text-[#3c5a4e]">
-              VIVO records your instructions and runs a verified handover. Balances are the figures you enter; the only live
+              PayHalo records your instructions and runs a verified handover. Balances are the figures you enter; the only live
               connection is PayPal, and only if you enable it.
             </p>
             <p className="t-body mt-3 text-[#3c5a4e]">
-              VIVO helps organise instructions. It does not execute legal documents or replace professional
+              PayHalo helps organise instructions. It does not execute legal documents or replace professional
               legal advice.
             </p>
           </section>

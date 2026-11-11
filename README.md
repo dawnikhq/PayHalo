@@ -1,4 +1,4 @@
-# VIVO — Your legacy, considered.
+# PayHalo — Your legacy, considered.
 
 A working prototype of the **Dormant Billion** idea from *Dawnik Lab Team 1 (PRD)*: a calm, verified
 handover for a digital life lived across PayPal balances, crypto wallets and online businesses.
@@ -6,14 +6,14 @@ handover for a digital life lived across PayPal balances, crypto wallets and onl
 > If something happened to you today, would your family know where your money lives — or how to
 > get it?
 
-VIVO lets someone decide *who gets what, in what order* while they are well, name a trusted keyholder
+PayHalo lets someone decide *who gets what, in what order* while they are well, name a trusted keyholder
 who can start a claim, and give their family a plan instead of a puzzle. Nothing is released before a
 document has been verified **and** the account holder has had **14 full days** to respond.
 
 **Live: <https://hack1-weld.vercel.app>** — sign in with an emailed link and you get your own empty plan.
 No shared household, no sample data, nothing visible to anyone else.
 
-Sign-in is VIVO's own: an email and password (scrypt), or a one-time emailed link, stored in
+Sign-in is PayHalo's own: an email and password (scrypt), or a one-time emailed link, stored in
 `vivo_users` / `vivo_sessions` / `vivo_login_tokens`. Supabase is the database, not the identity
 provider. Each account owns exactly one plan, stored as one row in `public.vivo_docs` keyed by
 `vivo_users.id`; the server never reads across owners. Keyholders and beneficiaries are given
@@ -39,7 +39,7 @@ Requires **Node 22+**. Locally, state persists to `data/hack1.db`; on Vercel it 
 
 ## The design system
 
-VIVO is one art-directed product, not a set of screens. Every page is built from the same token layer
+PayHalo is one art-directed product, not a set of screens. Every page is built from the same token layer
 (`app/globals.css`) and the same primitives (`components/ui.tsx`).
 
 | Token | Value | Used for |
@@ -80,7 +80,7 @@ VIVO is one art-directed product, not a set of screens. Every page is built from
 | `/plan` | Owner | Lime banner, 01–04 section cards, live checklist, seal action, "Life happens. Pause here." |
 | `/documents` | Owner | Guidance records with search, access level, and upload |
 | `/activity` | Owner | Grouped trail with category filters; a claim in its registry check never appears |
-| `/settings` | Owner | Profile form, account email, **share links** for keyholder and beneficiary, PayPal, what VIVO never asks for |
+| `/settings` | Owner | Profile form, account email, **share links** for keyholder and beneficiary, PayPal, what PayHalo never asks for |
 | `/help` | Owner | FAQ, support request, the safety notice in four steps |
 | `/keyholder` | Keyholder | Role home → claim intake (code, evidence, confirmation) → review → window → complete |
 | `/keyholder/support` | Keyholder | Same help content, keyholder frame |
@@ -113,7 +113,7 @@ The rules the product will not break:
   release.
 - A beneficiary sees only their own entitlement, and only after verification plus 14 full days.
 - Nothing is released before 14 full days. Ever.
-- VIVO never asks for a password, private key or recovery phrase, and no portal can display one.
+- PayHalo never asks for a password, private key or recovery phrase, and no portal can display one.
 
 ---
 
@@ -122,7 +122,7 @@ The rules the product will not break:
 1. **`/`** → *Get started* → **`/signup`**. Name, email, password. You land in `/onboarding` with a
    brand-new, empty plan. `/signin` takes either the password or a one-time emailed link.
 2. **`/onboarding`** (or *Add an asset* from the dashboard) — name what you hold, who gets it, and the
-   instructions a keyholder would need. Balances are figures you type, not figures VIVO reads.
+   instructions a keyholder would need. Balances are figures you type, not figures PayHalo reads.
 3. **`/settings` → Sharing** — copy the keyholder link to the person you trust, and the beneficiary link
    to each recipient. Both are signed; replacing them invalidates the old ones.
 4. Open the **keyholder link** in a private window: owner name, claim status, clocks — no balances, no
@@ -212,7 +212,7 @@ per press; a live system waits for the registrar.
 
 ## PayPal (sandbox)
 
-The one place VIVO leaves the building. Three capabilities, three trust levels:
+The one place PayHalo leaves the building. Three capabilities, three trust levels:
 
 | Capability | How | What it proves |
 |---|---|---|
@@ -276,7 +276,7 @@ instead of returning a 500. Each owner's plan is one JSON document under its own
 - PayPal is the one live integration, in sandbox until the round-trip is verified. Wallets and
   storefronts remain records you describe.
 - Payouts move money from the app's **own** PayPal business account — PayPal authorises payouts from an
-  account you control, not from a beneficiary's. PayPal is not a bank and VIVO does not hold customer
+  account you control, not from a beneficiary's. PayPal is not a bank and PayHalo does not hold customer
   balances. Live payouts need `PAYPAL_ENV=live` **and** `PAYPAL_ALLOW_LIVE_PAYOUTS=true`, and the release
   still requires the passcode.
 - Accounts are real and self-hosted. The **emailed link needs `RESEND_API_KEY` and `MAIL_FROM`**; until
@@ -285,4 +285,4 @@ instead of returning a 500. Each owner's plan is one JSON document under its own
 - A signed share link is a bearer credential. Anyone holding it sees that audience's view until the
   secret is rotated — which invalidates every link at once. There is no per-link revocation yet.
 - Terms, privacy, data-export and account-deletion pages are **not built** (deliberately deferred).
-- Platform terms and inheritance law still apply. VIVO makes the process preparable, not bypassable.
+- Platform terms and inheritance law still apply. PayHalo makes the process preparable, not bypassable.

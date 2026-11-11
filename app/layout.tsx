@@ -4,10 +4,10 @@ import "@fontsource-variable/manrope";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "VIVO — Your legacy, considered.",
+  title: "PayHalo — Your legacy, considered.",
   description:
-    "VIVO is the calm handover for your digital estate. Decide where your digital wealth goes, name a trusted keyholder, and give your family a plan instead of a puzzle.",
-  applicationName: "VIVO",
+    "PayHalo is the calm handover for your digital estate. Decide where your digital wealth goes, name a trusted keyholder, and give your family a plan instead of a puzzle.",
+  applicationName: "PayHalo",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

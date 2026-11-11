@@ -46,7 +46,7 @@ function displayName(email: string, meta: Record<string, unknown> | undefined): 
 }
 
 /**
- * The signed-in owner, from VIVO's own session cookie.
+ * The signed-in owner, from PayHalo's own session cookie.
  *
  * Supabase stores the data; it is not the identity provider. The Supabase Auth
  * path below is kept dormant (VIVO_AUTH=supabase) in case it is ever wanted

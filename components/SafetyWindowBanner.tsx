@@ -49,7 +49,7 @@ export function SafetyWindowBanner({
               View the notice you were sent
             </summary>
             <div className="mt-2.5 rounded-[12px] border border-[#e9d6b2] bg-white/70 p-3.5">
-              <p className="label text-[var(--color-warnink)]">VIVO notice</p>
+              <p className="label text-[var(--color-warnink)]">PayHalo notice</p>
               <p className="mt-1.5 text-[12.5px] font-semibold text-[#5c3d0f]">
                 A handover has been started on your plan
               </p>

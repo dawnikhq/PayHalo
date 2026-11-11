@@ -161,7 +161,7 @@ export default async function PlanPage() {
           <section className="card p-6">
             <h2 className="h3">Guidance, not secrets.</h2>
             <p className="t-small mt-2">
-              Documents hold recovery instructions only. VIVO never asks for a password, private key or
+              Documents hold recovery instructions only. PayHalo never asks for a password, private key or
               recovery phrase — and a keyholder never sees one.
             </p>
             <Link href="/documents" className="mt-3 inline-block text-[12.5px] font-semibold text-[var(--color-brand)]">

@@ -20,8 +20,8 @@ export default async function SignInPage({
   return (
     <div className="min-h-screen bg-[var(--color-canvas)]">
       <header className="mx-auto flex h-[68px] w-full max-w-[1120px] items-center justify-between px-5 sm:px-8">
-        <Link href="/" aria-label="VIVO home" className="font-[var(--font-display)] text-[22px] font-extrabold tracking-[-0.055em] text-[var(--color-brand)]">
-          vivo
+        <Link href="/" aria-label="PayHalo home" className="font-[var(--font-display)] text-[22px] font-extrabold tracking-[-0.055em] text-[var(--color-brand)]">
+          payhalo
         </Link>
         <Link href="/" className="text-[12.5px] font-semibold text-[var(--color-muted)]">
           ← Back to the site

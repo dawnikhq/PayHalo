@@ -270,7 +270,7 @@ export function AssetForm({ asset }: { asset?: Asset }) {
           <h3 className="h3 text-[#6a4712]">Descriptions, not credentials.</h3>
           <p className="mt-2 text-[12.5px] leading-relaxed text-[#7a5418]">
             Record what the account is and how to find it. Never paste a password, private key or recovery phrase —
-            VIVO cannot use them and will not store them.
+            PayHalo cannot use them and will not store them.
           </p>
         </div>
 

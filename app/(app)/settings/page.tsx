@@ -160,7 +160,7 @@ export default async function SettingsPage({
           <section className="card-forest p-6">
             <h2 className="h2 text-white">Private by design.</h2>
             <p className="t-body mt-3 text-[#b7cfbd]">
-              VIVO stores instructions, not credentials. No portal can display a password, private key or
+              PayHalo stores instructions, not credentials. No portal can display a password, private key or
               recovery phrase — because none are ever collected.
             </p>
             <div className="my-5 h-px bg-white/12" />
@@ -172,7 +172,7 @@ export default async function SettingsPage({
           </section>
 
           <section className="card-mint p-6">
-            <h2 className="h3 text-[var(--color-forest)]">What VIVO never asks for</h2>
+            <h2 className="h3 text-[var(--color-forest)]">What PayHalo never asks for</h2>
             <ul className="mt-3 space-y-2">
               {["Passwords or PINs", "Private keys", "Wallet recovery phrases", "Bank logins"].map((item) => (
                 <li key={item} className="flex items-center gap-2 text-[12.5px] text-[#3c5a4e]">

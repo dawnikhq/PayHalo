@@ -214,7 +214,7 @@ export interface Snapshot {
   steps: PlanStep[];
   events: EventRow[];
   totalCents: number;
-  /** Money moved into VIVO and not yet set aside in a save. */
+  /** Money moved into PayHalo and not yet set aside in a save. */
   stashCents: number;
   pots: Pot[];
   moves: MoneyMove[];

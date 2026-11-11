@@ -2,7 +2,7 @@ import Link from "next/link";
 import { footerNote } from "@/lib/paypal";
 
 export const metadata = {
-  title: "VIVO — Your legacy, considered.",
+  title: "PayHalo — Your legacy, considered.",
 };
 
 const PILLARS = [
@@ -28,9 +28,9 @@ export default function LandingPage() {
     <div className="min-h-screen bg-[var(--color-canvas)]">
       <header className="border-b border-[var(--color-line)] bg-[var(--color-surface)]">
         <div className="mx-auto flex h-[68px] w-full max-w-[1180px] items-center justify-between gap-4 px-5 sm:px-8">
-          <Link href="/" className="flex items-baseline gap-2" aria-label="VIVO home">
+          <Link href="/" className="flex items-baseline gap-2" aria-label="PayHalo home">
             <span className="font-[var(--font-display)] text-[26px] font-extrabold tracking-[-0.055em] text-[var(--color-brand)]">
-              vivo
+              payhalo
             </span>
             <span className="hidden text-[9.5px] font-semibold uppercase tracking-[0.13em] text-[#94a29a] sm:block">
               Your legacy, considered
@@ -61,7 +61,7 @@ export default function LandingPage() {
       <main className="mx-auto w-full max-w-[1180px] px-5 pb-16 pt-10 sm:px-8 sm:pt-14">
         <section className="grid items-start gap-8 lg:grid-cols-[1.05fr_0.95fr]">
           <div>
-            <p className="eyebrow">Welcome to VIVO</p>
+            <p className="eyebrow">Welcome to PayHalo</p>
             <h1 className="mt-3 font-[var(--font-display)] text-[clamp(2.3rem,5vw,3.5rem)] font-medium leading-[1.05] tracking-[-0.03em] text-[var(--color-ink)]">
               Your life, thoughtfully passed on.
             </h1>
@@ -108,7 +108,7 @@ export default function LandingPage() {
             <div className="mt-7 grid grid-cols-2 gap-3 border-t border-white/10 pt-5">
               <div>
                 <p className="t-num text-[24px] leading-none text-white">0</p>
-                <p className="mt-1.5 text-[11px] text-[#8fb098]">Passwords VIVO ever asks for</p>
+                <p className="mt-1.5 text-[11px] text-[#8fb098]">Passwords PayHalo ever asks for</p>
               </div>
               <div>
                 <p className="t-num text-[24px] leading-none text-[var(--color-lime)]">14</p>
@@ -169,7 +169,7 @@ export default function LandingPage() {
         <div className="mx-auto flex w-full max-w-[1180px] flex-col gap-2 px-5 pb-24 pt-6 sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:pb-20">
           <p className="t-meta">{footerNote()}</p>
           <p className="font-[var(--font-display)] text-[12.5px] font-semibold tracking-[0.02em] text-[var(--color-forest)]">
-            VIVO / Your legacy, considered.
+            PayHalo / Your legacy, considered.
           </p>
         </div>
       </footer>

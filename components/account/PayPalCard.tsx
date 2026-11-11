@@ -144,7 +144,7 @@ export function PayPalCard() {
       </div>
 
       <p className="t-small mt-2 max-w-[62ch]">
-        VIVO reads nothing about your money and never asks for a password. Connecting only proves which PayPal account is
+        PayHalo reads nothing about your money and never asks for a password. Connecting only proves which PayPal account is
         yours; the handover payout is sent from the plan&apos;s own business account, in {modeLabel.toLowerCase()} mode.
       </p>
 
@@ -194,7 +194,7 @@ export function PayPalCard() {
           ) : (
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-dashed border-[var(--color-line-strong)] p-4">
               <p className="t-small max-w-[46ch]">
-                Connect the PayPal account this plan should pay from. VIVO asks for no password and no permissions over your money.
+                Connect the PayPal account this plan should pay from. PayHalo asks for no password and no permissions over your money.
               </p>
               <a href="/api/paypal/oauth/start" className="btn btn-primary btn-sm">
                 Connect PayPal <span aria-hidden>→</span>
@@ -274,7 +274,7 @@ export function PayPalCard() {
               <div>
                 <p className="label">Add money</p>
                 <p className="t-small mt-1.5 max-w-[46ch]">
-                  A release is paid out of this PayPal business account. Top it up with a real PayPal payment — VIVO
+                  A release is paid out of this PayPal business account. Top it up with a real PayPal payment — PayHalo
                   cannot hold a balance of its own, so the money sits with PayPal until a handover clears.
                 </p>
               </div>

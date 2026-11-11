@@ -60,7 +60,7 @@ const STEPS = [
   {
     kicker: "Step two",
     title: "What would you be leaving behind?",
-    note: "You enter these figures yourself — VIVO never reads a provider balance.",
+    note: "You enter these figures yourself — PayHalo never reads a provider balance.",
   },
   { kicker: "Step three", title: "Who inherits first?", note: "The person you would want it to reach without hesitation." },
   { kicker: "Step four", title: "And if they can't?", note: "A plan needs a second path. Split it however feels fair." },
@@ -159,7 +159,7 @@ export default function OnboardingPage() {
         <div className="mx-auto flex h-[64px] w-full max-w-[1120px] items-center justify-between px-5 sm:px-8">
           <Link href="/" className="flex items-baseline gap-2">
             <span className="font-[var(--font-display)] text-[24px] font-extrabold tracking-[-0.055em] text-[var(--color-brand)]">
-              vivo
+              payhalo
             </span>
             <span className="hidden text-[9.5px] font-semibold uppercase tracking-[0.13em] text-[#94a29a] sm:block">
               New plan
@@ -646,9 +646,9 @@ export default function OnboardingPage() {
 
       <footer className="border-t border-[var(--color-line)] bg-[var(--color-surface)]">
         <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-1.5 px-5 pb-24 pt-5 sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:pb-20">
-          <p className="t-meta">VIVO records instructions. It is not a will and does not replace legal advice.</p>
+          <p className="t-meta">PayHalo records instructions. It is not a will and does not replace legal advice.</p>
           <p className="font-[var(--font-display)] text-[11.5px] font-semibold text-[var(--color-forest)]">
-            VIVO / Your legacy, considered.
+            PayHalo / Your legacy, considered.
           </p>
         </div>
       </footer>

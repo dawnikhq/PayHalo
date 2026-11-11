@@ -19,12 +19,12 @@ async function handleGET(request: NextRequest) {
   try {
     await requireOwner();
   } catch {
-    return NextResponse.redirect(new URL("/signin?next=%2Fmoney", origin));
+    return NextResponse.redirect(new URL("/signin?next=%2Fsettings", origin));
   }
 
   const orderId = request.cookies.get(FUND_COOKIE)?.value;
   if (!orderId) {
-    return NextResponse.redirect(new URL("/money?added=cancelled", origin));
+    return NextResponse.redirect(new URL("/settings?funded=cancelled", origin));
   }
 
   try {
@@ -41,13 +41,13 @@ async function handleGET(request: NextRequest) {
     }
 
     const res = NextResponse.redirect(
-      new URL(`/money?added=${encodeURIComponent(capture.amount ?? "done")}`, origin),
+      new URL(`/settings?funded=${encodeURIComponent(capture.amount ?? "done")}`, origin),
     );
     res.cookies.delete(FUND_COOKIE);
     return res;
   } catch (error) {
     const reason = error instanceof PayPalError ? error.message : "PayPal did not complete the payment.";
-    const res = NextResponse.redirect(new URL(`/money?added=failed&reason=${encodeURIComponent(reason)}`, origin));
+    const res = NextResponse.redirect(new URL(`/settings?funded=failed&reason=${encodeURIComponent(reason)}`, origin));
     res.cookies.delete(FUND_COOKIE);
     return res;
   }

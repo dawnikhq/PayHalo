@@ -50,13 +50,6 @@ export default async function AssetsPage() {
         </div>
       </div>
 
-      <div className="mb-5 flex flex-wrap items-center gap-2">
-        <Link href="/money" className="btn btn-secondary btn-sm">
-          Transfer into VIVO
-        </Link>
-        <p className="t-meta">Move money in first, then say what it is for — it becomes an asset with a purpose.</p>
-      </div>
-
       <div className="mt-5">
         <AssetsExplorer assets={s.assets} />
       </div>

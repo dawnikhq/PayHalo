@@ -14,7 +14,6 @@ import {
   IconMenu,
   IconPlan,
   IconShield,
-  IconWallet,
 } from "./icons";
 
 export type Role = "owner" | "keyholder" | "beneficiary";
@@ -26,7 +25,6 @@ const NAV: Record<Role, { primary: NavItem[]; secondary: NavItem[]; workspace: s
     workspace: "Personal workspace",
     primary: [
       { href: "/dashboard", label: "Dashboard", icon: <IconDashboard /> },
-      { href: "/money", label: "Money", icon: <IconWallet /> },
       { href: "/assets", label: "Assets", icon: <IconAssets /> },
       { href: "/beneficiaries", label: "Beneficiaries", icon: <IconBeneficiaries /> },
       { href: "/plan", label: "My Plan", icon: <IconPlan /> },
@@ -171,7 +169,7 @@ export function AppShell({
 
   const sidebar = (
     <div className="flex min-h-full flex-col gap-6 px-4 py-6">
-      <Link href="/dashboard" className="flex px-1" onClick={() => setOpen(false)} aria-label="VIVO home">
+      <Link href="/dashboard" className="flex px-1" onClick={() => setOpen(false)} aria-label="PayHalo home">
         <Wordmark />
       </Link>
 
@@ -291,7 +289,7 @@ export function AppShell({
           <div className="mx-auto flex max-w-[1180px] flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
             <p>{note ?? "Your plan is private. Only you, and the people you invite with a link, can see any of it."}</p>
             <p className="font-[var(--font-display)] font-semibold tracking-[0.02em] text-[var(--color-forest)]">
-              VIVO / Your legacy, considered.
+              PayHalo / Your legacy, considered.
             </p>
           </div>
         </footer>
@@ -313,7 +311,6 @@ function MobileTabs({ role }: { role: Role }) {
     role === "owner"
       ? [
           { href: "/dashboard", label: "Home", icon: <IconDashboard /> },
-          { href: "/money", label: "Money", icon: <IconWallet /> },
           { href: "/assets", label: "Assets", icon: <IconAssets /> },
           { href: "/plan", label: "Plan", icon: <IconPlan /> },
           { href: "/settings", label: "Profile", icon: <IconShield /> },
@@ -382,7 +379,7 @@ function Wordmark({ small = false }: { small?: boolean }) {
         }`}
         style={{ fontFeatureSettings: '"ss01"' }}
       >
-        vivo
+        payhalo
       </span>
     </span>
   );

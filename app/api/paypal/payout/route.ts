@@ -111,7 +111,7 @@ async function handlePOST(request: Request) {
       pending.map((row) => ({
         email: row.email,
         amountCents: row.amountCents,
-        note: `Planned handover released by VIVO (${mode}).`,
+        note: `Planned handover released by PayHalo (${mode}).`,
         itemId: `claim-${ledger.claimId}-b${row.beneficiaryId}`,
       })),
     );

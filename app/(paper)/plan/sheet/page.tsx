@@ -7,7 +7,7 @@ import { PrintButton } from "@/components/PrintButton";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Instruction sheet — VIVO",
+  title: "Instruction sheet — PayHalo",
 };
 
 /**
@@ -26,7 +26,7 @@ export default async function SheetPage() {
   const shareFor = (id: number) => allocations.find((a) => a.beneficiaryId === id)?.share ?? 0;
   const backupTotal = backups.reduce((sum, b) => sum + b.share, 0) || 1;
 
-  const ref = `VIVO-${String(s.plan.id).padStart(4, "0")}-${String(s.user.id).padStart(3, "0")}`;
+  const ref = `PayHalo-${String(s.plan.id).padStart(4, "0")}-${String(s.user.id).padStart(3, "0")}`;
 
   return (
     <main className="mx-auto max-w-[816px] px-4 pb-24 pt-8 print:max-w-none print:p-0">
@@ -41,7 +41,7 @@ export default async function SheetPage() {
         <header className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--color-line)] pb-6">
           <div>
             <p className="font-[var(--font-display)] text-[20px] font-extrabold tracking-[-0.05em] text-[var(--color-brand)]">
-              vivo
+              payhalo
             </p>
             <h1 className="mt-3 font-[var(--font-display)] text-[30px] font-medium leading-none tracking-[-0.02em]">
               Instruction sheet
@@ -215,12 +215,12 @@ export default async function SheetPage() {
 
         <p className="mt-6 border-t border-[var(--color-line)] pt-4 text-[10px] leading-relaxed text-[var(--color-muted)]">
           This sheet records instructions, not a legal instrument. It is not a will and does not replace legal
-          advice. VIVO never asks for passwords, private keys or recovery phrases.
+          advice. PayHalo never asks for passwords, private keys or recovery phrases.
         </p>
       </article>
 
       <p className="mt-4 text-center text-[11px] text-[var(--color-muted)] print:hidden">
-        VIVO / Your legacy, considered.
+        PayHalo / Your legacy, considered.
       </p>
     </main>
   );

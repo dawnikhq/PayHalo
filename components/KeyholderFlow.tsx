@@ -456,7 +456,7 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
                   </button>
                 </div>
                 <p className="t-meta mt-3">
-                  The registry check runs for 72 hours and cannot be hurried — not by you, and not by VIVO. You will see
+                  The registry check runs for 72 hours and cannot be hurried — not by you, and not by PayHalo. You will see
                   the result here.
                 </p>
               </div>
@@ -517,7 +517,7 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
                   </button>
                 </div>
                 <p className="t-meta mt-3">
-                  The window runs for 14 full days and nothing can shorten it, including VIVO. If the account holder
+                  The window runs for 14 full days and nothing can shorten it, including PayHalo. If the account holder
                   responds, this page changes to say so.
                 </p>
               </div>
@@ -529,7 +529,7 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
               <p className="label">Handover completed</p>
               <h2 className="h2 mt-2 text-white">Your part is complete.</h2>
               <p className="t-body mt-2 max-w-[58ch] text-[#b7cfbd]">
-                The safety window closed with no response on {shortDate(claim.distributedAt)}. VIVO notified the{" "}
+                The safety window closed with no response on {shortDate(claim.distributedAt)}. PayHalo notified the{" "}
                 {view.recipientCount} people named on the plan, each with only their own entitlement.
               </p>
               <p className="body mt-4 border-t border-white/10 pt-4 text-[12px] text-[#8fb098]">

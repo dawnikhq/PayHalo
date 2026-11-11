@@ -49,7 +49,7 @@ export interface StateDoc {
   documents: DocumentRow[];
   events: EventRow[];
   seq: number;
-  /** Money the owner has moved into VIVO, and what it was set aside for. */
+  /** Money the owner has moved into PayHalo, and what it was set aside for. */
   stashCents?: number;
   pots?: Pot[];
   moves?: MoneyMove[];
