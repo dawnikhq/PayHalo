@@ -5,7 +5,6 @@ import { SafetyWindowBanner } from "@/components/SafetyWindowBanner";
 import { StatusPill } from "@/components/StatusPill";
 import { Page, ProgressTicks } from "@/components/ui";
 import { MoneyActions } from "@/components/money/MoneyActions";
-import { payoutsBlockedReason } from "@/lib/paypal";
 
 export const dynamic = "force-dynamic";
 
@@ -138,7 +137,7 @@ export default async function DashboardPage({
         </section>
 
         {/* money — directly under the asset card */}
-        <MoneyActions flush sendBlocked={payoutsBlockedReason()} />
+        <MoneyActions flush />
 
         {/* the vault the money belongs to */}
         <section className="card p-6 md:p-7">

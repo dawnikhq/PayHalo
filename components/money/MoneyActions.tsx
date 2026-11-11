@@ -12,13 +12,7 @@ const label = "block text-[11px] font-semibold uppercase tracking-[0.12em] text-
  * neither can move money without the owner's release passcode and a
  * same-origin request, and a transfer is only sent after the review step.
  */
-export function MoneyActions({
-  flush = false,
-  sendBlocked = null,
-}: {
-  flush?: boolean;
-  sendBlocked?: string | null;
-} = {}) {
+export function MoneyActions({ flush = false }: { flush?: boolean } = {}) {
   const [panel, setPanel] = useState<"send" | "receive" | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,8 +51,6 @@ export function MoneyActions({
               setNotice(null);
             }}
             aria-expanded={panel === "send"}
-            disabled={Boolean(sendBlocked)}
-            title={sendBlocked ?? undefined}
             className={`btn btn-sm ${panel === "send" ? "btn-primary" : "btn-secondary"}`}
           >
             Send
@@ -78,12 +70,6 @@ export function MoneyActions({
         </div>
       </div>
 
-      {sendBlocked && (
-        <p className="mt-3 rounded-[12px] border border-[var(--color-line)] bg-[#fbfdfb] px-3.5 py-2.5 text-[11.5px] text-[var(--color-muted)]">
-          <strong className="font-semibold text-[var(--color-ink)]">Sending is not open yet.</strong> {sendBlocked}
-        </p>
-      )}
-
       {notice && (
         <p className="mt-4 rounded-[12px] bg-[var(--color-mint)] px-4 py-3 text-[12.5px] text-[var(--color-forest)]">
           {notice}
@@ -97,9 +83,13 @@ export function MoneyActions({
               disabled={busy}
               error={error}
               onSubmit={async (form) => {
-                await post("/api/paypal/send", form);
-                setNotice(`Sent ${money(form.amountCents)} to ${form.email}.`);
-                setPanel(null);
+                try {
+                  await post("/api/paypal/send", form);
+                  setNotice(`Sent ${money(form.amountCents)} to ${form.email}.`);
+                  setPanel(null);
+                } catch {
+                  setError("We could not send that just now. Nothing left your account.");
+                }
               }}
             />
           )}

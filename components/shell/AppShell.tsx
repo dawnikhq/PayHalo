@@ -140,13 +140,10 @@ export function AppShell({
   children,
   role,
   name,
-  note,
 }: {
   children: ReactNode;
   role: Role;
   name: string;
-  /** Honest disclosure for this deployment, computed on the server. */
-  note?: string;
 }) {
   const pathname = usePathname() ?? "/";
   const [open, setOpen] = useState(false);
@@ -285,7 +282,7 @@ export function AppShell({
 
         <footer className="mt-6 border-t border-[var(--color-line)] px-5 pb-24 pt-5 text-[11.5px] text-[var(--color-muted)] sm:px-8 sm:pb-20">
           <div className="mx-auto flex max-w-[1180px] flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
-            <p>{note ?? "Your plan is private. Only you, and the people you invite with a link, can see any of it."}</p>
+            <p>Help is a click away if anything here is unclear.</p>
             <p className="font-[var(--font-display)] font-semibold tracking-[0.02em] text-[var(--color-forest)]">
               PayHalo / Your legacy, considered.
             </p>

@@ -1,7 +1,6 @@
 import { AppShell } from "@/components/shell/AppShell";
 import { getBeneficiaryView } from "@/lib/store";
 import { currentUser } from "@/lib/scope";
-import { footerNote } from "@/lib/paypal";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +9,7 @@ export default async function BeneficiaryLayout({ children }: { children: React.
   const view = await getBeneficiaryView();
   const user = view ? null : await currentUser();
   return (
-    <AppShell role="beneficiary" name={view?.person.name ?? user?.name ?? "Beneficiary"} note={footerNote()}>
+    <AppShell role="beneficiary" name={view?.person.name ?? user?.name ?? "Beneficiary"}>
       {children}
     </AppShell>
   );

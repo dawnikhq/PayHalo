@@ -123,13 +123,13 @@ export function payoutsEnabled(): boolean {
  */
 export function payoutsBlockedReason(): string | null {
   if (!paypalConfigured() || process.env.PAYPAL_PAYOUTS_ENABLED?.toLowerCase() !== "true") {
-    return "Sending is coming to this account soon. Receiving payments already works.";
+    return "Sending is not available on this account yet. Asking for money works today.";
   }
   if (paypalMode() === "live" && process.env.PAYPAL_ALLOW_LIVE_PAYOUTS?.toLowerCase() !== "true") {
-    return "Sending is coming to this account soon. Receiving payments already works.";
+    return "Sending is not available on this account yet. Asking for money works today.";
   }
   if (!releasePasscodeConfigured()) {
-    return "Sending is coming to this account soon. Receiving payments already works.";
+    return "Sending is not available on this account yet. Asking for money works today.";
   }
   return null;
 }
@@ -750,15 +750,24 @@ export async function diagnosePayPal(requestUrl: string): Promise<PayPalDiagnosi
       }
     : { ok: false, status: 0, message: "request failed" };
 
-  const payoutRes = await fetch(`${API[mode]}/v1/payments/payouts?page_size=1&page=1&total_required=true`, {
-    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+  /* Payouts has no read endpoint — a GET always 404s, enabled or not. The honest
+     probe is a POST with an empty body: an app without the capability is refused
+     (401/403) before the body is even read, an app with it complains about the
+     body (400/422) and nothing is sent. */
+  const payoutRes = await fetch(`${API[mode]}/v1/payments/payouts`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({}),
     cache: "no-store",
   }).catch(() => null);
+  const payoutDenied = payoutRes ? [401, 403].includes(payoutRes.status) : false;
   result.payoutCapability = payoutRes
     ? {
-        ok: payoutRes.ok,
+        ok: !payoutDenied,
         status: payoutRes.status,
-        message: payoutRes.ok ? "payouts reachable" : (await payoutRes.text().catch(() => "")).slice(0, 200) || `HTTP ${payoutRes.status}`,
+        message: payoutDenied
+          ? (await payoutRes.text().catch(() => "")).slice(0, 200) || `HTTP ${payoutRes.status}`
+          : `reachable · PayPal answered ${payoutRes.status} to an empty payout (expected)`,
       }
     : { ok: false, status: 0, message: "request failed" };
 
@@ -775,16 +784,12 @@ export async function diagnosePayPal(requestUrl: string): Promise<PayPalDiagnosi
     : { ok: false, status: 0, message: "request failed" };
 
   result.verdict = result.payoutCapability.ok
-    ? "Credentials work and payouts are reachable."
-    : result.payoutCapability.status === 403 || result.payoutCapability.status === 404
+    ? "Credentials work and payouts are reachable — sending is live."
+    : result.payoutCapability.status === 401 || result.payoutCapability.status === 403
       ? mode === "sandbox"
-        ? "Credentials work and balances and invoices are readable, but Payouts is not enabled for this sandbox app. Turn it on in Apps & Credentials → your app → Features → Payouts; sandbox transfers are free."
+        ? "Credentials work and balances and invoices are readable, but this app is refused payouts. Turn Payouts on in Apps & Credentials → your app → Features → Payouts; sandbox transfers are free."
         : "Credentials work, but this app has no Payouts access. Payouts must be enabled on the Live app by PayPal, and the business account has to be in a country PayPal pays out from."
       : "Credentials work, but the payouts check did not succeed.";
 
   return result;
-}
-
-export function footerNote(): string {
-  return "Considered, private, and only ever opened for the people you name.";
 }

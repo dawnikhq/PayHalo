@@ -100,13 +100,13 @@ async function handlePOST(request: Request) {
   } catch (error) {
     const upstream = error instanceof PayPalError ? error.status : 502;
     const message = error instanceof Error ? error.message : "PayPal did not accept the payment.";
-    const hint =
-      (upstream === 403 || upstream === 404) && paypalMode() === "sandbox"
-        ? " Payouts is not enabled for this sandbox app — turn it on under Apps & Credentials → your app → Features → Payouts."
-        : (upstream === 403 || upstream === 404) && paypalMode() === "live"
-          ? " Payouts is not enabled on this Live app."
-          : "";
-    return NextResponse.json({ error: `${message}${hint}` }, { status: 502 });
+    /* The owner is told what happened to their money, not which switch to flip.
+       The operator console carries the diagnosis. */
+    const plain =
+      upstream === 403 || upstream === 404
+        ? "Sending is not available on this account just now. Nothing left your account."
+        : `PayPal did not accept that payment. ${message}`.slice(0, 220);
+    return NextResponse.json({ error: plain }, { status: 502 });
   }
 }
 
