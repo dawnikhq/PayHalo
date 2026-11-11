@@ -31,6 +31,9 @@ const OWNER_PATHS = [
 const OWNER_APIS = ["/api/paypal", "/api/assets", "/api/beneficiaries", "/api/documents", "/api/profile", "/api/plan", "/api/onboarding"];
 
 function isOwnerRoute(pathname: string) {
+  /* The diagnostic route checks its own key or the owner session, because a
+     machine probe has no cookie to present. */
+  if (pathname === "/api/paypal/diagnose") return false;
   if (OWNER_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return true;
   if (OWNER_APIS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return true;
   return false;
