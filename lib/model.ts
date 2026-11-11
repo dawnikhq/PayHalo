@@ -1,4 +1,5 @@
 import { allocate, totalOf } from "./engine";
+import { money } from "./format";
 import type { StoredReport } from "./certs";
 import type {
   Asset,
@@ -14,6 +15,8 @@ import type {
   PlanStatus,
   PayPalState,
   PlanStep,
+  Pot,
+  MoneyMove,
   Role,
   Snapshot,
   User,
@@ -46,6 +49,10 @@ export interface StateDoc {
   documents: DocumentRow[];
   events: EventRow[];
   seq: number;
+  /** Money the owner has moved into VIVO, and what it was set aside for. */
+  stashCents?: number;
+  pots?: Pot[];
+  moves?: MoneyMove[];
   /**
    * PayPal connections and payout attempts. Optional so documents written
    * before the integration existed keep loading.
@@ -72,6 +79,9 @@ export function emptyDoc(user: { id: string; name: string; email: string }): Sta
     documents: [],
     events: [],
     seq: 3,
+    stashCents: 0,
+    pots: [],
+    moves: [],
   };
 }
 
@@ -129,6 +139,9 @@ export function snapshotOf(
           })
           .sort((a, b) => b.amountCents - a.amountCents)
       : [],
+    stashCents: doc.stashCents ?? 0,
+    pots: doc.pots ?? [],
+    moves: [...(doc.moves ?? [])].reverse().slice(0, 20),
     events: [...doc.events]
       // `ownerVisible` was added with the 72-hour gate; older rows have no
       // flag and were always owner-visible.
@@ -1065,4 +1078,117 @@ export function beneficiaryView(doc: StateDoc): BeneficiaryView {
           }
         : null,
   };
+}
+
+/* ------------------------------------------------------------- stash & saves */
+
+export interface PotInput {
+  name: string;
+  purpose: string;
+  targetCents?: number;
+  beneficiaryId?: number | null;
+}
+
+/**
+ * "What is this money for?" — the question the app asks after a transfer.
+ * A pot is a stated purpose, not a second bank account: the balance stays in
+ * the payout account, and the document records the intention.
+ */
+export function createPot(doc: StateDoc, input: PotInput): { ok: boolean; error?: string; id?: number } {
+  const name = input.name.trim();
+  const purpose = input.purpose.trim();
+  if (name.length < 2) return { ok: false, error: "Give this save a name." };
+  if (purpose.length < 4) return { ok: false, error: "Say what the money is for." };
+
+  doc.seq += 1;
+  const pot: Pot = {
+    id: doc.seq,
+    name,
+    purpose,
+    targetCents: Math.max(0, Math.round(input.targetCents ?? 0)),
+    allocatedCents: 0,
+    beneficiaryId: input.beneficiaryId ?? null,
+    createdAt: now(),
+  };
+  doc.pots = [...(doc.pots ?? []), pot];
+  doc.plan.updatedAt = now();
+  addEvent(doc, "pot.created", `${pot.name} created`, `A save was named: ${purpose}`);
+  return { ok: true, id: pot.id };
+}
+
+export function allocateToPot(
+  doc: StateDoc,
+  potId: number,
+  amountCents: number,
+  direction: "to" | "from",
+): { ok: boolean; error?: string } {
+  const amount = Math.round(amountCents);
+  if (!Number.isFinite(amount) || amount <= 0) return { ok: false, error: "Enter an amount above zero." };
+
+  const pot = (doc.pots ?? []).find((p) => p.id === potId);
+  if (!pot) return { ok: false, error: "That save no longer exists." };
+
+  const stash = doc.stashCents ?? 0;
+  if (direction === "to") {
+    if (amount > stash) return { ok: false, error: "That is more than the money waiting in your stash." };
+    doc.stashCents = stash - amount;
+    pot.allocatedCents += amount;
+  } else {
+    if (amount > pot.allocatedCents) return { ok: false, error: "That is more than this save holds." };
+    pot.allocatedCents -= amount;
+    doc.stashCents = stash + amount;
+  }
+
+  doc.plan.updatedAt = now();
+  addEvent(
+    doc,
+    direction === "to" ? "money.saved" : "money.unsaved",
+    direction === "to" ? `Moved into ${pot.name}` : `Moved back from ${pot.name}`,
+    `${money(amount)} ${direction === "to" ? "set aside for" : "returned to the stash from"} ${pot.purpose.toLowerCase()}.`,
+  );
+  return { ok: true };
+}
+
+export interface MoveInput {
+  kind: MoneyMove["kind"];
+  amountCents: number;
+  potId?: number | null;
+  counterparty?: string | null;
+  note?: string;
+  status?: MoneyMove["status"];
+  providerId?: string | null;
+}
+
+/** The ledger every send, receive and top-up lands in. */
+export function recordMove(doc: StateDoc, input: MoveInput): { ok: boolean; error?: string; id?: number } {
+  const amount = Math.round(input.amountCents);
+  if (!Number.isFinite(amount) || amount <= 0) return { ok: false, error: "Enter an amount above zero." };
+
+  doc.seq += 1;
+  const move: MoneyMove = {
+    id: doc.seq,
+    kind: input.kind,
+    amountCents: amount,
+    potId: input.potId ?? null,
+    counterparty: input.counterparty?.trim() || null,
+    note: input.note?.trim() ?? "",
+    status: input.status ?? "recorded",
+    providerId: input.providerId ?? null,
+    createdAt: now(),
+  };
+  doc.moves = [...(doc.moves ?? []), move];
+
+  if (move.status === "recorded") {
+    if (move.kind === "in") doc.stashCents = (doc.stashCents ?? 0) + amount;
+    if (move.kind === "out") doc.stashCents = Math.max(0, (doc.stashCents ?? 0) - amount);
+  }
+
+  doc.plan.updatedAt = now();
+  addEvent(
+    doc,
+    `money.${move.kind}`,
+    move.kind === "in" ? "Money added" : move.kind === "out" ? "Money sent" : "Money moved",
+    `${money(amount)}${move.counterparty ? ` · ${move.counterparty}` : ""}`,
+  );
+  return { ok: true, id: move.id };
 }

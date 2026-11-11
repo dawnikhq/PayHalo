@@ -14,6 +14,7 @@ import {
   IconMenu,
   IconPlan,
   IconShield,
+  IconWallet,
 } from "./icons";
 
 export type Role = "owner" | "keyholder" | "beneficiary";
@@ -25,6 +26,7 @@ const NAV: Record<Role, { primary: NavItem[]; secondary: NavItem[]; workspace: s
     workspace: "Personal workspace",
     primary: [
       { href: "/dashboard", label: "Dashboard", icon: <IconDashboard /> },
+      { href: "/money", label: "Money", icon: <IconWallet /> },
       { href: "/assets", label: "Assets", icon: <IconAssets /> },
       { href: "/beneficiaries", label: "Beneficiaries", icon: <IconBeneficiaries /> },
       { href: "/plan", label: "My Plan", icon: <IconPlan /> },
@@ -263,13 +265,6 @@ export function AppShell({
             <p className="hidden text-[13px] font-medium text-[var(--color-ink)] lg:block">{nav.workspace}</p>
 
             <div className="ml-auto flex items-center gap-3 sm:gap-5">
-              <span className="hidden text-[10.5px] font-semibold uppercase tracking-[0.18em] text-[#9aa8a2] sm:block">
-                Private by design
-              </span>
-              <span className="hidden items-center gap-2 text-[12px] text-[var(--color-muted)] sm:flex">
-                <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-sage)]" />
-                Private workspace
-              </span>
               {role === "owner" ? (
                 <form action="/auth/signout" method="post">
                   <button
@@ -301,7 +296,70 @@ export function AppShell({
           </div>
         </footer>
       </div>
+
+      <MobileTabs role={role} />
     </div>
+  );
+}
+
+/**
+ * The phone shell: five thumb-reachable destinations, floating above the page
+ * with the canvas showing through. Nothing here duplicates the desktop
+ * sidebar's secondary items — those live in the drawer.
+ */
+function MobileTabs({ role }: { role: Role }) {
+  const pathname = usePathname();
+  const tabs: NavItem[] =
+    role === "owner"
+      ? [
+          { href: "/dashboard", label: "Home", icon: <IconDashboard /> },
+          { href: "/money", label: "Money", icon: <IconWallet /> },
+          { href: "/assets", label: "Assets", icon: <IconAssets /> },
+          { href: "/plan", label: "Plan", icon: <IconPlan /> },
+          { href: "/settings", label: "Profile", icon: <IconShield /> },
+        ]
+      : role === "keyholder"
+        ? [
+            { href: "/keyholder", label: "Home", icon: <IconDashboard />, exact: true },
+            { href: "/keyholder/support", label: "Support", icon: <IconHelp /> },
+          ]
+        : [
+            { href: "/beneficiary", label: "Home", icon: <IconDashboard />, exact: true },
+            { href: "/beneficiary/support", label: "Support", icon: <IconHelp /> },
+          ];
+
+  return (
+    <nav
+      aria-label="Primary"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--color-line)] bg-[rgba(255,255,255,0.94)] backdrop-blur-md lg:hidden"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
+      <ul className="mx-auto flex max-w-[560px] items-stretch justify-between px-2">
+        {tabs.map((tab) => {
+          const active = tab.exact ? pathname === tab.href : pathname === tab.href || pathname.startsWith(`${tab.href}/`);
+          return (
+            <li key={tab.href} className="flex-1">
+              <Link
+                href={tab.href}
+                aria-current={active ? "page" : undefined}
+                className={`flex flex-col items-center gap-1 rounded-[14px] px-1 py-2.5 text-[10.5px] font-semibold transition ${
+                  active ? "text-[var(--color-brand)]" : "text-[var(--color-muted)]"
+                }`}
+              >
+                <span
+                  className={`grid h-8 w-8 place-items-center rounded-full transition ${
+                    active ? "bg-[var(--color-mint)]" : ""
+                  }`}
+                >
+                  {tab.icon}
+                </span>
+                {tab.label}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
   );
 }
 

@@ -46,9 +46,20 @@ export default async function DashboardPage({
           </h1>
           <p className="t-body mt-2">A little more clarity. A lot more peace of mind.</p>
         </div>
-        <Link href="/assets" className="btn btn-primary self-start">
-          Manage assets <span aria-hidden>→</span>
-        </Link>
+        <div className="flex flex-wrap items-center gap-2 self-start">
+          <Link href="/money" className="btn btn-secondary btn-sm">
+            Send
+          </Link>
+          <Link href="/money" className="btn btn-secondary btn-sm">
+            Receive
+          </Link>
+          <Link href="/money" className="btn btn-secondary btn-sm">
+            Transfer
+          </Link>
+          <Link href="/assets" className="btn btn-primary btn-sm">
+            Manage assets <span aria-hidden>→</span>
+          </Link>
+        </div>
       </header>
 
       {sealed && (

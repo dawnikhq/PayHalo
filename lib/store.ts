@@ -1,6 +1,7 @@
 import { getDriver } from "./storage";
 import {
   addAsset,
+  allocateToPot,
   beneficiaryView,
   addBeneficiary,
   addDocument,
@@ -18,13 +19,17 @@ import {
   submitClaim,
   updateAsset,
   updateBeneficiary,
+  createPot,
+  recordMove,
   updateProfile,
   keyholderView,
   verifyClaim,
   type AssetInput,
   type Audience,
   type BeneficiaryInput,
+  type MoveInput,
   type PlanInput,
+  type PotInput,
   type StateDoc,
 } from "./model";
 import type { StoredReport } from "./certs";
@@ -287,4 +292,18 @@ export async function getReleaseLedger(): Promise<ReleaseLedger | null> {
     totalCents: rows.reduce((sum, row) => sum + row.amountCents, 0),
     rows,
   };
+}
+
+/* ------------------------------------------------------------- stash & saves */
+
+export async function createPotAction(input: PotInput) {
+  return mutate((doc) => createPot(doc, input));
+}
+
+export async function allocateAction(potId: number, amountCents: number, direction: "to" | "from") {
+  return mutate((doc) => allocateToPot(doc, potId, amountCents, direction));
+}
+
+export async function recordMoveAction(input: MoveInput) {
+  return mutate((doc) => recordMove(doc, input));
 }

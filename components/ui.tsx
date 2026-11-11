@@ -5,7 +5,7 @@ import type { PlanStep } from "@/lib/types";
 
 export function Page({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`mx-auto w-full max-w-[1180px] px-5 pb-16 pt-7 sm:px-8 ${className}`}>{children}</div>
+    <div className={`mx-auto w-full max-w-[1180px] px-5 pb-28 pt-7 sm:px-8 lg:pb-16 ${className}`}>{children}</div>
   );
 }
 

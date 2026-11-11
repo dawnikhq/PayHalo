@@ -53,7 +53,7 @@ async function handlePOST(request: NextRequest) {
       amount.toFixed(2),
       CURRENCY,
       `${origin}/api/paypal/fund/return`,
-      `${origin}/settings?funded=cancelled`,
+      `${origin}/money?added=cancelled`,
     );
 
     const res = NextResponse.json({ approveUrl: order.approveUrl, mode: paypalMode() });

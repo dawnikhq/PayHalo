@@ -39,6 +39,35 @@ export interface Asset {
   reviewed?: number;
 }
 
+/**
+ * A "save" — money set aside for one named purpose. The balance itself stays in
+ * the PayPal account; this records what that money is for and who inherits it.
+ */
+export interface Pot {
+  id: number;
+  name: string;
+  /** The answer to "what is this money for?" */
+  purpose: string;
+  targetCents: number;
+  allocatedCents: number;
+  beneficiaryId: number | null;
+  createdAt: string;
+}
+
+export type MoneyMoveKind = "in" | "out" | "to-pot" | "from-pot";
+
+export interface MoneyMove {
+  id: number;
+  kind: MoneyMoveKind;
+  amountCents: number;
+  potId: number | null;
+  counterparty: string | null;
+  note: string;
+  status: "recorded" | "pending" | "failed";
+  providerId: string | null;
+  createdAt: string;
+}
+
 export interface DocumentRow {
   id: number;
   userId: number;
@@ -185,6 +214,10 @@ export interface Snapshot {
   steps: PlanStep[];
   events: EventRow[];
   totalCents: number;
+  /** Money moved into VIVO and not yet set aside in a save. */
+  stashCents: number;
+  pots: Pot[];
+  moves: MoneyMove[];
   secondsToReviewEnd: number | null;
   secondsToWindowEnd: number | null;
   /** Which persistence driver served this state. */

@@ -393,6 +393,122 @@ export async function captureDepositOrder(orderId: string): Promise<DepositCaptu
   };
 }
 
+/* -------------------------------------------------------------------- send */
+
+/**
+ * Money out to one person. This is a payout from the app's own business
+ * account — the same rail the estate release uses, with a single item and a
+ * unique batch id so a retry cannot send twice.
+ */
+export async function sendToRecipient(
+  email: string,
+  amountCents: number,
+  note: string,
+  currency = "USD",
+): Promise<{ batchId: string | null; status: string }> {
+  const token = await appAccessToken();
+  const batchId = `vivo-send-${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
+
+  const res = await fetch(`${API[paypalMode()]}/v1/payments/payouts`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      sender_batch_header: {
+        sender_batch_id: batchId,
+        email_subject: "A payment from VIVO",
+        email_message:
+          paypalMode() === "live"
+            ? "A payment was sent to you from a VIVO plan."
+            : "This payment ran in PayPal's sandbox and is not real money.",
+      },
+      items: [
+        {
+          recipient_type: "EMAIL",
+          receiver: email,
+          amount: { value: decimal(amountCents), currency },
+          note: note.slice(0, 400),
+          sender_item_id: batchId.slice(0, 63),
+        },
+      ],
+    }),
+    cache: "no-store",
+  });
+
+  const json = (await res.json().catch(() => null)) as
+    | { batch_header?: { payout_batch_id?: string; batch_status?: string }; message?: string; name?: string }
+    | null;
+
+  if (!res.ok) {
+    throw new PayPalError(json?.message ?? json?.name ?? `PayPal rejected the payment (${res.status})`, res.status);
+  }
+  return {
+    batchId: json?.batch_header?.payout_batch_id ?? null,
+    status: json?.batch_header?.batch_status ?? "PENDING",
+  };
+}
+
+/* ----------------------------------------------------------------- receive */
+
+/**
+ * Money in, requested rather than taken: PayPal emails the payer an invoice
+ * they can settle from their own account. Nothing is charged without them.
+ */
+export async function requestPayment(
+  email: string,
+  amountCents: number,
+  note: string,
+  currency = "USD",
+): Promise<{ invoiceId: string; status: string }> {
+  const token = await appAccessToken();
+  const invoiceNumber = `VIVO-${Date.now().toString(36).toUpperCase()}`;
+
+  const res = await fetch(`${API[paypalMode()]}/v2/invoicing/invoices?send_to_recipient=true`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      detail: {
+        invoice_number: invoiceNumber,
+        currency_code: currency,
+        note: note.slice(0, 400) || "Requested through VIVO",
+        payment_term: { term_type: "DUE_ON_RECEIPT" },
+      },
+      primary_recipients: [{ billing_info: { email_address: email } }],
+      items: [
+        {
+          name: "Money for a VIVO plan",
+          description: note.slice(0, 200) || "Transfer into a VIVO plan",
+          quantity: "1",
+          unit_amount: { currency_code: currency, value: decimal(amountCents) },
+        },
+      ],
+    }),
+    cache: "no-store",
+  });
+
+  const json = (await res.json().catch(() => null)) as
+    | { id?: string; status?: string; message?: string; name?: string; details?: { issue?: string }[] }
+    | null;
+
+  if (!res.ok || !json?.id) {
+    const reason =
+      json?.message ??
+      json?.details?.[0]?.issue ??
+      json?.name ??
+      `PayPal could not raise the request (${res.status})`;
+    throw new PayPalError(reason, res.ok ? 502 : res.status);
+  }
+
+  return { invoiceId: json.id, status: json.status ?? "DRAFT" };
+}
+
 /* ------------------------------------------------------------------- oauth */
 
 export function authorizeUrl(redirectUri: string, state: string): string {

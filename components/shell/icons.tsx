@@ -104,3 +104,35 @@ export const IconLogout = (p: IconProps) => (
     <path d="M13 12h8m-3-3l3 3-3 3" />
   </svg>
 );
+
+export const IconWallet = (p: IconProps) => (
+  <svg {...base} {...p}>
+    <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6H18a2 2 0 0 1 2 2v1" />
+    <rect x="3" y="9" width="18" height="10" rx="2.5" />
+    <path d="M16 14h2" />
+  </svg>
+);
+
+export const IconSend = (p: IconProps) => (
+  <svg {...base} {...p}>
+    <path d="M20 4L4 10.5l6 2.5 2.5 6L20 4z" />
+    <path d="M10 13l4-4" />
+  </svg>
+);
+
+export const IconReceive = (p: IconProps) => (
+  <svg {...base} {...p}>
+    <path d="M12 4v11" />
+    <path d="M7.5 10.5L12 15l4.5-4.5" />
+    <path d="M5 19h14" />
+  </svg>
+);
+
+export const IconSwap = (p: IconProps) => (
+  <svg {...base} {...p}>
+    <path d="M4 8h13" />
+    <path d="M14 5l3 3-3 3" />
+    <path d="M20 16H7" />
+    <path d="M10 13l-3 3 3 3" />
+  </svg>
+);
