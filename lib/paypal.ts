@@ -780,7 +780,9 @@ export async function diagnosePayPal(requestUrl: string): Promise<PayPalDiagnosi
   result.verdict = result.payoutCapability.ok
     ? "Credentials work and payouts are reachable."
     : result.payoutCapability.status === 403 || result.payoutCapability.status === 404
-      ? "Credentials work, but this app has no Payouts access. Payouts must be enabled on the Live app by PayPal, and the business account has to be in a country PayPal pays out from."
+      ? mode === "sandbox"
+        ? "Credentials work and balances and invoices are readable, but Payouts is not enabled for this sandbox app. Turn it on in Apps & Credentials → your app → Features → Payouts; sandbox transfers are free."
+        : "Credentials work, but this app has no Payouts access. Payouts must be enabled on the Live app by PayPal, and the business account has to be in a country PayPal pays out from."
       : "Credentials work, but the payouts check did not succeed.";
 
   return result;

@@ -98,11 +98,15 @@ async function handlePOST(request: Request) {
     });
     return NextResponse.json({ ok: true, batchId: result.batchId, status: result.status, mode: paypalMode() });
   } catch (error) {
-    const status = error instanceof PayPalError ? error.status : 502;
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "PayPal did not accept the payment." },
-      { status },
-    );
+    const upstream = error instanceof PayPalError ? error.status : 502;
+    const message = error instanceof Error ? error.message : "PayPal did not accept the payment.";
+    const hint =
+      (upstream === 403 || upstream === 404) && paypalMode() === "sandbox"
+        ? " Payouts is not enabled for this sandbox app — turn it on under Apps & Credentials → your app → Features → Payouts."
+        : (upstream === 403 || upstream === 404) && paypalMode() === "live"
+          ? " Payouts is not enabled on this Live app."
+          : "";
+    return NextResponse.json({ error: `${message}${hint}` }, { status: 502 });
   }
 }
 
