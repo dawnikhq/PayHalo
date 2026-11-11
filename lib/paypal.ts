@@ -658,9 +658,9 @@ export async function diagnosePayPal(requestUrl: string): Promise<PayPalDiagnosi
 
   if (!tokenResult.ok) {
     result.verdict =
-      "PayPal rejected the client id and secret pair. Regenerate the secret on the same REST app the client id belongs to, for the " +
+      "PayPal rejected this client id and secret for the " +
       mode +
-      " environment, and set both variables together.";
+      " environment. The usual cause is credentials from the other tab: a Live id pair cannot authenticate against sandbox (or the reverse), and a secret only works with the app that issued it. Copy the Client ID and Secret from one app, in one environment, at the same moment.";
     return result;
   }
 

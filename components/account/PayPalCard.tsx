@@ -184,6 +184,11 @@ export function PayPalCard() {
         yours; the handover payout is sent from the plan&apos;s own business account, in {modeLabel.toLowerCase()} mode.
       </p>
 
+      <p className="mt-2 max-w-[62ch] text-[11.5px] text-[var(--color-muted)]">
+        Connecting is optional: Send and Receive use the deployment&apos;s own API credentials, not this link. Sandbox apps need
+        no PayPal review; <em>Log in with PayPal</em> on a Live app is reviewed by PayPal and that review is what takes weeks.
+      </p>
+
       {diagnosis && (
         <div className="mt-4 rounded-[14px] border border-[var(--color-line-strong)] bg-[#fbfdfb] p-4">
           {"error" in diagnosis ? (
