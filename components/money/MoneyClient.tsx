@@ -290,20 +290,26 @@ function SendForm({
   const [note, setNote] = useState("");
   const [passcode, setPasscode] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const amountCents = Math.round(Number(amount || "0") * 100);
 
   return (
     <form
       onSubmit={async (e) => {
         e.preventDefault();
         setLocalError(null);
+        if (!confirming) {
+          if (amountCents < 100) {
+            setLocalError("Send at least 1.00.");
+            return;
+          }
+          setConfirming(true);
+          return;
+        }
         try {
-          await onSubmit({
-            email,
-            amountCents: Math.round(Number(amount) * 100),
-            note,
-            passcode,
-          });
+          await onSubmit({ email, amountCents, note, passcode });
         } catch (err) {
+          setConfirming(false);
           setLocalError(err instanceof Error ? err.message : "Could not send.");
         }
       }}
@@ -352,9 +358,31 @@ function SendForm({
         </div>
       </div>
       {(localError || error) && <p className="field-error mt-3">{localError ?? error}</p>}
-      <button type="submit" disabled={disabled} className="btn btn-primary mt-4">
-        {disabled ? "Sending…" : "Send"}
-      </button>
+
+      {confirming ? (
+        <div className="mt-4 rounded-[12px] border border-[var(--color-line-strong)] bg-[#f8faf7] p-4">
+          <p className="text-[13px] font-semibold text-[var(--color-ink)]">
+            Send {money(amountCents)} to {email}?
+          </p>
+          <p className="t-meta mt-1">Check the address. A PayPal payout cannot be pulled back once it is paid.</p>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <button type="submit" disabled={disabled} className="btn btn-primary">
+              {disabled ? "Sending…" : "Confirm and send"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirming(false)}
+              className="text-[12.5px] font-semibold text-[var(--color-muted)]"
+            >
+              Change it
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button type="submit" disabled={disabled} className="btn btn-primary mt-4">
+          Review the transfer
+        </button>
+      )}
     </form>
   );
 }
