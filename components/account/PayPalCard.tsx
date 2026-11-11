@@ -36,6 +36,7 @@ export function PayPalCard() {
         token: { ok: boolean; status: number; message: string };
         balances: { ok: boolean; status: number; message: string };
         payoutCapability: { ok: boolean; status: number; message: string };
+        invoicing: { ok: boolean; status: number; message: string };
         otherEnvironment: { mode: string; ok: boolean; message: string } | null;
         verdict: string;
       }
@@ -209,6 +210,10 @@ export function PayPalCard() {
                 <li>
                   <strong className="text-[var(--color-ink)]">Payouts:</strong>{" "}
                   {diagnosis.payoutCapability.ok ? "reachable" : `not reachable — ${diagnosis.payoutCapability.message}`}
+                </li>
+                <li>
+                  <strong className="text-[var(--color-ink)]">Invoicing:</strong>{" "}
+                  {diagnosis.invoicing.ok ? "reachable" : `not reachable — ${diagnosis.invoicing.message}`}
                 </li>
                 {diagnosis.otherEnvironment && !diagnosis.token.ok && (
                   <li>

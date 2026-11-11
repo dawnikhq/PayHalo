@@ -615,6 +615,7 @@ export interface PayPalDiagnosis {
   token: { ok: boolean; status: number; message: string };
   balances: { ok: boolean; status: number; message: string };
   payoutCapability: { ok: boolean; status: number; message: string };
+  invoicing: { ok: boolean; status: number; message: string };
   /** Did the same credentials work against the other PayPal environment? */
   otherEnvironment: { mode: PayPalMode; ok: boolean; message: string } | null;
   verdict: string;
@@ -643,6 +644,7 @@ export async function diagnosePayPal(requestUrl: string): Promise<PayPalDiagnosi
     token: { ok: false, status: 0, message: "not attempted" },
     balances: { ok: false, status: 0, message: "not attempted" },
     payoutCapability: { ok: false, status: 0, message: "not attempted" },
+    invoicing: { ok: false, status: 0, message: "not attempted" },
     otherEnvironment: null,
     verdict: "",
   };
@@ -693,15 +695,25 @@ export async function diagnosePayPal(requestUrl: string): Promise<PayPalDiagnosi
     headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
     cache: "no-store",
   }).catch(() => null);
+  const balanceBody = balanceRes
+    ? ((await balanceRes.json().catch(() => null)) as
+        | { balances?: { currency?: string; total_balance?: { value?: string } }[] }
+        | null)
+    : null;
+  const primaryBalance = balanceBody?.balances?.[0];
   result.balances = balanceRes
     ? {
         ok: balanceRes.ok,
         status: balanceRes.status,
-        message: balanceRes.ok ? "read" : (await balanceRes.text().catch(() => "")).slice(0, 200) || `HTTP ${balanceRes.status}`,
+        message: balanceRes.ok
+          ? primaryBalance
+            ? `read · ${primaryBalance.currency ?? "USD"} ${primaryBalance.total_balance?.value ?? "0.00"}`
+            : "read · no balances returned"
+          : `HTTP ${balanceRes.status}`,
       }
     : { ok: false, status: 0, message: "request failed" };
 
-  const payoutRes = await fetch(`${API[mode]}/v1/payments/payouts?page_size=1`, {
+  const payoutRes = await fetch(`${API[mode]}/v1/payments/payouts?page_size=1&page=1&total_required=true`, {
     headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
     cache: "no-store",
   }).catch(() => null);
@@ -713,9 +725,23 @@ export async function diagnosePayPal(requestUrl: string): Promise<PayPalDiagnosi
       }
     : { ok: false, status: 0, message: "request failed" };
 
+  const invoiceRes = await fetch(`${API[mode]}/v2/invoicing/invoices?page_size=1&total_required=false`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+    cache: "no-store",
+  }).catch(() => null);
+  result.invoicing = invoiceRes
+    ? {
+        ok: invoiceRes.ok,
+        status: invoiceRes.status,
+        message: invoiceRes.ok ? "invoices reachable" : (await invoiceRes.text().catch(() => "")).slice(0, 200) || `HTTP ${invoiceRes.status}`,
+      }
+    : { ok: false, status: 0, message: "request failed" };
+
   result.verdict = result.payoutCapability.ok
     ? "Credentials work and payouts are reachable."
-    : "Credentials work, but this app cannot reach payouts. Enable the Payouts capability on the REST app (and confirm the business account is verified).";
+    : result.payoutCapability.status === 403 || result.payoutCapability.status === 404
+      ? "Credentials work, but this app has no Payouts access. Payouts must be enabled on the Live app by PayPal, and the business account has to be in a country PayPal pays out from."
+      : "Credentials work, but the payouts check did not succeed.";
 
   return result;
 }
