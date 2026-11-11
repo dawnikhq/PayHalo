@@ -2,7 +2,7 @@ import { Badge } from "./ui";
 
 const MAP: Record<string, { label: string; tone: "forest" | "lime" | "mint" | "warn" | "danger" | "neutral" }> = {
   active: { label: "Plan active", tone: "mint" },
-  draft: { label: "Draft", tone: "neutral" },
+  draft: { label: "In progress", tone: "neutral" },
   claiming: { label: "Safety window open", tone: "warn" },
   review: { label: "Under registry check", tone: "warn" },
   window: { label: "Safety window open", tone: "warn" },

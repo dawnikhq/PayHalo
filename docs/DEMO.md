@@ -37,6 +37,11 @@ PAYPAL_PAYOUT_PASSCODE=any phrase    # required: payouts fail closed without it
 OPENAI_API_KEY=...                   # or ANTHROPIC_API_KEY / GEMINI_API_KEY
 AI_MODEL=gpt-4o-mini
 
+# Email — Brevo transactional (sign-in link + vault key)
+BREVO_API_KEY=...
+MAIL_FROM=hello@yourdomain.com
+MAIL_FROM_NAME=PayHalo
+
 # Operator desk
 ADMIN_PASSCODE=...
 ```
@@ -59,7 +64,7 @@ account owns one plan; nothing is shared between accounts.
    should get the flat. My son Tunde gets the savings. My sister Ngozi is the backup."*
    The draft comes back with people, shares totalling 100%, and assets with amounts. Press **Add to my plan**.
 3. **Start the vault** (`/plan/start`) → names the first beneficiary, opens the vault, mints a key. The
-   key is emailed when `RESEND_API_KEY` + `MAIL_FROM` are set; otherwise it is shown **once** to hand over.
+   key is emailed when `BREVO_API_KEY` + `MAIL_FROM` are set; otherwise it is shown **once** to hand over.
 4. **My Plan** → *The vault* card: reference, key recipient, balance, release state.
 5. **Dashboard** → Send / Receive under the asset card; the vault card below it.
 6. **Beneficiaries** → *Plans that name you*: the other direction.

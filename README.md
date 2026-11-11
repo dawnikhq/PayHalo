@@ -292,7 +292,7 @@ first person, open the vault, mint a key and send it to them.
   state, and the one button you have — *Request the assets*, with your key. A signed-in person only ever sees
   plans where their own email is written, via `driver.scan()` filtered to that address.
 
-Env for this flow: `ADMIN_PASSCODE` (the release desk), plus `RESEND_API_KEY` and `MAIL_FROM` for the key
+Env for this flow: `ADMIN_PASSCODE` (the release desk), plus `BREVO_API_KEY` and `MAIL_FROM` for the key
 email. Without the mail pair the wizard shows the key to the owner exactly once so it can be handed over by
 hand — it is never stored in clear.
 
@@ -323,9 +323,9 @@ instead of returning a 500. Each owner's plan is one JSON document under its own
   account you control, not from a beneficiary's. PayPal is not a bank and PayHalo does not hold customer
   balances. Live payouts need `PAYPAL_ENV=live` **and** `PAYPAL_ALLOW_LIVE_PAYOUTS=true`, and the release
   still requires the passcode.
-- Accounts are real and self-hosted. The **emailed link needs `RESEND_API_KEY` and `MAIL_FROM`**; until
-  both are set the link tab says delivery is off and passwords are the only way in. The same two variables
-  gate the vault key email, and until they are set the key is shown to the owner once instead. There is no
+- Accounts are real and self-hosted. Email goes through **Brevo** (`BREVO_API_KEY`, `MAIL_FROM`,
+  `MAIL_FROM_NAME`); it carries the sign-in link and the vault key. Until those are set the link tab says
+  delivery is off, and the wizard shows the key to the owner exactly once to hand over. There is no
   "forgot password" flow yet — that is the next thing to build.
 - A signed share link is a bearer credential. Anyone holding it sees that audience's view until the
   secret is rotated — which invalidates every link at once. There is no per-link revocation yet.

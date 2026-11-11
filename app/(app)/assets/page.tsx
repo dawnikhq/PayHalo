@@ -34,7 +34,7 @@ export default async function AssetsPage() {
           <p className="label">Accounts in your plan</p>
           <p className="t-num mt-2.5 text-[30px] leading-none">{pad2(s.assets.length)}</p>
           <p className="t-small mt-2">
-            {s.assets.length ? "All included in your draft" : "Nothing added yet"}
+            {s.assets.length ? "All included in your plan" : "Nothing added yet"}
           </p>
         </div>
         <div className="card p-6">
@@ -64,7 +64,7 @@ export default async function AssetsPage() {
         </div>
         <div className="card p-6">
           <h2 className="h3">You record what you hold</h2>
-          <p className="t-small mt-2">Balances are the figures you enter, so nothing is claimed on your behalf. Connect PayPal in Settings for a live payout account.</p>
+          <p className="t-small mt-2">Balances are the figures you enter, so nothing is claimed on your behalf.</p>
         </div>
       </div>
     </Page>

@@ -80,7 +80,7 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
 
         <section className="card p-6">
           <span className={`pill ${asset.reviewed ? "badge-mint" : "badge-neutral"}`}>
-            {asset.reviewed ? "Included in draft" : "Needs a review"}
+            {asset.reviewed ? "Included in your plan" : "Needs a review"}
           </span>
           <h2 className="h2 mt-4">
             {primary ? `Planned for ${primary.name.split(" ")[0]}.` : "No primary beneficiary yet."}
@@ -154,9 +154,7 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
             <p className="label">Last updated</p>
             <p className="mt-1 text-[13px] text-[var(--color-ink)]">{stampLabel(asset.reviewed ? s.plan.updatedAt : null)}</p>
           </div>
-          <Link href="/documents" className="mt-3 inline-block text-[12.5px] font-semibold text-[var(--color-brand)]">
-            Open documents →
-          </Link>
+
           <p className="t-meta mt-4">Only you can edit this asset.</p>
         </section>
       </div>

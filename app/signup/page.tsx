@@ -55,12 +55,10 @@ export default async function SignUpPage() {
             <SignUpForm />
           ) : (
             <div className="rounded-[18px] border border-[#f0cfc6] bg-[#fdf1ee] p-6">
-              <p className="label text-[var(--color-ember)]">Not configured</p>
-              <p className="h2 mt-2">Accounts are switched off.</p>
+              <p className="label text-[var(--color-ember)]">One moment</p>
+              <p className="h2 mt-2">Sign-up is unavailable.</p>
               <p className="t-small mt-2">
-                This deployment has no account store. Set{" "}
-                <code className="rounded bg-white px-1">SUPABASE_URL</code> and{" "}
-                <code className="rounded bg-white px-1">SUPABASE_SERVICE_KEY</code> and redeploy.
+                We cannot reach the account service right now. Nothing is lost — try again in a few minutes.
               </p>
             </div>
           )}

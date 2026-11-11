@@ -102,12 +102,17 @@ export function latestClaim(doc: StateDoc): Claim | null {
 }
 
 /** The five checklist items shown on My Plan and the dashboard progress card. */
+/**
+ * Six steps, in the order a person actually thinks about them. The vault is not
+ * one of them: it is what happens once all six are done.
+ */
 export function planSteps(doc: StateDoc): PlanStep[] {
   const has = (role: Role) => doc.beneficiaries.some((b) => b.role === role);
   return [
-    { key: "assets", label: "Assets", done: doc.assets.length > 0 },
-    { key: "beneficiaries", label: "Beneficiaries & allocations", done: has("primary") && has("backup") },
-    { key: "charity", label: "Fallback charity", done: has("charity") },
+    { key: "first_choice", label: "First choice", done: has("primary") },
+    { key: "assets", label: "What you own", done: doc.assets.length > 0 },
+    { key: "backups", label: "Family backups", done: has("backup") },
+    { key: "charity", label: "Final cause", done: has("charity") },
     { key: "keyholder", label: "Trusted keyholder", done: Boolean(doc.keyholder) },
     { key: "review", label: "Review & seal", done: Boolean(doc.plan.sealedAt) },
   ];
@@ -1211,6 +1216,42 @@ export function vaultBalanceCents(doc: StateDoc): number {
   return cash + totalCents(doc);
 }
 
+export interface KeyholderInput {
+  name: string;
+  email: string;
+  relationship: string;
+  accessCode?: string;
+}
+
+/**
+ * The trusted keyholder. They can open a claim; they never see balances, names
+ * or shares. The access code is the only thing they hold.
+ */
+export function setKeyholder(doc: StateDoc, input: KeyholderInput): { ok: boolean; error?: string; accessCode?: string } {
+  if (!input.name.trim()) return { ok: false, error: "Enter the name of your trusted person." };
+  if (input.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(input.email.trim())) {
+    return { ok: false, error: "That email does not look right." };
+  }
+
+  const code =
+    input.accessCode?.trim() ||
+    doc.keyholder?.accessCode ||
+    `KEY-${String(Math.floor(1000 + Math.random() * 9000))}`;
+
+  doc.seq += 1;
+  doc.keyholder = {
+    id: doc.keyholder?.id ?? doc.seq,
+    userId: doc.user.id,
+    name: input.name.trim(),
+    email: input.email.trim(),
+    relationship: input.relationship.trim(),
+    accessCode: code,
+  };
+  doc.plan.updatedAt = now();
+  addEvent(doc, "keyholder.set", "Keyholder named", `${doc.keyholder.name} can open a claim, and nothing else.`);
+  return { ok: true, accessCode: code };
+}
+
 function vaultRef(doc: StateDoc): string {
   const n = doc.plan.id;
   let tail = "";
@@ -1227,8 +1268,9 @@ export function openVault(doc: StateDoc): { ok: boolean; error?: string; vault?:
   if (doc.vault && doc.vault.status !== "released") {
     return { ok: false, error: "This plan already has an open vault." };
   }
-  if (!doc.beneficiaries.length) {
-    return { ok: false, error: "Name the first person who should receive this plan." };
+  const unfinished = planSteps(doc).filter((s) => !s.done && s.key !== "review");
+  if (unfinished.length) {
+    return { ok: false, error: `Finish your plan first: ${unfinished.map((s) => s.label).join(", ")}.` };
   }
   const vault: Vault = {
     ref: vaultRef(doc),
@@ -1241,7 +1283,7 @@ export function openVault(doc: StateDoc): { ok: boolean; error?: string; vault?:
     releaseRef: null,
   };
   doc.vault = vault;
-  doc.plan.status = "draft";
+  if (!doc.plan.sealedAt) doc.plan.status = "draft";
   doc.plan.updatedAt = now();
   addEvent(doc, "vault.opened", "Vault opened", `Vault ${vault.ref} is open and ready for money.`);
   return { ok: true, vault };

@@ -107,7 +107,7 @@ export default async function BeneficiariesPage() {
           </section>
 
           <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-            <p className="t-meta">Changes saved to draft · Only you can edit or seal.</p>
+            <p className="t-meta">Saved · Only you can edit or seal.</p>
             <Link href="/plan" className="text-[12.5px] font-semibold text-[var(--color-brand)]">
               Review the plan →
             </Link>

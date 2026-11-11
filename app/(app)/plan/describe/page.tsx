@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Page } from "@/components/ui";
 import { DescribePlan } from "@/components/plan/DescribePlan";
-import { aiConfigured, aiProvider } from "@/lib/ai";
+import { aiConfigured } from "@/lib/ai";
 
 export const dynamic = "force-dynamic";
 
@@ -15,11 +15,7 @@ export default async function DescribePage() {
           Some people would rather talk than fill a form. Say who matters and what you own, and the draft comes back for
           you to check before a single line is written.
         </p>
-        <p className="t-meta mt-2">
-          {aiConfigured()
-            ? `A model reads the text (${aiProvider()}); your plan is still written by the app's own rules.`
-            : "No model key is configured on this deployment, so a deterministic reader does the work and says so."}
-        </p>
+
       </header>
 
       <DescribePlan modelReady={aiConfigured()} />

@@ -9,7 +9,6 @@ import {
   IconBeneficiaries,
   IconClose,
   IconDashboard,
-  IconDocuments,
   IconHelp,
   IconMenu,
   IconPlan,
@@ -28,7 +27,6 @@ const NAV: Record<Role, { primary: NavItem[]; secondary: NavItem[]; workspace: s
       { href: "/assets", label: "Assets", icon: <IconAssets /> },
       { href: "/beneficiaries", label: "Beneficiaries", icon: <IconBeneficiaries /> },
       { href: "/plan", label: "My Plan", icon: <IconPlan /> },
-      { href: "/documents", label: "Documents", icon: <IconDocuments /> },
       { href: "/activity", label: "Activity", icon: <IconActivity /> },
     ],
     secondary: [
@@ -220,9 +218,9 @@ export function AppShell({
   );
 
   return (
-    <div className="min-h-screen bg-[var(--color-canvas)]">
+    <div className="min-h-screen">
       {/* desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[264px] overflow-y-auto overscroll-contain border-r border-[var(--color-line)] bg-[var(--color-surface)] [scrollbar-width:thin] lg:block">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[264px] overflow-y-auto overscroll-contain border-r border-white/70 bg-white/65 backdrop-blur-xl [scrollbar-width:thin] lg:block">
         {sidebar}
       </aside>
 
@@ -234,7 +232,7 @@ export function AppShell({
             onClick={() => setOpen(false)}
             className="absolute inset-0 bg-[#172d29]/35 backdrop-blur-[2px]"
           />
-          <div className="absolute inset-y-0 left-0 w-[290px] max-w-[86vw] overflow-y-auto border-r border-[var(--color-line)] bg-[var(--color-surface)] shadow-2xl">
+          <div className="absolute inset-y-0 left-0 w-[290px] max-w-[86vw] overflow-y-auto border-r border-white/70 bg-white/85 backdrop-blur-2xl shadow-2xl">
             <button
               onClick={() => setOpen(false)}
               aria-label="Close navigation"
@@ -248,7 +246,7 @@ export function AppShell({
       )}
 
       <div className="lg:pl-[264px]">
-        <header className="sticky top-0 z-20 border-b border-[var(--color-line)] bg-[rgba(255,255,255,0.86)] backdrop-blur-md">
+        <header className="sticky top-0 z-20 border-b border-white/70 bg-white/60 backdrop-blur-xl">
           <div className="flex h-[64px] items-center gap-3 px-4 sm:px-8">
             <button
               onClick={() => setOpen(true)}
@@ -328,7 +326,7 @@ function MobileTabs({ role }: { role: Role }) {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--color-line)] bg-[rgba(255,255,255,0.94)] backdrop-blur-md lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-white/70 bg-white/80 backdrop-blur-2xl lg:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <ul className="mx-auto flex max-w-[560px] items-stretch justify-between px-2">

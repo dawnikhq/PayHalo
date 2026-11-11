@@ -5,7 +5,7 @@ import { SafetyWindowBanner } from "@/components/SafetyWindowBanner";
 import { StatusPill } from "@/components/StatusPill";
 import { Page, ProgressTicks } from "@/components/ui";
 import { MoneyActions } from "@/components/money/MoneyActions";
-import { payoutsBlockedReason, paypalMode } from "@/lib/paypal";
+import { payoutsBlockedReason } from "@/lib/paypal";
 
 export const dynamic = "force-dynamic";
 
@@ -138,7 +138,7 @@ export default async function DashboardPage({
         </section>
 
         {/* money — directly under the asset card */}
-        <MoneyActions flush sendBlocked={payoutsBlockedReason()} mode={paypalMode()} />
+        <MoneyActions flush sendBlocked={payoutsBlockedReason()} />
 
         {/* the vault the money belongs to */}
         <section className="card p-6 md:p-7">
@@ -189,7 +189,7 @@ export default async function DashboardPage({
 
         {/* plan progress */}
         <section className="card-lime flex flex-col p-6 md:p-7">
-          <p className="label text-[#4d6b2a]">Your plan / {s.plan.sealedAt ? "sealed" : "draft"}</p>
+          <p className="label text-[#4d6b2a]">Your plan / {s.plan.sealedAt ? "sealed" : "in progress"}</p>
           <p className="h2 mt-2 text-[1.35rem] text-[var(--color-forest)]">
             {remaining === 0
               ? "Every step is in place."
@@ -208,7 +208,7 @@ export default async function DashboardPage({
           <p className="mt-4 flex-1 text-[12.5px] leading-relaxed text-[#3f5b3a]">
             {nextStep ? `Next: ${nextStep.label.toLowerCase()}.` : "Review anything you like, any time."}
             <br />
-            Draft saved {stampLabel(s.plan.updatedAt)}.
+            Saved {stampLabel(s.plan.updatedAt)}.
           </p>
 
           <Link href="/plan" className="btn btn-primary mt-5 w-full">

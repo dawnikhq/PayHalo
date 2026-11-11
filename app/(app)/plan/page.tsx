@@ -26,7 +26,7 @@ export default async function PlanPage() {
           <span className="pill badge-lime self-start">Vault {s.vault.ref}</span>
         ) : (
           <Link href="/plan/start" className="btn btn-primary self-start">
-            Start a plan <span aria-hidden>→</span>
+            {s.steps.every((step) => step.done) ? "Review my plan" : "Continue my plan"} <span aria-hidden>→</span>
           </Link>
         )}
       </header>
@@ -36,7 +36,7 @@ export default async function PlanPage() {
           <h2 className="h2 text-[1.35rem] text-[var(--color-forest)]">A considered plan. At your pace.</h2>
           <p className="mt-1 text-[12.5px] text-[#42603f]">
             {done} of {s.steps.length} complete ·{" "}
-            {s.plan.sealedAt ? `Sealed ${stampLabel(s.plan.sealedAt)}` : `Draft saved ${stampLabel(s.plan.updatedAt)}`}
+            {s.plan.sealedAt ? `Sealed ${stampLabel(s.plan.sealedAt)}` : `Saved ${stampLabel(s.plan.updatedAt)}`}
           </p>
         </div>
         <div className="w-full sm:w-[220px]">
@@ -45,7 +45,7 @@ export default async function PlanPage() {
             href={s.vault ? "/dashboard" : "/plan/start"}
             className="btn btn-primary btn-sm mt-3 w-full"
           >
-            {s.vault ? "Resume review" : "Start a plan"} <span aria-hidden>→</span>
+            {(s.vault || s.steps.some((step) => step.done)) ? "Continue my plan" : "Start my plan"} <span aria-hidden>→</span>
           </Link>
         </div>
       </section>
@@ -90,8 +90,7 @@ export default async function PlanPage() {
               or open it without that approval — and the key is required to ask.
             </p>
             <p className="t-meta mt-2 max-w-[64ch]">
-              Settlement runs over PayPal. While Payouts is not enabled on this account an approved release is recorded
-              here and the beneficiaries are notified, but the transfer itself waits on PayPal.
+              When a release is confirmed, the money is paid to the people you named — and to no one else.
             </p>
 
             {s.releaseRequests.length > 0 && (
@@ -233,7 +232,7 @@ export default async function PlanPage() {
           <section className="card p-6">
             <h2 className="h2">Life happens. Pause here.</h2>
             <p className="t-body mt-2">
-              Setup is optional. Leave anytime and resume this saved draft when you are ready. Drafts never
+              Setup is optional. Leave anytime and pick it up where you left off. Nothing is ever
               move assets.
             </p>
             <Link href="/dashboard" className="btn btn-secondary btn-sm mt-4">
@@ -247,9 +246,7 @@ export default async function PlanPage() {
               Documents hold recovery instructions only. PayHalo never asks for a password, private key or
               recovery phrase — and a keyholder never sees one.
             </p>
-            <Link href="/documents" className="mt-3 inline-block text-[12.5px] font-semibold text-[var(--color-brand)]">
-              Open documents →
-            </Link>
+
           </section>
         </aside>
       </div>

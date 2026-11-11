@@ -5,7 +5,6 @@ import { ProfileForm } from "@/components/account/ProfileForm";
 import { ShareLinks } from "@/components/account/ShareLinks";
 import { requireOwner } from "@/lib/scope";
 import { shareToken } from "@/lib/share";
-import { PayPalCard } from "@/components/account/PayPalCard";
 import { CopyButton } from "@/components/CopyButton";
 import { Avatar } from "@/components/Avatar";
 
@@ -55,10 +54,10 @@ export default async function SettingsPage({
           }`}
         >
           {paypal === "connected"
-            ? "PayPal connected. Only the account you signed in with was linked — no balances or permissions were requested."
+            ? "You are connected. Nothing about your balances or permissions was read."
             : paypal === "unconfigured"
-              ? "PayPal is not configured on this deployment yet."
-              : `PayPal could not be connected. ${reason ?? ""}`.trim()}
+              ? "Connecting is not available just yet. Everything else works as normal."
+              : "That did not complete. Nothing changed — try again when you are ready."}
         </div>
       )}
 
@@ -82,7 +81,6 @@ export default async function SettingsPage({
             hasKeyholder={Boolean(s.keyholder)}
           />
 
-          <PayPalCard />
 
           <section className="card p-6 md:p-7">
             <h2 className="h2">Who can see what</h2>

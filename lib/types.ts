@@ -112,7 +112,7 @@ export interface Plan {
 
 /** The five things the My Plan checklist counts. */
 export interface PlanStep {
-  key: "assets" | "beneficiaries" | "charity" | "keyholder" | "review";
+  key: "first_choice" | "assets" | "backups" | "charity" | "keyholder" | "review";
   label: string;
   done: boolean;
 }

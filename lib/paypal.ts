@@ -116,23 +116,20 @@ export function payoutsEnabled(): boolean {
   return true;
 }
 
+/**
+ * The one sentence a person reads when sending is unavailable. Deliberately
+ * free of environment names, status codes and provider detail: the operator
+ * console has the diagnosis, the customer has a plain answer.
+ */
 export function payoutsBlockedReason(): string | null {
-  const mode = paypalMode();
-  if (!paypalConfigured()) {
-    return mode === "sandbox"
-      ? "Sandbox keys are not installed. Add PAYPAL_SANDBOX_CLIENT_ID and PAYPAL_SANDBOX_CLIENT_SECRET, and sending turns itself on — sandbox transfers cost nothing."
-      : "PayPal credentials are not set on this deployment.";
-  }
-  if (process.env.PAYPAL_PAYOUTS_ENABLED?.toLowerCase() !== "true") {
-    return mode === "sandbox"
-      ? "Payouts are switched off. Set PAYPAL_PAYOUTS_ENABLED=true — in sandbox the money is fake and the transfer is free."
-      : "Payouts are switched off. Set PAYPAL_PAYOUTS_ENABLED=true to allow transfers.";
+  if (!paypalConfigured() || process.env.PAYPAL_PAYOUTS_ENABLED?.toLowerCase() !== "true") {
+    return "Sending is coming to this account soon. Receiving payments already works.";
   }
   if (paypalMode() === "live" && process.env.PAYPAL_ALLOW_LIVE_PAYOUTS?.toLowerCase() !== "true") {
-    return "Live payouts are locked. Set PAYPAL_ALLOW_LIVE_PAYOUTS=true only when you mean it.";
+    return "Sending is coming to this account soon. Receiving payments already works.";
   }
   if (!releasePasscodeConfigured()) {
-    return "No release passcode is set. Add PAYPAL_PAYOUT_PASSCODE to the environment to enable the release button.";
+    return "Sending is coming to this account soon. Receiving payments already works.";
   }
   return null;
 }
@@ -789,11 +786,5 @@ export async function diagnosePayPal(requestUrl: string): Promise<PayPalDiagnosi
 }
 
 export function footerNote(): string {
-  if (!paypalConfigured()) {
-    return "Your plan is private. Balances are what you record; no provider is connected.";
-  }
-  if (paypalMode() === "live") {
-    return "PayPal Live connected · A release moves real money, once the passcode is given.";
-  }
-  return "PayPal Sandbox connected · Transfers run against PayPal's sandbox account.";
+  return "Considered, private, and only ever opened for the people you name.";
 }

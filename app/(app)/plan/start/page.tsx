@@ -2,8 +2,6 @@ import Link from "next/link";
 import { Page } from "@/components/ui";
 import { StartPlan } from "@/components/plan/StartPlan";
 import { getSnapshot } from "@/lib/store";
-import { mailConfigured } from "@/lib/mailer";
-import { paypalMode } from "@/lib/paypal";
 
 export const dynamic = "force-dynamic";
 
@@ -13,35 +11,34 @@ export default async function StartPlanPage() {
   return (
     <Page>
       <header className="mb-6">
-        <p className="eyebrow">Start a plan</p>
-        <h1 className="h1 mt-2.5">A vault, a key, a person.</h1>
+        <p className="eyebrow">Your plan</p>
+        <h1 className="h1 mt-2.5">Six steps, in your own time.</h1>
         <p className="t-body mt-2 max-w-[60ch]">
-          Starting the plan opens its vault and sends a key to the first person you name. From then on the money has a
-          home that nobody — including us — can empty.
+          Who comes first, what you own, who comes after, a cause, someone you trust — then you read it back. The vault
+          opens at the end, when it is all in place.
+        </p>
+        <p className="t-meta mt-3">
+          Rather say it in a sentence?{" "}
+          <Link href="/plan/describe" className="font-semibold text-[var(--color-brand)]">
+            Describe your plan
+          </Link>
         </p>
       </header>
 
-      {!mailConfigured() && (
-        <p className="mb-5 rounded-[12px] border border-[var(--color-line)] bg-[#fbfdfb] px-4 py-3 text-[12px] text-[var(--color-muted)]">
-          Email delivery is not configured on this deployment, so the key will be shown to you once to pass on by hand.
-        </p>
-      )}
-
-      <div className="mb-5 rounded-[14px] border border-[var(--color-line)] bg-[#fbfdfb] px-4 py-3">
-        <p className="text-[12.5px] text-[var(--color-ink)]">
-          Would you rather talk than fill a form?{" "}
-          <Link href="/plan/describe" className="font-semibold text-[var(--color-brand)]">
-            Describe your plan in a paragraph
-          </Link>{" "}
-          and check the draft it produces.
-        </p>
-      </div>
-
-      <StartPlan ownerName={s.user.name} hasVault={Boolean(s.vault)} />
-
-      <p className="t-meta mt-6">
-        Vaults are {paypalMode() === "live" ? "live" : "in sandbox"} mode on this deployment.
-      </p>
+      <StartPlan
+        steps={s.steps}
+        ownerName={s.user.name}
+        vaultOpen={Boolean(s.vault)}
+        people={s.beneficiaries.map((b) => ({
+          name: b.name,
+          role: b.role,
+          share: b.share,
+          relationship: b.relationship,
+        }))}
+        assetCount={s.assets.length}
+        totalCents={s.totalCents}
+        keyholderName={s.keyholder?.name ?? null}
+      />
     </Page>
   );
 }

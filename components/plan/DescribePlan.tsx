@@ -103,7 +103,7 @@ export function DescribePlan({ modelReady }: { modelReady: boolean }) {
             <p className="eyebrow">In your own words</p>
             <h2 className="h2 mt-2">Say it once, plainly.</h2>
           </div>
-          <span className="pill badge-neutral">{modelReady ? "reading with a model" : "reading with rules"}</span>
+          <span className="pill badge-neutral">{modelReady ? "read for you" : "read for you"}</span>
         </div>
 
         <p className="t-small mt-2 max-w-[62ch]">
@@ -143,12 +143,10 @@ export function DescribePlan({ modelReady }: { modelReady: boolean }) {
         <section className="card p-6 md:p-7">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="eyebrow">The draft</p>
+              <p className="eyebrow">What we read</p>
               <h2 className="h2 mt-2">Check what it read</h2>
             </div>
-            <span className="pill badge-neutral">
-              {draft.source === "model" ? draft.model ?? "model" : "rules, not a model"}
-            </span>
+            <span className="pill badge-neutral">Check every line</span>
           </div>
 
           <p className="t-small mt-2">{draft.reading}</p>

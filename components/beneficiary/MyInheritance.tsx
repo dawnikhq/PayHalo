@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { money, shortDate } from "@/lib/format";
 
@@ -55,6 +56,12 @@ export function MyInheritance({ plans }: { plans: MyPlan[] }) {
   if (!plans.length) {
     return (
       <div className="card p-6">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <p className="eyebrow">Your inheritance</p>
+          <Link href="/dashboard" className="text-[12.5px] font-semibold text-[var(--color-brand)]">
+            ← Back to my home
+          </Link>
+        </div>
         <h1 className="h2">Nobody has named you yet</h1>
         <p className="t-small mt-2 max-w-[58ch]">
           When someone starts a PayHalo plan and names you, it appears here with the key they sent and what the plan
@@ -66,13 +73,18 @@ export function MyInheritance({ plans }: { plans: MyPlan[] }) {
 
   return (
     <div className="space-y-5">
-      <header>
-        <p className="eyebrow">Your inheritance</p>
-        <h1 className="h1 mt-2.5">Plans that name you</h1>
-        <p className="t-body mt-2 max-w-[58ch]">
-          Only plans where your email is written as a beneficiary appear here. Each one is a promise, held until an
-          operator confirms what happened.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="eyebrow">Your inheritance</p>
+          <h1 className="h1 mt-2.5">Plans that name you</h1>
+          <p className="t-body mt-2 max-w-[58ch]">
+            Only plans where your email is written as a beneficiary appear here. Each one is a promise, held until it is
+            confirmed that it should be opened.
+          </p>
+        </div>
+        <Link href="/dashboard" className="btn btn-secondary btn-sm">
+          ← Back to my home
+        </Link>
       </header>
 
       {message && (

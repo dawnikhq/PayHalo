@@ -23,6 +23,7 @@ import {
   recordMove,
   openVault,
   markKeySent,
+  setKeyholder,
   requestRelease,
   decideRelease,
   vaultBalanceCents,
@@ -318,7 +319,7 @@ export async function recordMoveAction(input: MoveInput) {
 
 /* ------------------------------------------------------------ vault + keys -- */
 
-export interface StartPlanResult {
+export interface OpenVaultResult {
   ok: boolean;
   error?: string;
   vault: Vault | null;
@@ -328,59 +329,37 @@ export interface StartPlanResult {
 }
 
 /**
- * "Start a plan": name the first person, open the vault, and hand back what the
- * caller needs to deliver the key. All three happen in one write so a plan can
- * never be left half-started.
+ * The vault is the last thing that happens, not the first. It opens only when
+ * the six steps are done, and the key goes to the first choice who is already
+ * named on the plan.
  */
-export async function startPlanAction(input: {
-  name: string;
-  email: string;
-  relationship?: string;
-}): Promise<StartPlanResult & { snapshot: Snapshot }> {
-  let firstId: number | null = null;
-
+export async function openVaultAction(): Promise<OpenVaultResult & { snapshot: Snapshot }> {
   let issueKey: string | null = null;
 
   const result = await mutate((doc) => {
-    if (doc.vault) return { ok: false, error: "This plan already has a vault." };
-
-    const existing = doc.beneficiaries.find((b) => b.email.toLowerCase() === input.email.trim().toLowerCase());
-    if (existing && existing.role !== "primary") {
-      const primaryTaken = doc.beneficiaries.some((b) => b.role === "primary");
-      if (primaryTaken) return { ok: false, error: "Someone else is already the first choice." };
-      existing.role = "primary";
-    }
-    if (!existing) {
-      const added = addBeneficiary(doc, {
-        name: input.name,
-        email: input.email,
-        relationship: input.relationship ?? "",
-        role: "primary",
-        share: 100,
-      });
-      if (!added.ok) return added;
-    }
+    const opened = openVault(doc);
+    if (!opened.ok || !opened.vault) return { ok: false, error: opened.error };
 
     const primary = doc.beneficiaries.find((b) => b.role === "primary");
-    firstId = primary?.id ?? null;
-
-    const opened = openVault(doc);
-    if (!opened.ok) return { ok: false, error: opened.error };
-
-    if (primary && opened.vault) {
+    if (primary) {
       issueKey = mintVaultKey(opened.vault.ref);
       markKeySent(doc, primary.email, hashVaultKey(issueKey));
     }
     return { ok: true };
   });
 
-  const first = firstId === null ? null : (result.snapshot.beneficiaries.find((b) => b.id === firstId) ?? null);
+  const primary = result.snapshot.beneficiaries.find((b) => b.role === "primary") ?? null;
   return {
     ...result,
     vault: result.snapshot.vault,
-    firstBeneficiary: first ? { id: first.id, name: first.name, email: first.email } : null,
+    firstBeneficiary: primary ? { id: primary.id, name: primary.name, email: primary.email } : null,
     key: issueKey,
+    snapshot: result.snapshot,
   };
+}
+
+export async function setKeyholderAction(input: { name: string; email: string; relationship: string }) {
+  return mutate((doc) => setKeyholder(doc, input));
 }
 
 export async function markKeySentAction(email: string) {

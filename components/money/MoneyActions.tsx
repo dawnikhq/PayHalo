@@ -15,11 +15,9 @@ const label = "block text-[11px] font-semibold uppercase tracking-[0.12em] text-
 export function MoneyActions({
   flush = false,
   sendBlocked = null,
-  mode = "sandbox",
 }: {
   flush?: boolean;
   sendBlocked?: string | null;
-  mode?: "sandbox" | "live";
 } = {}) {
   const [panel, setPanel] = useState<"send" | "receive" | null>(null);
   const [busy, setBusy] = useState(false);
@@ -47,17 +45,8 @@ export function MoneyActions({
     <section className={`card p-5 sm:p-6 ${flush ? "" : "mb-5"}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <h2 className="h3">Money</h2>
-            <span className={`pill ${mode === "live" ? "badge-lime" : "badge-neutral"}`}>
-              {mode === "live" ? "Live" : "Sandbox"}
-            </span>
-          </div>
-          <p className="t-small mt-1">
-            {mode === "live"
-              ? "Send it with PayPal, or ask someone to pay in."
-              : "Sandbox money — real PayPal API calls, no real funds."}
-          </p>
+          <h2 className="h3">Money</h2>
+          <p className="t-small mt-1">Send something to someone, or ask them to pay in.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
@@ -91,10 +80,7 @@ export function MoneyActions({
 
       {sendBlocked && (
         <p className="mt-3 rounded-[12px] border border-[var(--color-line)] bg-[#fbfdfb] px-3.5 py-2.5 text-[11.5px] text-[var(--color-muted)]">
-          <strong className="font-semibold text-[var(--color-ink)]">
-            {mode === "live" ? "Sending is locked." : "Sending is off."}
-          </strong>{" "}
-          {sendBlocked}
+          <strong className="font-semibold text-[var(--color-ink)]">Sending is not open yet.</strong> {sendBlocked}
         </p>
       )}
 
@@ -123,7 +109,7 @@ export function MoneyActions({
               error={error}
               onSubmit={async (form) => {
                 await post("/api/paypal/receive", form);
-                setNotice(`PayPal emailed a request for ${money(form.amountCents)} to ${form.email}.`);
+                setNotice(`A request for ${money(form.amountCents)} is on its way to ${form.email}.`);
                 setPanel(null);
               }}
             />
@@ -175,11 +161,11 @@ function SendForm({
       }}
     >
       <h2 className="h2">Send money</h2>
-      <p className="t-small mt-1.5">Out of this plan&apos;s PayPal account, to anyone with a PayPal email.</p>
+      <p className="t-small mt-1.5">From your balance, to anyone with an email.</p>
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <div>
           <label htmlFor="send-email" className={label}>
-            Their PayPal email
+            Their email
           </label>
           <input id="send-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={field} />
         </div>
@@ -224,7 +210,7 @@ function SendForm({
           <p className="text-[13px] font-semibold text-[var(--color-ink)]">
             Send {money(amountCents)} to {email}?
           </p>
-          <p className="t-meta mt-1">Check the address. A PayPal payout cannot be pulled back once it is paid.</p>
+          <p className="t-meta mt-1">Check the address. Once it is paid, it cannot be pulled back.</p>
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <button type="submit" disabled={disabled} className="btn btn-primary">
               {disabled ? "Sending…" : "Confirm and send"}
@@ -275,7 +261,7 @@ function ReceiveForm({
     >
       <h2 className="h2">Receive money</h2>
       <p className="t-small mt-1.5">
-        PayPal emails them a request they settle from their own account. Nothing is taken until they do.
+        They get a request by email and settle it from their own account. Nothing is taken until they do.
       </p>
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <div>
