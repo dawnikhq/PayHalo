@@ -117,9 +117,16 @@ export function payoutsEnabled(): boolean {
 }
 
 export function payoutsBlockedReason(): string | null {
-  if (!paypalConfigured()) return "PayPal credentials are not set on this deployment.";
+  const mode = paypalMode();
+  if (!paypalConfigured()) {
+    return mode === "sandbox"
+      ? "Sandbox keys are not installed. Add PAYPAL_SANDBOX_CLIENT_ID and PAYPAL_SANDBOX_CLIENT_SECRET, and sending turns itself on — sandbox transfers cost nothing."
+      : "PayPal credentials are not set on this deployment.";
+  }
   if (process.env.PAYPAL_PAYOUTS_ENABLED?.toLowerCase() !== "true") {
-    return "Payouts are switched off. Set PAYPAL_PAYOUTS_ENABLED=true to allow sandbox transfers.";
+    return mode === "sandbox"
+      ? "Payouts are switched off. Set PAYPAL_PAYOUTS_ENABLED=true — in sandbox the money is fake and the transfer is free."
+      : "Payouts are switched off. Set PAYPAL_PAYOUTS_ENABLED=true to allow transfers.";
   }
   if (paypalMode() === "live" && process.env.PAYPAL_ALLOW_LIVE_PAYOUTS?.toLowerCase() !== "true") {
     return "Live payouts are locked. Set PAYPAL_ALLOW_LIVE_PAYOUTS=true only when you mean it.";
