@@ -22,9 +22,13 @@ export default async function PlanPage() {
           <h1 className="h1 mt-2.5">My Plan</h1>
           <p className="t-body mt-2">For the people, projects and causes that matter to you.</p>
         </div>
-        <Link href="/dashboard" className="btn btn-secondary self-start">
-          Save &amp; exit
-        </Link>
+        {s.vault ? (
+          <span className="pill badge-lime self-start">Vault {s.vault.ref}</span>
+        ) : (
+          <Link href="/plan/start" className="btn btn-primary self-start">
+            Start a plan <span aria-hidden>→</span>
+          </Link>
+        )}
       </header>
 
       <section className="card-lime mb-5 flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between md:p-7">
@@ -37,10 +41,89 @@ export default async function PlanPage() {
         </div>
         <div className="w-full sm:w-[220px]">
           <ProgressTicks steps={s.steps} />
-          <Link href="/dashboard" className="btn btn-primary btn-sm mt-3 w-full">
-            Resume review <span aria-hidden>→</span>
+          <Link
+            href={s.vault ? "/dashboard" : "/plan/start"}
+            className="btn btn-primary btn-sm mt-3 w-full"
+          >
+            {s.vault ? "Resume review" : "Start a plan"} <span aria-hidden>→</span>
           </Link>
         </div>
+      </section>
+
+      <section className="card mb-5 p-6 md:p-7" id="vault">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="eyebrow">The vault</p>
+            <h2 className="h2 mt-2">
+              {s.vault ? "Money with one door" : "No vault yet"}
+            </h2>
+          </div>
+          <span className={`pill ${s.vault?.status === "released" ? "badge-lime" : "badge-neutral"}`}>
+            {s.vault ? s.vault.status : "not started"}
+          </span>
+        </div>
+
+        {s.vault ? (
+          <>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-[14px] border border-[var(--color-line)] p-4">
+                <p className="label">Reference</p>
+                <p className="mt-1.5 text-[13.5px] font-semibold text-[var(--color-ink)]">{s.vault.ref}</p>
+              </div>
+              <div className="rounded-[14px] border border-[var(--color-line)] p-4">
+                <p className="label">Key sent to</p>
+                <p className="mt-1.5 truncate text-[13.5px] font-semibold text-[var(--color-ink)]">
+                  {s.vault.keyTo ?? "—"}
+                </p>
+              </div>
+              <div className="rounded-[14px] border border-[var(--color-line)] p-4">
+                <p className="label">Opened</p>
+                <p className="mt-1.5 text-[13.5px] font-semibold text-[var(--color-ink)]">
+                  {stampLabel(s.vault.openedAt)}
+                </p>
+              </div>
+            </div>
+
+            <p className="t-small mt-4 max-w-[64ch]">
+              The vault can only open one way: an operator researches the death documentation, approves the release,
+              and the money is paid to the people this plan names. PayHalo staff cannot withdraw it, change the payees
+              or open it without that approval — and the key is required to ask.
+            </p>
+            <p className="t-meta mt-2 max-w-[64ch]">
+              Settlement runs over PayPal. While Payouts is not enabled on this account an approved release is recorded
+              here and the beneficiaries are notified, but the transfer itself waits on PayPal.
+            </p>
+
+            {s.releaseRequests.length > 0 && (
+              <ul className="mt-4 divide-y divide-[var(--color-line)]">
+                {s.releaseRequests.slice(0, 4).map((r) => (
+                  <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
+                    <span className="min-w-0">
+                      <span className="block text-[13px] font-semibold text-[var(--color-ink)]">
+                        {r.ref} · {r.status}
+                      </span>
+                      <span className="t-meta block truncate">
+                        {r.requesterName} · {stampLabel(r.createdAt)}
+                        {r.adminNote ? ` · ${r.adminNote}` : ""}
+                      </span>
+                    </span>
+                    <span className="pill badge-neutral">{r.status === "pending" ? "with the operator" : r.status}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        ) : (
+          <div className="mt-3">
+            <p className="t-small max-w-[60ch]">
+              Starting the plan creates the vault and sends a key to the first person you name. Until a vault exists
+              there is nowhere for money to go, so nothing can be transferred in.
+            </p>
+            <Link href="/plan/start" className="btn btn-primary btn-sm mt-4">
+              Start a plan <span aria-hidden>→</span>
+            </Link>
+          </div>
+        )}
       </section>
 
       <div className="grid gap-5 lg:grid-cols-[1.55fr_1fr]">

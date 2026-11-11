@@ -2,6 +2,8 @@ import { allocate, totalOf } from "./engine";
 import { money } from "./format";
 import type { StoredReport } from "./certs";
 import type {
+  Vault,
+  ReleaseRequest,
   Asset,
   AssetKind,
   Beneficiary,
@@ -49,6 +51,10 @@ export interface StateDoc {
   documents: DocumentRow[];
   events: EventRow[];
   seq: number;
+  /** The vault this plan's money sits in, once the owner starts the plan. */
+  vault?: Vault | null;
+  /** Death-documentation release requests and the operator's decisions. */
+  releaseRequests?: ReleaseRequest[];
   /** Money the owner has moved into PayHalo, and what it was set aside for. */
   stashCents?: number;
   pots?: Pot[];
@@ -82,6 +88,8 @@ export function emptyDoc(user: { id: string; name: string; email: string }): Sta
     stashCents: 0,
     pots: [],
     moves: [],
+    vault: null,
+    releaseRequests: [],
   };
 }
 
@@ -141,6 +149,8 @@ export function snapshotOf(
       : [],
     stashCents: doc.stashCents ?? 0,
     pots: doc.pots ?? [],
+    vault: doc.vault ?? null,
+    releaseRequests: [...(doc.releaseRequests ?? [])].sort((a, b) => b.id - a.id),
     moves: [...(doc.moves ?? [])].reverse().slice(0, 20),
     events: [...doc.events]
       // `ownerVisible` was added with the 72-hour gate; older rows have no
@@ -1191,4 +1201,145 @@ export function recordMove(doc: StateDoc, input: MoveInput): { ok: boolean; erro
     `${money(amount)}${move.counterparty ? ` · ${move.counterparty}` : ""}`,
   );
   return { ok: true, id: move.id };
+}
+
+/* ------------------------------------------------------------------- vault */
+
+/** What the vault holds: money in PayHalo plus the value recorded in assets. */
+export function vaultBalanceCents(doc: StateDoc): number {
+  const cash = (doc.stashCents ?? 0) + (doc.pots ?? []).reduce((sum, p) => sum + p.allocatedCents, 0);
+  return cash + totalCents(doc);
+}
+
+function vaultRef(doc: StateDoc): string {
+  const n = doc.plan.id;
+  let tail = "";
+  for (let i = 0; i < 6; i += 1) tail += "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random() * 32)];
+  return `PH-${n}-${tail}`;
+}
+
+/**
+ * Start the plan: open the vault. This is the moment the plan stops being a
+ * draft on a screen and becomes something with a reference, a destination for
+ * money, and a first beneficiary who will receive a key.
+ */
+export function openVault(doc: StateDoc): { ok: boolean; error?: string; vault?: Vault } {
+  if (doc.vault && doc.vault.status !== "released") {
+    return { ok: false, error: "This plan already has an open vault." };
+  }
+  if (!doc.beneficiaries.length) {
+    return { ok: false, error: "Name the first person who should receive this plan." };
+  }
+  const vault: Vault = {
+    ref: vaultRef(doc),
+    openedAt: now(),
+    status: "open",
+    keySentAt: null,
+    keyTo: null,
+    keyHash: null,
+    releasedAt: null,
+    releaseRef: null,
+  };
+  doc.vault = vault;
+  doc.plan.status = "draft";
+  doc.plan.updatedAt = now();
+  addEvent(doc, "vault.opened", "Vault opened", `Vault ${vault.ref} is open and ready for money.`);
+  return { ok: true, vault };
+}
+
+export function markKeySent(doc: StateDoc, email: string, keyHash?: string): void {
+  if (!doc.vault) return;
+  doc.vault.keySentAt = now();
+  doc.vault.keyTo = email;
+  if (keyHash) doc.vault.keyHash = keyHash;
+  doc.plan.updatedAt = now();
+  addEvent(doc, "vault.key", "Key sent", `The vault key went to ${email}.`);
+}
+
+export interface ReleaseInput {
+  requestedBy: ReleaseRequest["requestedBy"];
+  requesterName: string;
+  requesterEmail: string;
+  beneficiaryId?: number | null;
+  note?: string;
+}
+
+/**
+ * File a release request. Anyone the plan names may ask; nobody may decide.
+ * The request is advisory until an operator researches the death
+ * documentation, which is the only path that can open a vault.
+ */
+export function requestRelease(doc: StateDoc, input: ReleaseInput): { ok: boolean; error?: string; id?: number; ref?: string } {
+  if (!doc.vault) return { ok: false, error: "This plan has no vault yet." };
+  if (doc.vault.status === "released") return { ok: false, error: "This vault has already been released." };
+  const open = (doc.releaseRequests ?? []).find((r) => r.status === "pending" || r.status === "researching");
+  if (open) return { ok: false, error: "A release is already under review for this plan." };
+
+  doc.seq += 1;
+  const id = doc.seq;
+  const ref = `RR-${doc.plan.id}-${String(id).padStart(3, "0")}`;
+  const request: ReleaseRequest = {
+    id,
+    ref,
+    requestedBy: input.requestedBy,
+    requesterName: input.requesterName.trim() || "Named beneficiary",
+    requesterEmail: input.requesterEmail.trim().toLowerCase(),
+    beneficiaryId: input.beneficiaryId ?? null,
+    note: (input.note ?? "").trim().slice(0, 600),
+    status: "pending",
+    createdAt: now(),
+    decidedAt: null,
+    decidedBy: null,
+    adminNote: "",
+  };
+  doc.releaseRequests = [...(doc.releaseRequests ?? []), request];
+  doc.plan.updatedAt = now();
+  addEvent(doc, "release.requested", "Release requested", `${request.requesterName} asked for the vault to be opened (${ref}).`);
+  return { ok: true, id, ref };
+}
+
+/**
+ * The operator's decision. Approving is the only thing in the product that
+ * marks a vault released, and the money can still only go to the plan's own
+ * beneficiaries — there is no amount or destination in this signature.
+ */
+export function decideRelease(
+  doc: StateDoc,
+  id: number,
+  decision: "researching" | "approved" | "rejected",
+  adminNote: string,
+  decidedBy: string,
+): { ok: boolean; error?: string } {
+  const request = (doc.releaseRequests ?? []).find((r) => r.id === id);
+  if (!request) return { ok: false, error: "That request is gone." };
+  if (request.status === "approved" || request.status === "rejected") {
+    return { ok: false, error: "That request has already been decided." };
+  }
+
+  request.status = decision;
+  request.adminNote = adminNote.trim().slice(0, 600);
+  request.decidedBy = decidedBy;
+
+  if (decision === "approved") {
+    request.decidedAt = now();
+    if (doc.vault) {
+      doc.vault.status = "released";
+      doc.vault.releasedAt = now();
+      doc.vault.releaseRef = request.ref;
+    }
+    addEvent(
+      doc,
+      "release.approved",
+      "Release approved",
+      `${request.ref} approved after documentation review. The vault is open to the plan's beneficiaries only.`,
+    );
+  } else if (decision === "rejected") {
+    request.decidedAt = now();
+    addEvent(doc, "release.rejected", "Release declined", `${request.ref} was declined${adminNote ? `: ${adminNote}` : "."}`);
+  } else {
+    addEvent(doc, "release.researching", "Documentation under review", `${request.ref} is being checked.`);
+  }
+
+  doc.plan.updatedAt = now();
+  return { ok: true };
 }

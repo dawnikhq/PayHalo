@@ -43,6 +43,12 @@ export function supabaseDriver(): Driver | null {
       const rows = (await res.json()) as { doc: StateDoc }[];
       return rows[0]?.doc ?? null;
     },
+    async scan() {
+      const res = await fetch(`${endpoint}?select=user_id,doc`, { headers: baseHeaders, cache: "no-store" });
+      if (!res.ok) throw new Error(`Supabase read failed (${res.status})`);
+      const rows = (await res.json()) as { user_id: string; doc: StateDoc }[];
+      return rows.filter((r) => r.doc).map((r) => ({ key: r.user_id, doc: r.doc }));
+    },
     async save(ownerId: string, doc: StateDoc) {
       const res = await fetch(`${endpoint}?on_conflict=user_id`, {
         method: "POST",

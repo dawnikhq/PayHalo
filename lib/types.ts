@@ -202,6 +202,54 @@ export interface PayPalState {
   payouts: PayPalPayout[];
 }
 
+
+/**
+ * The vault. One per plan.
+ *
+ * Money moves in through PayPal and can only ever leave one way: a release
+ * that pays the beneficiaries the plan already names, after an operator has
+ * confirmed the death documentation. There is deliberately no "withdraw"
+ * shape in this type, so no screen and no endpoint can invent one.
+ */
+export type VaultStatus = "open" | "frozen" | "released";
+
+export interface Vault {
+  /** Short human reference, e.g. PH-2-A1B2C3. */
+  ref: string;
+  openedAt: string;
+  status: VaultStatus;
+  /** When the one-time key was emailed to the first beneficiary. */
+  keySentAt: string | null;
+  keyTo: string | null;
+  /** SHA-256 of the key that went to the first beneficiary. Never the key. */
+  keyHash: string | null;
+  releasedAt: string | null;
+  /** Reference the operator's approval produced. */
+  releaseRef: string | null;
+}
+
+export type ReleaseStatus = "pending" | "researching" | "approved" | "rejected";
+
+/**
+ * A request that the vault be opened. A beneficiary or keyholder raises it;
+ * an operator researches the death documentation and decides. Approval is the
+ * only thing that can set the vault to released.
+ */
+export interface ReleaseRequest {
+  id: number;
+  ref: string;
+  requestedBy: "beneficiary" | "keyholder" | "owner";
+  requesterName: string;
+  requesterEmail: string;
+  beneficiaryId: number | null;
+  note: string;
+  status: ReleaseStatus;
+  createdAt: string;
+  decidedAt: string | null;
+  decidedBy: string | null;
+  adminNote: string;
+}
+
 export interface Snapshot {
   user: User;
   plan: Plan;
@@ -218,6 +266,8 @@ export interface Snapshot {
   stashCents: number;
   pots: Pot[];
   moves: MoneyMove[];
+  vault: Vault | null;
+  releaseRequests: ReleaseRequest[];
   secondsToReviewEnd: number | null;
   secondsToWindowEnd: number | null;
   /** Which persistence driver served this state. */

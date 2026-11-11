@@ -22,5 +22,9 @@ export function memoryDriver(): Driver {
       if (!global.__vivoMemory) global.__vivoMemory = new Map();
       global.__vivoMemory.set(ownerId, doc);
     },
+    async scan() {
+      if (!global.__vivoMemory) return [];
+      return [...global.__vivoMemory.entries()].map(([key, doc]) => ({ key, doc }));
+    },
   };
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getSnapshot } from "@/lib/store";
+import { getSnapshot, plansForBeneficiary } from "@/lib/store";
 import { money, pct } from "@/lib/format";
 import { Page, EmptyState } from "@/components/ui";
 import { AllocationEditor } from "@/components/beneficiaries/AllocationEditor";
@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function BeneficiariesPage() {
   const s = await getSnapshot();
+  const namedIn = s.user.email ? await plansForBeneficiary(s.user.email) : [];
   const primary = s.beneficiaries.find((b) => b.role === "primary");
   const backups = s.beneficiaries.filter((b) => b.role === "backup");
   const charity = s.beneficiaries.find((b) => b.role === "charity");
@@ -162,6 +163,47 @@ export default async function BeneficiariesPage() {
           </section>
         </aside>
       </div>
+      {/* the other direction: plans where *this* person is named */}
+      <section className="card mt-5 p-6 md:p-7">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="eyebrow">In someone else&apos;s plan</p>
+            <h2 className="h2 mt-2">Plans that name you</h2>
+          </div>
+          <Link href="/beneficiary" className="btn btn-secondary btn-sm self-start">
+            Beneficiary home <span aria-hidden>→</span>
+          </Link>
+        </div>
+
+        {namedIn.length === 0 ? (
+          <p className="t-small mt-3 max-w-[62ch]">
+            Nobody has named {s.user.email || "you"} as a beneficiary yet. The moment someone does, their plan appears
+            here — with your share, and the key you will need to ask for the assets.
+          </p>
+        ) : (
+          <ul className="mt-4 divide-y divide-[var(--color-line)]">
+            {namedIn.map((plan) => (
+              <li key={plan.ownerId} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                <span className="min-w-0">
+                  <span className="block text-[13.5px] font-semibold text-[var(--color-ink)]">
+                    {plan.ownerName}
+                  </span>
+                  <span className="t-meta block truncate">
+                    {plan.role === "primary" ? "First beneficiary" : plan.role === "backup" ? "Family backup" : "Final cause"} ·{" "}
+                    {pct(plan.share)} · {plan.vault ? `vault ${plan.vault.ref}` : "no vault yet"}
+                  </span>
+                </span>
+                <span className="text-right">
+                  <span className="t-num block text-[15px] text-[var(--color-forest)]">{money(plan.valueCents)}</span>
+                  <Link href="/beneficiary" className="text-[12px] font-semibold text-[var(--color-brand)]">
+                    Request assets →
+                  </Link>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </Page>
   );
 }

@@ -12,4 +12,10 @@ export interface Driver {
   durable: boolean;
   load(key: string): Promise<StateDoc | null>;
   save(key: string, doc: StateDoc): Promise<void>;
+  /**
+   * Every owner document, for the two cross-plan reads the product needs:
+   * "which plans name me as a beneficiary" and the operator release queue.
+   * Optional, because a driver that cannot enumerate simply has none.
+   */
+  scan?(): Promise<{ key: string; doc: StateDoc }[]>;
 }

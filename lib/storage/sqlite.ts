@@ -19,6 +19,7 @@ export async function sqliteDriver(): Promise<Driver | null> {
 
     const read = db.prepare("SELECT doc FROM docs WHERE owner = ?");
     const write = db.prepare("INSERT OR REPLACE INTO docs (owner, doc) VALUES (?, ?)");
+    const readAll = db.prepare("SELECT owner, doc FROM docs");
 
     return {
       kind: "sqlite",
@@ -31,6 +32,16 @@ export async function sqliteDriver(): Promise<Driver | null> {
       },
       async save(ownerId: string, doc: StateDoc) {
         write.run(ownerId, JSON.stringify(doc));
+      },
+      async scan() {
+        const rows = readAll.all() as { owner: string; doc: string }[];
+        return rows.flatMap((row) => {
+          try {
+            return [{ key: row.owner, doc: JSON.parse(row.doc) as StateDoc }];
+          } catch {
+            return [];
+          }
+        });
       },
     };
   } catch {

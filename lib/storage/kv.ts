@@ -44,5 +44,19 @@ export function kvDriver(): Driver | null {
     async save(ownerId: string, doc: StateDoc) {
       await command(["SET", `${PREFIX}${ownerId}`, JSON.stringify(doc)]);
     },
+    async scan() {
+      const keys = (await command(["KEYS", `${PREFIX}*`])) as string[] | null;
+      if (!Array.isArray(keys) || !keys.length) return [];
+      const values = (await command(["MGET", ...keys])) as (string | null)[];
+      return keys.flatMap((k, i) => {
+        const raw = values?.[i];
+        if (!raw) return [];
+        try {
+          return [{ key: k.slice(PREFIX.length), doc: JSON.parse(raw) as StateDoc }];
+        } catch {
+          return [];
+        }
+      });
+    },
   };
 }

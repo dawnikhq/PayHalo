@@ -139,6 +139,52 @@ export default async function DashboardPage({
 
         {/* money — directly under the asset card */}
         <MoneyActions flush sendBlocked={payoutsBlockedReason()} />
+
+        {/* the vault the money belongs to */}
+        <section className="card p-6 md:p-7">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="label">The vault</p>
+              <p className="mt-2 text-[13.5px] font-semibold text-[var(--color-ink)]">
+                {s.vault ? s.vault.ref : "No vault yet"}
+              </p>
+            </div>
+            <span className="pill badge-neutral">{s.vault ? s.vault.status : "not started"}</span>
+          </div>
+
+          {s.vault ? (
+            <>
+              <p className="t-num mt-4 text-[clamp(1.6rem,3vw,2rem)] leading-none text-[var(--color-forest)]">
+                {money(s.stashCents + s.pots.reduce((n, pot) => n + pot.allocatedCents, 0) + s.totalCents)}
+              </p>
+              <p className="t-meta mt-1.5">held for this plan · pays {s.beneficiaries.length} named people</p>
+              <p className="t-small mt-3">
+                {s.vault.keyTo ? `Key sent to ${s.vault.keyTo}.` : "No key delivered yet."} Only an operator-approved
+                release opens this vault, and it pays the people your plan names — nobody else.
+              </p>
+              {s.releaseRequests.length > 0 && (
+                <p className="t-meta mt-2">
+                  Release {s.releaseRequests[0].ref} · {s.releaseRequests[0].status}
+                </p>
+              )}
+              <div className="mt-4 flex flex-wrap items-center gap-4">
+                <Link href="/plan#vault" className="text-[12.5px] font-semibold text-[var(--color-brand)]">
+                  See the vault on My Plan →
+                </Link>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="t-small mt-3 max-w-[52ch]">
+                Money has nowhere to sit until the vault exists. Starting the plan opens it and sends the key to the
+                first person you name.
+              </p>
+              <Link href="/plan/start" className="btn btn-primary btn-sm mt-4">
+                Start a plan <span aria-hidden>→</span>
+              </Link>
+            </>
+          )}
+        </section>
         </div>
 
         {/* plan progress */}

@@ -14,3 +14,5 @@ data/*.db-shm
 next-env.d.ts
 tsconfig.tsbuildinfo
 google_drive/
+data/
+.qa-vault.db

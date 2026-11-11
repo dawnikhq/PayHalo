@@ -21,6 +21,11 @@ import {
   updateBeneficiary,
   createPot,
   recordMove,
+  openVault,
+  markKeySent,
+  requestRelease,
+  decideRelease,
+  vaultBalanceCents,
   updateProfile,
   keyholderView,
   verifyClaim,
@@ -33,10 +38,12 @@ import {
   type StateDoc,
 } from "./model";
 import type { StoredReport } from "./certs";
-import type { Snapshot } from "./types";
+import type { ReleaseRequest, Snapshot, Vault } from "./types";
+import { hashVaultKey, mintVaultKey, vaultKeyMatches } from "./vault-key";
 import { currentUser, requireOwner, sharedOwner } from "./scope";
 
 export { SAFETY_WINDOW_DAYS, REVIEW_HOURS } from "./model";
+export { vaultBalanceCents } from "./model";
 export type { Audience } from "./model";
 export type { PlanInput } from "./model";
 export type { BeneficiaryView, KeyholderView } from "./model";
@@ -306,4 +313,205 @@ export async function allocateAction(potId: number, amountCents: number, directi
 
 export async function recordMoveAction(input: MoveInput) {
   return mutate((doc) => recordMove(doc, input));
+}
+
+/* ------------------------------------------------------------ vault + keys -- */
+
+export interface StartPlanResult {
+  ok: boolean;
+  error?: string;
+  vault: Vault | null;
+  firstBeneficiary: { id: number; name: string; email: string } | null;
+  /** Returned exactly once, so the caller can email it. Never stored in clear. */
+  key: string | null;
+}
+
+/**
+ * "Start a plan": name the first person, open the vault, and hand back what the
+ * caller needs to deliver the key. All three happen in one write so a plan can
+ * never be left half-started.
+ */
+export async function startPlanAction(input: {
+  name: string;
+  email: string;
+  relationship?: string;
+}): Promise<StartPlanResult & { snapshot: Snapshot }> {
+  let firstId: number | null = null;
+
+  let issueKey: string | null = null;
+
+  const result = await mutate((doc) => {
+    if (doc.vault) return { ok: false, error: "This plan already has a vault." };
+
+    const existing = doc.beneficiaries.find((b) => b.email.toLowerCase() === input.email.trim().toLowerCase());
+    if (existing && existing.role !== "primary") {
+      const primaryTaken = doc.beneficiaries.some((b) => b.role === "primary");
+      if (primaryTaken) return { ok: false, error: "Someone else is already the first choice." };
+      existing.role = "primary";
+    }
+    if (!existing) {
+      const added = addBeneficiary(doc, {
+        name: input.name,
+        email: input.email,
+        relationship: input.relationship ?? "",
+        role: "primary",
+        share: 100,
+      });
+      if (!added.ok) return added;
+    }
+
+    const primary = doc.beneficiaries.find((b) => b.role === "primary");
+    firstId = primary?.id ?? null;
+
+    const opened = openVault(doc);
+    if (!opened.ok) return { ok: false, error: opened.error };
+
+    if (primary && opened.vault) {
+      issueKey = mintVaultKey(opened.vault.ref);
+      markKeySent(doc, primary.email, hashVaultKey(issueKey));
+    }
+    return { ok: true };
+  });
+
+  const first = firstId === null ? null : (result.snapshot.beneficiaries.find((b) => b.id === firstId) ?? null);
+  return {
+    ...result,
+    vault: result.snapshot.vault,
+    firstBeneficiary: first ? { id: first.id, name: first.name, email: first.email } : null,
+    key: issueKey,
+  };
+}
+
+export async function markKeySentAction(email: string) {
+  return mutate((doc) => {
+    if (!doc.vault) return { ok: false, error: "This plan has no vault yet." };
+    markKeySent(doc, email);
+    return { ok: true };
+  });
+}
+
+export interface BeneficiaryPlan {
+  ownerId: string;
+  ownerName: string;
+  vault: Vault | null;
+  role: "primary" | "backup" | "charity";
+  share: number;
+  valueCents: number;
+  assets: { label: string; kind: string }[];
+  request: ReleaseRequest | null;
+}
+
+/**
+ * "Whose plan names me?" — every plan, filtered to the ones where this email is
+ * a beneficiary. Only the fields a named person may see are copied out: their
+ * own role and share, the vault's state, and the assets that would come to
+ * them. Nothing about the owner's other beneficiaries leaves this function.
+ */
+export async function plansForBeneficiary(email: string): Promise<BeneficiaryPlan[]> {
+  const driver = await getDriver();
+  const needle = email.trim().toLowerCase();
+  if (!needle || !driver.scan) return [];
+
+  const rows = await driver.scan();
+  const out: BeneficiaryPlan[] = [];
+
+  for (const { key, doc } of rows) {
+    const mine = doc.beneficiaries?.find((b) => b.email.trim().toLowerCase() === needle);
+    if (!mine || doc.user.email.trim().toLowerCase() === needle) continue;
+
+    const requests = [...(doc.releaseRequests ?? [])].sort((a, b) => b.id - a.id);
+    out.push({
+      ownerId: key,
+      ownerName: doc.user.name || "A PayHalo member",
+      vault: doc.vault ?? null,
+      role: mine.role,
+      share: mine.share,
+      valueCents: Math.round((vaultBalanceCents(doc) * mine.share) / 100),
+      assets: doc.assets.map((a) => ({ label: a.label, kind: a.kind })),
+      request: requests[0] ?? null,
+    });
+  }
+
+  return out;
+}
+
+/**
+ * A named beneficiary asks for the vault to be opened. This is the only write
+ * one account can make into another account's plan, and it is refused unless
+ * the signed-in email is written on that plan.
+ */
+export async function requestReleaseAsBeneficiary(ownerId: string, key: string, note: string) {
+  const user = await requireOwner();
+  const driver = await getDriver();
+  const doc = await driver.load(ownerId);
+  if (!doc) return { ok: false, error: "That plan no longer exists." };
+
+  const mine = doc.beneficiaries.find((b) => b.email.trim().toLowerCase() === user.email.trim().toLowerCase());
+  if (!mine) return { ok: false, error: "This plan does not name you." };
+
+  if (doc.vault?.keyHash && !vaultKeyMatches(key, doc.vault.keyHash)) {
+    return { ok: false, error: "That is not the key for this plan." };
+  }
+
+  const result = requestRelease(doc, {
+    requestedBy: "beneficiary",
+    requesterName: user.name,
+    requesterEmail: user.email,
+    beneficiaryId: mine.id,
+    note,
+  });
+  if (result.ok) await driver.save(ownerId, doc);
+  return result;
+}
+
+export interface ReleaseQueueRow {
+  ownerId: string;
+  ownerName: string;
+  ownerEmail: string;
+  vault: Vault | null;
+  valueCents: number;
+  request: ReleaseRequest;
+  beneficiaries: { name: string; email: string; share: number }[];
+}
+
+/** The operator queue: every undecided release request, newest first. */
+export async function releaseQueue(): Promise<ReleaseQueueRow[]> {
+  const driver = await getDriver();
+  if (!driver.scan) return [];
+
+  const rows = await driver.scan();
+  const out: ReleaseQueueRow[] = [];
+
+  for (const { key, doc } of rows) {
+    for (const request of doc.releaseRequests ?? []) {
+      if (request.status === "approved") continue;
+      out.push({
+        ownerId: key,
+        ownerName: doc.user.name || "Unnamed member",
+        ownerEmail: doc.user.email,
+        vault: doc.vault ?? null,
+        valueCents: vaultBalanceCents(doc),
+        request,
+        beneficiaries: doc.beneficiaries.map((b) => ({ name: b.name, email: b.email, share: b.share })),
+      });
+    }
+  }
+
+  return out.sort((a, b) => (a.request.createdAt < b.request.createdAt ? 1 : -1));
+}
+
+/** An operator's decision. The only route to a released vault. */
+export async function decideReleaseAction(
+  ownerId: string,
+  requestId: number,
+  decision: "researching" | "approved" | "rejected",
+  note: string,
+  operator: string,
+) {
+  const driver = await getDriver();
+  const doc = await driver.load(ownerId);
+  if (!doc) return { ok: false, error: "That plan no longer exists." };
+  const result = decideRelease(doc, requestId, decision, note, operator);
+  if (result.ok) await driver.save(ownerId, doc);
+  return result;
 }
