@@ -93,7 +93,8 @@ export default async function DashboardPage({
         </div>
       )}
 
-      <div className="grid gap-5 lg:grid-cols-[1.55fr_1fr]">
+      <div className="grid items-start gap-5 lg:grid-cols-[1.55fr_1fr]">
+        <div className="space-y-5">
         {/* estate */}
         <section className="card-forest p-6 md:p-7">
           <p className="label">Assets</p>
@@ -135,6 +136,10 @@ export default async function DashboardPage({
           </div>
         </section>
 
+        {/* money — directly under the asset card */}
+        <MoneyActions flush />
+        </div>
+
         {/* plan progress */}
         <section className="card-lime flex flex-col p-6 md:p-7">
           <p className="label text-[#4d6b2a]">Your plan / {s.plan.sealedAt ? "sealed" : "draft"}</p>
@@ -165,9 +170,6 @@ export default async function DashboardPage({
         </section>
       </div>
 
-      <div className="mt-5">
-        <MoneyActions flush />
-      </div>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[1.55fr_1fr]">
         {/* assets table */}
