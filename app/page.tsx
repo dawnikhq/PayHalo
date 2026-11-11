@@ -63,7 +63,7 @@ const ROLES = [
 const BELIEFS = [
   {
     title: "Money should not wait for paperwork",
-    body: "The average estate spends months in a queue of forms. A plan that already names people skips that queue, because the decision was made while you were here to make it.",
+    body: "An estate can spend months in a queue of forms. A plan that already names people skips that queue, because the decision was made while you were here to make it.",
   },
   {
     title: "The owner always has the last word",
@@ -242,17 +242,17 @@ export default function LandingPage() {
                 ))}
               </div>
 
-              <p className="mt-5 border-t border-white/12 pt-4 text-[11px] text-[#8fb098]">
-                One door: confirmed, then paid to these people only.
-              </p>
-            </div>
-
-            <div className="glass absolute -bottom-6 -left-4 hidden w-[210px] p-4 sm:block">
-              <p className="label">The key</p>
-              <p className="mt-1.5 font-[var(--font-mono,monospace)] text-[12px] tracking-[0.06em] text-[var(--color-ink)]">
-                PH-2-KBVLVK-5LFF-Q78XT
-              </p>
-              <p className="t-meta mt-1.5">Sent once, to one person.</p>
+              <div className="mt-5 border-t border-white/12 pt-4">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-[10.5px] text-[#8fb098]">The key</span>
+                  <span className="font-[var(--font-mono,monospace)] text-[11px] tracking-[0.05em] text-white">
+                    PH-2-KBVLVK-5LFF-Q78XT
+                  </span>
+                </div>
+                <p className="mt-2 text-[11px] text-[#8fb098]">
+                  One door: confirmed, then paid to these people only.
+                </p>
+              </div>
             </div>
           </div>
         </section>
@@ -356,7 +356,7 @@ export default function LandingPage() {
                 alongside one — who gets what, in which order, and who gets to say that something has happened.
               </p>
               <div className="mt-6 flex flex-wrap gap-2">
-                <span className="pill badge-mint">Naira-ready</span>
+                <span className="pill badge-mint">Works with your PayPal balance</span>
                 <span className="pill badge-mint">Built on PayPal</span>
                 <span className="pill badge-mint">No passwords stored</span>
               </div>

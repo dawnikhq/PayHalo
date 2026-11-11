@@ -95,7 +95,7 @@ export function PersonDialog({
             role="dialog"
             aria-modal="true"
             aria-label={person ? `Edit ${person.name}` : "Add a beneficiary"}
-            className="rise relative w-full max-w-[520px] rounded-t-[22px] border border-[var(--color-line)] bg-white p-6 shadow-2xl sm:rounded-[20px]"
+            className="relative w-full max-w-[520px] rounded-t-[22px] border border-[var(--color-line)] bg-white p-6 shadow-2xl sm:rounded-[20px]"
           >
             <p className="eyebrow">{person ? "Edit person" : "New beneficiary"}</p>
             <h2 className="h2 mt-2">{person ? person.name : "Who comes next?"}</h2>

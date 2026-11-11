@@ -28,7 +28,7 @@ export function SafetyWindowBanner({
   }
 
   return (
-    <section className="rise card-warn p-6 md:p-7" aria-live="polite">
+    <section className="card-warn p-6 md:p-7" aria-live="polite">
       <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
         <div className="max-w-xl">
           <p className="flex items-center gap-2 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-[var(--color-warnink)]">

@@ -47,7 +47,7 @@ export default async function SettingsPage({
 
       {paypal && (
         <div
-          className={`rise mb-5 rounded-[14px] border p-4 text-[12.5px] ${
+          className={`mb-5 rounded-[14px] border p-4 text-[12.5px] ${
             paypal === "connected"
               ? "border-[#cbea92] bg-[var(--color-lime)] text-[var(--color-forest)]"
               : "border-[#f0cfc6] bg-[#fdf1ee] text-[var(--color-ember)]"

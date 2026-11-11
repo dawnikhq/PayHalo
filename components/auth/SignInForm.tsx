@@ -55,7 +55,7 @@ export function SignInForm({ next }: { next: string }) {
 
   if (sent) {
     return (
-      <div className="rise rounded-[18px] border border-[var(--color-line)] bg-white p-6">
+      <div className="rounded-[18px] border border-[var(--color-line)] bg-white p-6">
         <p className="label text-[var(--color-brand)]">{sent.delivered ? "Check your inbox" : "Link not sent"}</p>
         <p className="h3 mt-2">{sent.delivered ? "One link, twenty minutes." : "Email isn’t connected here."}</p>
         <p className="t-small mt-2">{sent.message}</p>

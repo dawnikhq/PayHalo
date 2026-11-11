@@ -53,7 +53,7 @@ export default async function DashboardPage({
       </header>
 
       {sealed && (
-        <div className="rise card-mint mb-5 flex items-start gap-3 p-5">
+        <div className="card-mint mb-5 flex items-start gap-3 p-5">
           <span aria-hidden className="text-[15px] text-[var(--color-brand)]">✓</span>
           <p className="t-body text-[var(--color-forest)]">
             Your plan is sealed. {s.beneficiaries.length} recipient
@@ -74,7 +74,7 @@ export default async function DashboardPage({
       )}
 
       {isDistributed && claim && (
-        <div className="rise card-lime mb-5 p-6">
+        <div className="card-lime mb-5 p-6">
           <p className="label text-[#4d6b2a]">Handover complete</p>
           <p className="h2 mt-1.5 text-[var(--color-forest)]">The window closed with no response.</p>
           <p className="t-body mt-1.5 text-[#3f5b3a]">
