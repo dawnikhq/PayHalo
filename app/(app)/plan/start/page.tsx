@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Page } from "@/components/ui";
 import { StartPlan } from "@/components/plan/StartPlan";
 import { getSnapshot } from "@/lib/store";
@@ -25,6 +26,16 @@ export default async function StartPlanPage() {
           Email delivery is not configured on this deployment, so the key will be shown to you once to pass on by hand.
         </p>
       )}
+
+      <div className="mb-5 rounded-[14px] border border-[var(--color-line)] bg-[#fbfdfb] px-4 py-3">
+        <p className="text-[12.5px] text-[var(--color-ink)]">
+          Would you rather talk than fill a form?{" "}
+          <Link href="/plan/describe" className="font-semibold text-[var(--color-brand)]">
+            Describe your plan in a paragraph
+          </Link>{" "}
+          and check the draft it produces.
+        </p>
+      </div>
 
       <StartPlan ownerName={s.user.name} hasVault={Boolean(s.vault)} />
 

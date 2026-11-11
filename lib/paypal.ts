@@ -42,12 +42,42 @@ export function paypalMode(): PayPalMode {
   return process.env.PAYPAL_ENV?.trim().toLowerCase() === "live" ? "live" : "sandbox";
 }
 
+/**
+ * Credentials are resolved per mode, so one deployment can hold both pairs and
+ * switch with PAYPAL_ENV alone — no secret swapping, no half-migrated state.
+ * A missing sandbox pair falls back to the shared variables.
+ */
+function credentialName(kind: "id" | "secret", mode: PayPalMode): string[] {
+  const specific = kind === "id" ? "PAYPAL_SANDBOX_CLIENT_ID" : "PAYPAL_SANDBOX_CLIENT_SECRET";
+  const shared = kind === "id" ? "PAYPAL_CLIENT_ID" : "PAYPAL_CLIENT_SECRET";
+  return mode === "sandbox" ? [specific, shared] : [shared];
+}
+
+function readCredential(kind: "id" | "secret"): string {
+  for (const name of credentialName(kind, paypalMode())) {
+    const value = process.env[name]?.trim();
+    if (value) return value;
+  }
+  return "";
+}
+
 function clientId(): string {
-  return process.env.PAYPAL_CLIENT_ID?.trim() ?? "";
+  return readCredential("id");
 }
 
 function clientSecret(): string {
-  return process.env.PAYPAL_CLIENT_SECRET?.trim() ?? "";
+  return readCredential("secret");
+}
+
+/** Which variable the pair came from — useful in the diagnosis, never the value. */
+export function paypalCredentialSource(): { id: string; secret: string } {
+  const pick = (kind: "id" | "secret") => {
+    for (const name of credentialName(kind, paypalMode())) {
+      if (process.env[name]?.trim()) return name;
+    }
+    return "unset";
+  };
+  return { id: pick("id"), secret: pick("secret") };
 }
 
 /**
@@ -611,6 +641,8 @@ export interface PayPalDiagnosis {
   configured: boolean;
   clientIdShape: string;
   secretShape: string;
+  /** Which env vars the pair came from, so a wrong pair is visible in one line. */
+  credentialSource: { id: string; secret: string };
   redirectUri: string;
   token: { ok: boolean; status: number; message: string };
   balances: { ok: boolean; status: number; message: string };
@@ -640,6 +672,7 @@ export async function diagnosePayPal(requestUrl: string): Promise<PayPalDiagnosi
     configured: Boolean(id && secret),
     clientIdShape: shape(id),
     secretShape: shape(secret),
+    credentialSource: paypalCredentialSource(),
     redirectUri: paypalRedirectUri(requestUrl),
     token: { ok: false, status: 0, message: "not attempted" },
     balances: { ok: false, status: 0, message: "not attempted" },

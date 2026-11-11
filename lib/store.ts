@@ -40,6 +40,7 @@ import {
 import type { StoredReport } from "./certs";
 import type { ReleaseRequest, Snapshot, Vault } from "./types";
 import { hashVaultKey, mintVaultKey, vaultKeyMatches } from "./vault-key";
+import type { Draft } from "./ai";
 import { currentUser, requireOwner, sharedOwner } from "./scope";
 
 export { SAFETY_WINDOW_DAYS, REVIEW_HOURS } from "./model";
@@ -54,7 +55,7 @@ export type { BeneficiaryView, KeyholderView } from "./model";
  * share link, and only the redacted view builders run against it.
  */
 
-type MutationResult = { ok: boolean; error?: string };
+type MutationResult = { ok: boolean; error?: string; extra?: Record<string, unknown> };
 
 async function loadDoc(ownerId: string, identity?: { name: string; email: string }): Promise<StateDoc> {
   const driver = await getDriver();
@@ -514,4 +515,62 @@ export async function decideReleaseAction(
   const result = decideRelease(doc, requestId, decision, note, operator);
   if (result.ok) await driver.save(ownerId, doc);
   return result;
+}
+
+/* ------------------------------------------------------------- drafted plan -- */
+
+/**
+ * Writes a drafted plan into the document. Everything still goes through
+ * addBeneficiary/addAsset, so the same rules apply as if it had been typed by
+ * hand: one first choice, validated amounts, no invented emails.
+ */
+export async function applyDraftAction(draft: Draft) {
+  return mutate((doc) => {
+    let addedPeople = 0;
+    let addedAssets = 0;
+    const skipped: string[] = [];
+
+    const hasPrimary = doc.beneficiaries.some((b) => b.role === "primary");
+    let primaryUsed = hasPrimary;
+
+    for (const person of draft.people) {
+      if (doc.beneficiaries.some((b) => b.name.trim().toLowerCase() === person.name.trim().toLowerCase())) {
+        skipped.push(person.name);
+        continue;
+      }
+      const role: "primary" | "backup" = primaryUsed ? "backup" : "primary";
+      const result = addBeneficiary(doc, {
+        name: person.name,
+        email: "",
+        relationship: person.relationship,
+        role,
+        share: person.share,
+        note: "Drafted from your own description",
+      });
+      if (result.ok) {
+        addedPeople += 1;
+        if (role === "primary") primaryUsed = true;
+      } else {
+        skipped.push(person.name);
+      }
+    }
+
+    for (const asset of draft.assets) {
+      if (doc.assets.some((a) => a.label.trim().toLowerCase() === asset.label.trim().toLowerCase())) {
+        skipped.push(asset.label);
+        continue;
+      }
+      const result = addAsset(doc, {
+        kind: asset.kind,
+        label: asset.label,
+        provider: asset.provider,
+        balanceCents: asset.balanceCents,
+        detail: "Added from your own description",
+      });
+      if (result.ok) addedAssets += 1;
+      else skipped.push(asset.label);
+    }
+
+    return { ok: true, extra: { addedPeople, addedAssets, skipped } };
+  });
 }

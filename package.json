@@ -1,8 +1,8 @@
 {
-  "name": "vivo",
+  "name": "payhalo",
   "version": "1.0.0",
   "private": true,
-  "description": "VIVO — your legacy, considered. A calm, verified handover for your digital estate.",
+  "description": "PayHalo \u2014 a calm, verified handover for your digital estate, with an AI plan reader and PayPal money rails.",
   "scripts": {
     "dev": "next dev -H 0.0.0.0 -p 3000",
     "build": "next build",

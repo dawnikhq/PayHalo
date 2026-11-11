@@ -10,8 +10,12 @@ PayHalo lets someone decide *who gets what, in what order* while they are well, 
 who can start a claim, and give their family a plan instead of a puzzle. Nothing is released before a
 document has been verified **and** the account holder has had **14 full days** to respond.
 
-**Live: <https://hack1-weld.vercel.app>** — sign in with an emailed link and you get your own empty plan.
-No shared household, no sample data, nothing visible to anyone else.
+**Live: <https://hack1-weld.vercel.app>** — sign up and you get your own empty plan. No shared
+household, no sample data, nothing visible to anyone else.
+
+**Judging this project? [`docs/DEMO.md`](docs/DEMO.md)** has the run instructions, a five-minute pass
+through the product and the three-minute video script. The short version: `npm install && npm run dev`
+works with no configuration at all.
 
 Sign-in is PayHalo's own: an email and password (scrypt), or a one-time emailed link, stored in
 `vivo_users` / `vivo_sessions` / `vivo_login_tokens`. Supabase is the database, not the identity
@@ -209,6 +213,23 @@ per press; a live system waits for the registrar.
 | POST | `/api/paypal/payout` | Release the estate via PayPal. `{confirm:true}`, same-origin, window must be closed |
 
 ---
+
+## The AI reader
+
+A will is a form most people never fill in. `/plan/describe` takes a paragraph of ordinary speech —
+*"my flat is worth about $120k, my daughter Chidi should get it, my son Tunde the savings"* — and
+returns a draft plan: people, relationships, shares that total exactly 100%, and assets with amounts.
+
+- `lib/ai.ts` speaks to an OpenAI-, Anthropic- or Gemini-shaped endpoint, chosen by which key is set
+  (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`; `OPENAI_BASE_URL` points it at any compatible
+  gateway). Keys are server-side only.
+- The model's JSON is **validated and normalised** before it can touch anything: shares are rescaled to
+  100, asset kinds are constrained to the three the app knows, amounts become cents, and anything without
+  a name or a label is dropped.
+- The model proposes; `lib/model.ts` still disposes. Applying a draft runs through the same
+  `addBeneficiary` / `addAsset` checks as typing by hand — one first choice, no invented emails.
+- With no key configured, a deterministic reader answers instead and the screen says **"rules, not a
+  model"** rather than implying an intelligence that is not there.
 
 ## PayPal (sandbox)
 
