@@ -157,7 +157,7 @@ export function MoneyClient({
         </section>
       )}
 
-      {askPurpose && stashCents > 0 && (
+      {askPurpose && (
         <PurposeForm
           stashCents={stashCents}
           beneficiaries={beneficiaries}
@@ -166,7 +166,7 @@ export function MoneyClient({
           onSubmit={async (form) => {
             const created = await post("/api/money", { action: "create-pot", ...form, targetCents: form.targetCents });
             const id = (created as { id?: number }).id;
-            if (id) {
+            if (id && form.allocateCents > 0) {
               await post("/api/money", {
                 action: "allocate",
                 potId: id,
@@ -557,6 +557,7 @@ function PurposeForm({
   const [name, setName] = useState("");
   const [purpose, setPurpose] = useState("");
   const [target, setTarget] = useState("");
+  const [amount, setAmount] = useState(stashCents > 0 ? (stashCents / 100).toFixed(2) : "");
   const [beneficiaryId, setBeneficiaryId] = useState<number | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
 
@@ -565,20 +566,26 @@ function PurposeForm({
       <p className="label text-[#4d6b2a]">One question</p>
       <h2 className="h2 mt-2 text-[var(--color-forest)]">What is this money for?</h2>
       <p className="mt-1.5 max-w-[56ch] text-[12.5px] text-[#3f5b3a]">
-        {money(stashCents)} is sitting in your stash. Naming it now is what turns money into an instruction: a save
-        says what it is for, and who it should reach.
+        {stashCents > 0
+          ? `${money(stashCents)} is sitting in your stash. Naming it now is what turns money into an instruction: a save says what it is for, and who it should reach.`
+          : "Nothing is in your stash yet. You can still name the save now — money you transfer in later can land straight in it."}
       </p>
       <form
         onSubmit={async (e) => {
           e.preventDefault();
           setLocalError(null);
+          const allocateCents = Math.round(Number(amount || "0") * 100);
+          if (allocateCents < 0 || allocateCents > stashCents) {
+            setLocalError(`You have ${money(stashCents)} in your stash.`);
+            return;
+          }
           try {
             await onSubmit({
               name,
               purpose,
               targetCents: target ? Math.round(Number(target) * 100) : 0,
               beneficiaryId,
-              allocateCents: stashCents,
+              allocateCents,
             });
           } catch (err) {
             setLocalError(err instanceof Error ? err.message : "Could not create the save.");
@@ -614,6 +621,19 @@ function PurposeForm({
             inputMode="decimal"
             value={target}
             onChange={(e) => setTarget(e.target.value.replace(/[^0-9.]/g, ""))}
+            className={field}
+          />
+        </div>
+        <div>
+          <label htmlFor="p-amount" className={label}>
+            Put in from your stash
+          </label>
+          <input
+            id="p-amount"
+            inputMode="decimal"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
+            placeholder="0.00"
             className={field}
           />
         </div>
