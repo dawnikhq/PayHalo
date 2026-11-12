@@ -5,14 +5,6 @@ import { useEffect, useRef, useState } from "react";
 interface Turn {
   role: "person" | "halo";
   text: string;
-  /** Which model phrased this answer — Halo rotates between two. */
-  model?: string;
-}
-
-/** "qwen/qwen3.8-27b" → "Qwen 3.8 27B", small enough to sit under an answer. */
-function shortModel(id: string): string {
-  const name = id.split("/").pop() ?? id;
-  return `via ${name.replace(/-/g, " ").replace(/\b[a-z]/g, (c) => c.toUpperCase())}`;
 }
 
 /**
@@ -140,11 +132,6 @@ export function HaloLauncher({ role }: { role: "owner" | "keyholder" | "benefici
                 }
               >
                 {turn.text}
-                {turn.model && (
-                  <span className="mt-1.5 block text-[10px] uppercase tracking-[0.14em] text-[#9aa8a1]">
-                    {shortModel(turn.model)}
-                  </span>
-                )}
               </div>
             ))}
             {busy && (

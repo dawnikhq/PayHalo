@@ -428,7 +428,7 @@ export async function sendConfirmAddress(to: string, details: { name: string; ur
  */
 export async function sendLoginCode(
   to: string,
-  details: { name: string; code: string; minutes: number; when: string },
+  details: { name: string; code: string; minutes: number; when: string; resetUrl?: string },
 ): Promise<MailResult> {
   return sendEmail(to, details.name, `${details.code} is your PayHalo sign-in code`, {
     preheader: `Your code expires in ${details.minutes} minutes.`,
@@ -437,12 +437,14 @@ export async function sendLoginCode(
     lines: [
       `Enter this code to finish signing in. It works once, and for ${details.minutes} minutes.`,
       `Someone asked to sign in at ${details.when}.`,
-      "If that was not you, do not use the code — change your password and tell us straight away.",
+      "If that was not you, do not use the code. Change your password straight away, and tell us.",
     ],
     facts: [
       { label: "Code", value: details.code },
       { label: "Expires", value: `${details.minutes} minutes` },
     ],
+    /* The sentence says what to do; this is where to do it. */
+    secondary: details.resetUrl ? { label: "This was not me — change my password", url: details.resetUrl } : undefined,
     finePrint: "You received this because someone signed in to PayHalo with your address. If it was not you, tell us.",
   });
 }
@@ -450,7 +452,7 @@ export async function sendLoginCode(
 /** A quiet note that the sign-in happened, once it has. */
 export async function sendLoginNotice(
   to: string,
-  details: { name: string; when: string; place: string },
+  details: { name: string; when: string; place: string; resetUrl?: string },
 ): Promise<MailResult> {
   return sendEmail(to, details.name, "You signed in to PayHalo", {
     preheader: `Signed in at ${details.when}.`,
@@ -464,6 +466,7 @@ export async function sendLoginNotice(
       { label: "When", value: details.when },
       { label: "Where", value: details.place },
     ],
+    secondary: details.resetUrl ? { label: "This was not me — change my password", url: details.resetUrl } : undefined,
   });
 }
 

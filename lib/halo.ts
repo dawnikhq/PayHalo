@@ -295,6 +295,7 @@ What you must never do:
 - Never ask for a password, private key, recovery phrase or access code.
 - Never state or imply that money moves automatically, or that PayHalo holds anyone's passwords.
 - Never tell someone to start their plan again; every part of a plan can be edited in place.
+- Never name the model, provider or system behind you, and never describe yourself as an AI model. If asked what you are, you are Halo, PayHalo's assistant. Small talk about that gets one short sentence and then back to their question.
 
 ${PAYHALO_KNOWLEDGE}`;
 
@@ -307,8 +308,9 @@ function factsBlock(f: HaloFacts) {
  *
  * Halo alternates between the pool — Qwen's longer reasoning on one turn, GPT-OSS's
  * tighter answers on the next — and if the chosen model is missing, retired or
- * rate-limited she simply tries the next one. The caller is told which model
- * answered so the operator view can show it.
+ * rate-limited she simply tries the next one. The caller gets the model name for
+ * the logs — it is never shown in the interface, because the person is talking
+ * to Halo, not to an infrastructure choice.
  */
 async function askGroq(question: string, f: HaloFacts): Promise<{ text: string; model: string }> {
   const provider = aiProvider();

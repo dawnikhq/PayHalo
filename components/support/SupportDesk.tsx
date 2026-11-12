@@ -15,7 +15,6 @@ import { useRouter } from "next/navigation";
 interface Turn {
   role: "person" | "halo";
   text: string;
-  model?: string;
   topic?: string;
 }
 
@@ -27,11 +26,6 @@ const TOPICS = [
   "Something is broken",
   "Something else",
 ];
-
-function shortModel(id: string): string {
-  const name = id.split("/").pop() ?? id;
-  return name.replace(/-/g, " ").replace(/\b[a-z]/g, (c) => c.toUpperCase());
-}
 
 export function SupportDesk({
   role,
@@ -59,7 +53,7 @@ export function SupportDesk({
     setThinking(true);
     fetch("/api/halo", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })
       .then(async (res) => {
-        const data = (await res.json()) as { text?: string; model?: string; suggestions?: string[]; error?: string };
+        const data = (await res.json()) as { text?: string; suggestions?: string[]; error?: string };
         if (cancelled) return;
         if (data.text) {
           setTurns([{ role: "halo", text: data.text }]);
@@ -94,13 +88,12 @@ export function SupportDesk({
       });
       const data = (await res.json()) as {
         text?: string;
-        model?: string;
         topic?: string;
         suggestions?: string[];
         error?: string;
       };
       if (!res.ok || !data.text) throw new Error(data.error ?? "Halo could not answer just now.");
-      setTurns((prev) => [...prev, { role: "halo", text: data.text as string, model: data.model, topic: data.topic }]);
+      setTurns((prev) => [...prev, { role: "halo", text: data.text as string, topic: data.topic }]);
       setSuggestions((data.suggestions ?? []).slice(0, 3));
     } catch (error) {
       setHaloError(error instanceof Error ? error.message : "Halo could not answer just now.");
@@ -152,7 +145,6 @@ export function SupportDesk({
           role,
           haloQuestion: lastPerson?.text ?? "",
           haloAnswer: lastHalo?.text ?? "",
-          haloModel: lastHalo?.model ?? "",
           haloTopic: lastHalo?.topic ?? "",
         }),
       });
@@ -199,11 +191,6 @@ export function SupportDesk({
                 }
               >
                 {turn.text}
-                {turn.role === "halo" && turn.model ? (
-                  <span className="mt-1.5 block text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-muted)]">
-                    via {shortModel(turn.model)}
-                  </span>
-                ) : null}
               </div>
             </div>
           ))}

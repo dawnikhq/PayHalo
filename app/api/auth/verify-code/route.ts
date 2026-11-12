@@ -39,7 +39,12 @@ export async function POST(request: Request) {
     if (mailConfigured()) {
       const when = new Date().toISOString().replace("T", " ").slice(0, 16) + " UTC";
       const place = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "an unknown network";
-      await sendLoginNotice(account.email, { name: account.name ?? "there", when, place }).catch(() => null);
+      await sendLoginNotice(account.email, {
+        name: account.name ?? "there",
+        when,
+        place,
+        resetUrl: `${new URL(request.url).origin}/reset?email=${encodeURIComponent(account.email)}`,
+      }).catch(() => null);
     }
 
     return NextResponse.json({ ok: true });

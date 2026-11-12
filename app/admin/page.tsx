@@ -455,7 +455,7 @@ export default async function AdminPage() {
                     {ticket.halo ? (
                       <details className="mt-2 rounded-[10px] bg-[#f7faf6] px-3 py-2">
                         <summary className="cursor-pointer text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--color-muted)]">
-                          What Halo said{ticket.halo.model ? ` (${ticket.halo.model})` : ""}
+                          What Halo said
                         </summary>
                         <p className="mt-1.5 text-[11.5px] text-[var(--color-muted)]">Asked: {ticket.halo.question}</p>
                         <p className="mt-1 whitespace-pre-line text-[12px] leading-relaxed text-[var(--color-ink)]">

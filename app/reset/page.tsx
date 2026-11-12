@@ -6,8 +6,12 @@ import { currentUser } from "@/lib/auth";
 export const dynamic = "force-dynamic";
 export const metadata = { title: { absolute: "Reset your password — PayHalo" } };
 
-export default async function ResetPage({ searchParams }: { searchParams: Promise<{ token?: string }> }) {
-  const { token } = await searchParams;
+export default async function ResetPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ token?: string; email?: string }>;
+}) {
+  const { token, email } = await searchParams;
   const user = await currentUser();
   if (user) redirect("/dashboard");
 
@@ -17,11 +21,18 @@ export default async function ResetPage({ searchParams }: { searchParams: Promis
 
       <main className="mx-auto w-full max-w-[520px] px-5 pb-24 pt-10 sm:px-8 lg:pt-16">
         <p className="eyebrow">Your account</p>
-        <h1 className="h1 mt-3">Forgot the password?</h1>
-        <p className="t-body mt-2">It happens. Set a new one and carry on where you left off.</p>
+        <h1 className="h1 mt-3">Change your password.</h1>
+        <p className="t-body mt-2">
+          {typeof token === "string" && token
+            ? "Choose a new password and carry on where you left off."
+            : "We will email you a link that sets a new one. Nothing changes until you use it."}
+        </p>
 
         <div className="mt-7">
-          <ResetForm token={typeof token === "string" ? token : ""} />
+          <ResetForm
+            token={typeof token === "string" ? token : ""}
+            email={typeof email === "string" ? email : ""}
+          />
         </div>
 
         <p className="mt-5 text-[11px] leading-relaxed text-[var(--color-muted)]">

@@ -79,6 +79,8 @@ export async function POST(request: Request) {
       code,
       minutes: CODE_MINUTES,
       when: when(),
+      /* The one action that ends a stolen password: set a new one. */
+      resetUrl: `${new URL(request.url).origin}/reset?email=${encodeURIComponent(account.email)}`,
     });
 
     if (!mail.sent) {

@@ -140,7 +140,12 @@ export function snapshotOf(
     assets: doc.assets,
     documents: doc.documents ?? [],
     steps: planSteps(doc),
-    beneficiaries: orderedBeneficiaries(doc),
+    /*
+     * A first choice and a final cause hold the whole plan by definition — a
+     * single primary always receives 100%, whatever an older record happened to
+     * store. Normalising here means every screen prints the same, true number.
+     */
+    beneficiaries: orderedBeneficiaries(doc).map((b) => (b.role === "backup" ? b : { ...b, share: 100 })),
     keyholder: doc.keyholder,
     claim,
     distributions: claim

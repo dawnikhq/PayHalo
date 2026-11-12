@@ -13,11 +13,39 @@ const RULES = [
   "Something you do not use anywhere else",
 ];
 
-export function ResetForm({ token }: { token: string }) {
+export function ResetForm({ token, email: initialEmail = "" }: { token: string; email?: string }) {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  /* The no-token view: ask for the link instead of pretending one exists. This
+     is the page a security notice points at, so it has to be a real door. */
+  const [email, setEmail] = useState(initialEmail);
+  const [asking, setAsking] = useState(false);
+  const [asked, setAsked] = useState<string | null>(null);
+  const [askError, setAskError] = useState<string | null>(null);
+
+  async function requestLink(event: React.FormEvent) {
+    event.preventDefault();
+    if (asking) return;
+    setAsking(true);
+    setAskError(null);
+    try {
+      const res = await fetch("/api/auth/forgot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
+      if (!res.ok) throw new Error(data.error ?? "That could not be sent just now.");
+      setAsked(data.message ?? "If that address has a PayHalo account, a reset link is on its way.");
+    } catch (e) {
+      setAskError(e instanceof Error ? e.message : "That could not be sent just now.");
+    } finally {
+      setAsking(false);
+    }
+  }
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -44,16 +72,53 @@ export function ResetForm({ token }: { token: string }) {
 
   if (!token) {
     return (
-      <div className="rounded-[18px] border border-[var(--color-line)] bg-white p-6 md:p-7">
-        <p className="label text-[var(--color-brand)]">Reset link</p>
-        <p className="h3 mt-2">This link is incomplete.</p>
-        <p className="t-small mt-2">
-          Reset links are single use and expire after an hour. Ask for a fresh one from the sign-in screen.
-        </p>
-        <Link href="/signin" className="btn btn-primary mt-5 w-full">
-          Back to sign in
-        </Link>
-      </div>
+      <form onSubmit={requestLink} className="rounded-[18px] border border-[var(--color-line)] bg-white p-6 md:p-7">
+        <p className="label text-[var(--color-brand)]">Change your password</p>
+        <p className="h3 mt-2">{asked ? "Check your inbox." : "Start with your email."}</p>
+
+        {asked ? (
+          <>
+            <p className="t-small mt-2">{asked}</p>
+            <p className="t-small mt-2">
+              The link works once, and for an hour. If it does not arrive, look in spam before asking again.
+            </p>
+            <Link href="/signin" className="btn btn-primary mt-5 w-full">
+              Back to sign in
+            </Link>
+          </>
+        ) : (
+          <>
+            <p className="t-small mt-2">
+              Reset links are single use and expire after an hour. Enter the address on your account and we will send a
+              fresh one.
+            </p>
+            <label htmlFor="reset-email" className={`${label} mt-5`}>
+              Email address
+            </label>
+            <input
+              id="reset-email"
+              type="email"
+              required
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="you@example.com"
+              className={input}
+            />
+            {askError ? <p className="field-error mt-3">{askError}</p> : null}
+            <button type="submit" disabled={asking} className="btn btn-primary mt-4 w-full">
+              {asking ? "Sending…" : "Email me a reset link"}
+            </button>
+            <p className="t-small mt-4">
+              Remembered it?{" "}
+              <Link href="/signin" className="font-semibold text-[var(--color-brand)]">
+                Sign in instead
+              </Link>
+              .
+            </p>
+          </>
+        )}
+      </form>
     );
   }
 

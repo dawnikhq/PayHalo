@@ -8,10 +8,15 @@ import { SiteTourButton } from "./SiteTour";
 /**
  * The opening screen.
  *
- * Motion borrowed from the reference hero: the statement arrives word by word,
- * light drifts behind it, a band of steps runs underneath, and the photographs
- * change on their own. Every one of those is switched off when the visitor has
- * asked their system for less motion — the letters simply are there.
+ * Arranged like the front of the building: one full-bleed photograph behind a
+ * very large statement, the description resting on a bordered panel at the
+ * foot of the screen, and a quiet scroll cue in the corner. The photographs
+ * change on their own; every motion is switched off when the visitor has asked
+ * their system for less.
+ *
+ * The whole arrangement — statement, description and both buttons — is inside
+ * the first screen on a phone and on a laptop, so nobody has to scroll to find
+ * out what PayHalo is or to start.
  */
 
 const HEADLINE = ["Your", "wealth", "deserves", "more", "than", "a", "forgotten", "password", "and", "a", "hopeful", "guess."];
@@ -20,26 +25,19 @@ const EMPHASIS_FROM = 5;
 const FRAMES = [
   {
     src: "/brand/field-ribbon.jpg",
-    alt: "A ribbon of mint light curving through deep green",
+    alt: "",
     focus: "object-center",
   },
   {
     src: "/brand/field-key.jpg",
-    alt: "A brass key resting on folded pale mint paper",
+    alt: "",
     focus: "object-center",
   },
   {
     src: "/brand/field-letter.jpg",
-    alt: "A sealed letter and a pen on a dark desk",
+    alt: "",
     focus: "object-center",
   },
-];
-
-const TICKER = [
-  "Record what you own",
-  "Decide who inherits",
-  "Appoint a Trusted Key",
-  "Allow the handover process to proceed",
 ];
 
 export function Hero() {
@@ -47,7 +45,7 @@ export function Hero() {
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const id = window.setInterval(() => setFrame((f) => (f + 1) % FRAMES.length), 4600);
+    const id = window.setInterval(() => setFrame((f) => (f + 1) % FRAMES.length), 5200);
     return () => window.clearInterval(id);
   }, []);
 
@@ -56,131 +54,76 @@ export function Hero() {
       data-tour="hero"
       className="relative isolate flex min-h-[calc(100svh-4rem)] flex-col overflow-hidden bg-[#0a0f0d] text-white sm:min-h-[calc(100svh-4.5rem)]"
     >
-      {/* light behind the words — three soft ribbons, drifting at different speeds */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="ribbon ribbon-a" />
-        <div className="ribbon ribbon-b" />
-        <div className="ribbon ribbon-c" />
-        <div className="absolute inset-0 bg-[radial-gradient(120%_90%_at_50%_-10%,transparent_35%,rgba(10,15,13,0.55)_100%)]" />
+      {/* the photograph, filling the screen behind everything */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-20">
+        {FRAMES.map((f, i) => (
+          <Image
+            key={f.src}
+            src={f.src}
+            alt=""
+            fill
+            priority={i === 0}
+            sizes="100vw"
+            className={`object-cover transition-opacity duration-[1600ms] ease-out ${i === frame ? "opacity-100" : "opacity-0"}`}
+          />
+        ))}
       </div>
 
-      <div className="section relative grid flex-1 content-center gap-6 pb-6 pt-6 sm:gap-9 sm:pb-9 sm:pt-8 lg:grid-cols-[1.04fr_0.96fr] lg:items-center lg:gap-12 lg:pb-11 lg:pt-10">
-        <div className="min-w-0">
-          <h1 className="display-hero max-w-[15ch] text-white">
-            {HEADLINE.map((word, i) => (
-              <span
-                key={`${word}-${i}`}
-                className={`hero-word inline-block ${i >= EMPHASIS_FROM ? "text-[var(--color-lime)]" : ""}`}
-                style={{ ["--i" as string]: i }}
-              >
-                {word}
-                {i === HEADLINE.length - 1 ? "" : "\u00A0"}
-              </span>
-            ))}
-          </h1>
+      {/* the light behind the words — ribbons, and the scrim that keeps them readable */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+        <div className="ribbon ribbon-a" />
+        <div className="ribbon ribbon-b" />
+        {/* the photograph stays visible on the right, and goes dark where the words are */}
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,15,13,0.62)_0%,rgba(10,15,13,0.24)_42%,rgba(10,15,13,0.74)_84%,rgba(10,15,13,0.94)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(10,15,13,0.86)_0%,rgba(10,15,13,0.54)_46%,rgba(10,15,13,0.2)_100%)]" />
+      </div>
 
-          <p
-            className="hero-fade mt-4 max-w-[52ch] text-[13.5px] leading-relaxed text-white/70 sm:mt-5 sm:text-[15.5px]"
-            style={{ ["--d" as string]: "620ms" }}
-          >
-            PayHalo is a digital inheritance platform that helps you document what you own, decide who inherits it and
-            leave instructions for how your wealth should be handled.
-          </p>
-
-          <div
-            className="hero-fade mt-5 flex flex-col gap-2.5 sm:mt-7 sm:flex-row sm:items-center"
-            style={{ ["--d" as string]: "760ms" }}
-          >
-            <Link href="/signup" className="btn btn-mint w-full sm:w-auto">
-              Create my inheritance plan <span aria-hidden>→</span>
-            </Link>
-            <Link href="#how" className="btn btn-on-dark w-full sm:w-auto">
-              See how PayHalo works
-            </Link>
-          </div>
-
-          <div className="hero-fade mt-3 sm:mt-4" style={{ ["--d" as string]: "880ms" }}>
-            <SiteTourButton className="text-[12px] font-semibold text-[var(--color-lime)] underline decoration-[rgba(167,243,208,0.4)] underline-offset-4 transition hover:text-white">
-              Take the one-minute tour
-            </SiteTourButton>
-          </div>
-
-          <div aria-hidden className="mt-7 hidden items-center gap-3 lg:flex">
-            <span className="grid h-9 w-9 place-items-center rounded-full border border-white/15 text-[11px] text-white/70">
-              ↓
+      <div className="section relative flex flex-1 flex-col justify-end gap-7 pb-5 pt-8 sm:justify-between sm:gap-6 sm:pb-6 sm:pt-10">
+        <h1 className="display-hero max-w-[16ch] text-white">
+          {HEADLINE.map((word, i) => (
+            <span
+              key={`${word}-${i}`}
+              className={`hero-word inline-block ${i >= EMPHASIS_FROM ? "text-[var(--color-lime)]" : ""}`}
+              style={{ ["--i" as string]: i }}
+            >
+              {word}
+              {i === HEADLINE.length - 1 ? "" : "\u00A0"}
             </span>
-            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40">Scroll</span>
-          </div>
-        </div>
+          ))}
+        </h1>
 
-        {/* photographs, changing on their own */}
-        <div className="hero-float relative mx-auto w-full max-w-[440px] lg:mx-0 lg:max-w-[460px] lg:justify-self-end">
-          <div className="relative aspect-[16/9] max-h-[min(30svh,230px)] w-full overflow-hidden rounded-[20px] border border-white/12 shadow-[0_50px_90px_-50px_rgba(0,0,0,0.9)] sm:aspect-[4/5] sm:max-h-none sm:rounded-[26px] lg:aspect-auto lg:h-[min(58svh,540px)]">
-            {FRAMES.map((f, i) => (
-              <Image
-                key={f.src}
-                src={f.src}
-                alt={f.alt}
-                fill
-                priority={i === 0}
-                sizes="(max-width: 1024px) 92vw, 520px"
-                className={`object-cover ${f.focus} transition-opacity duration-[1400ms] ease-out ${
-                  i === frame ? "opacity-100" : "opacity-0"
-                }`}
-              />
-            ))}
-            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(10,15,13,0.05),rgba(10,15,13,0.38))]" />
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-8">
+          <div className="hero-fade w-full max-w-[560px] rounded-[18px] border border-white/15 bg-[#0a0f0d]/55 p-5 backdrop-blur-md sm:p-6">
+            <p className="max-w-[52ch] text-[13.5px] leading-relaxed text-white/80 sm:text-[15px]">
+              PayHalo is a digital inheritance platform that helps you document what you own, decide who inherits it and
+              leave instructions for how your wealth should be handled.
+            </p>
 
-            <div className="absolute inset-x-3 bottom-3 flex items-center justify-between gap-3 rounded-full border border-white/15 bg-[#0a0f0d]/45 px-3.5 py-2 backdrop-blur-md">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/80">
-                Your Wealth, left in good hands.
-              </span>
-              <span className="flex items-center gap-1.5">
-                {FRAMES.map((f, i) => (
-                  <span
-                    key={f.src}
-                    className={`h-1.5 rounded-full transition-all duration-500 ${
-                      i === frame ? "w-5 bg-[var(--color-lime)]" : "w-1.5 bg-white/35"
-                    }`}
-                  />
-                ))}
-              </span>
+            <div className="mt-4 flex flex-col gap-2.5 sm:mt-5 sm:flex-row sm:items-center">
+              <Link href="/signup" className="btn btn-mint w-full sm:w-auto">
+                Create my inheritance plan <span aria-hidden>→</span>
+              </Link>
+              <Link href="#how" className="btn btn-on-dark w-full sm:w-auto">
+                See how PayHalo works
+              </Link>
+            </div>
+
+            <div className="mt-3">
+              <SiteTourButton className="text-[11.5px] font-semibold text-[var(--color-lime)] underline decoration-[rgba(167,243,208,0.4)] underline-offset-4 transition hover:text-white">
+                Take the one-minute tour
+              </SiteTourButton>
             </div>
           </div>
 
-          {/* one quiet piece of the product, floating beside the photographs */}
-          <div className="absolute -left-2 top-4 flex items-center gap-2.5 rounded-2xl border border-white/15 bg-white/95 px-3 py-2 shadow-[0_20px_40px_-24px_rgba(0,0,0,0.7)] sm:-left-4 lg:-left-6">
-            <span className="relative grid h-7 w-7 place-items-center rounded-full bg-[var(--color-mint)] text-[10px] font-bold text-[var(--color-forest)]">
-              AO
-              <span className="breathe absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[var(--color-brand)]" />
+          <a
+            href="#how"
+            className="hidden shrink-0 items-center gap-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/55 transition hover:text-white sm:flex"
+          >
+            Scroll
+            <span aria-hidden className="grid h-8 w-8 place-items-center rounded-full border border-white/20 text-[12px]">
+              ↓
             </span>
-            <span className="leading-tight">
-              <span className="block text-[9px] font-bold uppercase tracking-[0.13em] text-[var(--color-muted)]">
-                Trusted Key
-              </span>
-              <span className="block text-[11.5px] font-semibold text-[var(--color-ink)]">Amara O.</span>
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* the four steps, running past */}
-      <div className="relative border-y border-white/10 bg-[#0a0f0d]/80">
-        <div className="marquee">
-          <div className="marquee-track">
-            {[0, 1].map((copy) => (
-              <ul key={copy} className="flex shrink-0 items-center gap-7 pr-7" aria-hidden={copy === 1}>
-                {TICKER.map((step) => (
-                  <li key={step} className="flex items-center gap-7">
-                    <span className="whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70">
-                      {step}
-                    </span>
-                    <span aria-hidden className="h-1 w-1 rounded-full bg-[var(--color-lime)]" />
-                  </li>
-                ))}
-              </ul>
-            ))}
-          </div>
+          </a>
         </div>
       </div>
     </section>

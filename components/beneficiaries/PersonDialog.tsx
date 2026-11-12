@@ -29,7 +29,9 @@ export function PersonDialog({
   const [relationship, setRelationship] = useState(person?.relationship ?? "");
   const [note, setNote] = useState(person?.note ?? "");
   const [role, setRole] = useState<Role>("backup");
-  const [share, setShare] = useState("0");
+  /* A first choice is the whole plan; a backup splits it. Starting at 0 is how
+     a primary ended up showing no share at all. */
+  const [share, setShare] = useState(person ? String(person.share) : "100");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -56,7 +58,15 @@ export function PersonDialog({
       body: JSON.stringify(
         person
           ? { update: { id: person.id, name, email, relationship, note } }
-          : { name, email, relationship, note, role, share: Number(share) || 0 },
+          : {
+              name,
+              email,
+              relationship,
+              note,
+              role,
+              /* Only a backup carries a split; the other roles are 100%. */
+              share: role === "backup" ? Number(share) || 0 : 100,
+            },
       ),
     });
     const data = await res.json().catch(() => ({ ok: false, error: "Something went wrong." }));

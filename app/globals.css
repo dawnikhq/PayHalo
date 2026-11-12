@@ -649,9 +649,12 @@ body {
 .display-hero {
   font-family: var(--font-display);
   font-weight: 600;
-  line-height: 1.04;
-  letter-spacing: -0.04em;
-  font-size: clamp(1.9rem, 8vw, 4.35rem);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+  /* Bounded by the height as well as the width, so the statement can never
+     grow the first screen past the fold on a short laptop. */
+  font-size: clamp(1.95rem, min(6.2vw, 8.6vh), 4.05rem);
   text-wrap: balance;
 }
 
