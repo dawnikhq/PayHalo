@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { MarketingFooter, MarketingHeader } from "@/components/marketing/Chrome";
 import { DeviceStage, ProductMock } from "@/components/marketing/ProductMock";
-import { SiteTour } from "@/components/marketing/SiteTour";
+import { SiteTour, SiteTourButton } from "@/components/marketing/SiteTour";
 
 export const metadata = {
   title: "PayHalo — your wealth deserves more than a forgotten password.",
@@ -24,7 +24,7 @@ const FEATURES = [
     body: "Document your digital payment accounts, cryptocurrency wallets and online businesses, so important parts of your financial life don't disappear from the picture simply because they exist on different platforms.",
     cta: "Record my assets",
     href: "/assets",
-    tone: "photo",
+    tone: "dark",
   },
   {
     eyebrow: "Beneficiaries",
@@ -203,6 +203,12 @@ export default function LandingPage() {
             </Link>
           </div>
 
+          <div className="mt-4">
+            <SiteTourButton className="text-[12px] font-semibold text-[var(--color-brand)] underline decoration-[rgba(0,132,119,0.35)] underline-offset-4 transition hover:text-[var(--color-forest)]">
+              Take the one-minute tour
+            </SiteTourButton>
+          </div>
+
           {/* the hero is the whole first screen on a phone: one idea, two doors,
               and a quiet cue that the rest is a scroll away */}
           <div className="mt-10 flex flex-col items-center gap-2 sm:hidden" aria-hidden>
@@ -330,7 +336,7 @@ export default function LandingPage() {
                   {photo && (
                     <>
                       <Image
-                        src={i === 0 ? "/hero-lands.jpg" : "/about-light.jpg"}
+                        src="/about-light.jpg"
                         alt=""
                         fill
                         sizes="(max-width: 640px) 100vw, 400px"
