@@ -1,4 +1,4 @@
-import { aiKey, aiProvider, groqAttemptOrder, nextGroqModel } from "./ai";
+import { aiProvider, groqAttemptOrder, groqChat, nextGroqModel } from "./ai";
 import { PAYHALO_KNOWLEDGE } from "./halo-knowledge";
 import { allocate } from "./engine";
 import type { Snapshot } from "./types";
@@ -313,47 +313,25 @@ function factsBlock(f: HaloFacts) {
 async function askGroq(question: string, f: HaloFacts): Promise<{ text: string; model: string }> {
   const provider = aiProvider();
   if (provider !== "groq") throw new Error("no groq");
-  const base = (process.env.GROQ_BASE_URL ?? "https://api.groq.com/openai/v1").trim().replace(/\/+$/, "");
+
   const { turn } = nextGroqModel();
   let lastError = "";
 
   for (const model of groqAttemptOrder(turn)) {
-    const res = await fetch(`${base}/chat/completions`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${aiKey("groq")}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
+    try {
+      const answer = await groqChat({
         model,
         messages: [
           { role: "system", content: `${HALO_SYSTEM}\n\n${factsBlock(f)}` },
           { role: "user", content: question },
         ],
         temperature: 0.3,
-        max_tokens: 500,
-      }),
-      cache: "no-store",
-    }).catch((e: unknown) => {
-      lastError = e instanceof Error ? e.message : "network";
-      return null;
-    });
-
-    if (!res) continue;
-    if (!res.ok) {
-      lastError = `${model} ${res.status}`;
-      /* A rate limit or a missing model is worth trying the other model for; a
-         refused key is not, but the cost of one more attempt is a single call. */
-      continue;
+        maxTokens: 600,
+      });
+      return answer;
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : `${model} failed`;
     }
-
-    const data = (await res.json()) as {
-      choices?: { message?: { content?: string; reasoning?: string } }[];
-      model?: string;
-    };
-    const text = (data.choices?.[0]?.message?.content ?? "").trim();
-    if (!text) {
-      lastError = `${model} empty`;
-      continue;
-    }
-    return { text, model: data.model ?? model };
   }
 
   throw new Error(lastError || "groq unavailable");

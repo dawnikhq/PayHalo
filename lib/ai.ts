@@ -93,6 +93,78 @@ export function groqFallbackModels(): string[] {
   return ["openai/gpt-oss-20b"];
 }
 
+export interface GroqMessage {
+  role: "system" | "user" | "assistant";
+  content: string;
+}
+
+/**
+ * One chat call to one Groq model, shaped for the model it is going to.
+ *
+ * GPT-OSS is a reasoning model: it spends completion tokens thinking before it
+ * writes anything, and with a tight budget it can return a perfectly successful
+ * response with an empty `content` and its whole answer sitting in `reasoning`.
+ * So reasoning models get a low effort, a completion-token budget rather than
+ * the older `max_tokens`, and one retry with more room if the first comes back
+ * empty. Everything else gets a plain call.
+ */
+export async function groqChat(input: {
+  model: string;
+  messages: GroqMessage[];
+  temperature?: number;
+  maxTokens?: number;
+}): Promise<{ text: string; model: string }> {
+  const base = (process.env.GROQ_BASE_URL ?? "https://api.groq.com/openai/v1").trim().replace(/\/+$/, "");
+  const key = (process.env.GROQ_API_KEY ?? "").trim();
+  const reasoning = /gpt-oss/i.test(input.model);
+
+  const call = async (budget: number) => {
+    const res = await fetch(`${base}/chat/completions`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: input.model,
+        messages: input.messages,
+        temperature: input.temperature ?? 0.3,
+        max_completion_tokens: budget,
+        ...(reasoning ? { reasoning_effort: "low" } : {}),
+      }),
+      cache: "no-store",
+    });
+
+    const raw = await res.text().catch(() => "");
+    let body: {
+      choices?: { message?: { content?: string | null; reasoning?: string | null } }[];
+      model?: string;
+      error?: { message?: string };
+    } = {};
+    try {
+      body = JSON.parse(raw) as typeof body;
+    } catch {
+      /* keep the empty body */
+    }
+
+    const text = (body.choices?.[0]?.message?.content ?? "").trim();
+    return {
+      ok: res.ok,
+      status: res.status,
+      text,
+      // a reasoning model that used its budget thinking still returns 200 and no text
+      spentOnReasoning: Boolean(body.choices?.[0]?.message?.reasoning) && !text,
+      reported: body.model ?? input.model,
+      error: body.error?.message,
+    };
+  };
+
+  const budget = input.maxTokens ?? 700;
+  let result = await call(budget);
+  if (result.ok && !result.text && reasoning) result = await call(Math.max(budget * 3, 2000));
+
+  if (!result.ok) throw new Error(result.error ?? `${input.model} ${result.status}`);
+  if (!result.text) throw new Error(`${input.model} returned no text`);
+  return { text: result.text, model: result.reported };
+}
+
 /** Every model to try, in order, starting from the rotation's current turn. */
 export function groqAttemptOrder(startTurn: number): string[] {
   const pool = groqModels();
@@ -179,35 +251,25 @@ async function askOpenAI(key: string, text: string): Promise<string> {
 }
 
 async function askGroq(key: string, text: string): Promise<string> {
-  const base = (process.env.GROQ_BASE_URL ?? "https://api.groq.com/openai/v1").trim().replace(/\/+$/, "");
+  void key;
   const { turn } = nextGroqModel();
   let lastError = "Groq unavailable";
 
   for (const model of groqAttemptOrder(turn)) {
-    const res = await fetch(`${base}/chat/completions`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
+    try {
+      const { text: content } = await groqChat({
         model,
         messages: [
           { role: "system", content: SYSTEM },
           { role: "user", content: text },
         ],
         temperature: 0.2,
-        max_tokens: 900,
-      }),
-      cache: "no-store",
-    }).catch(() => null);
-
-    if (!res) continue;
-    if (!res.ok) {
-      lastError = `Groq ${res.status} (${model})`;
-      continue;
+        maxTokens: 900,
+      });
+      if (content.trim()) return content;
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : `${model} failed`;
     }
-    const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-    const content = data.choices?.[0]?.message?.content ?? "";
-    if (content.trim()) return content;
-    lastError = `Groq empty (${model})`;
   }
   throw new Error(lastError);
 }
@@ -254,8 +316,6 @@ async function askGemini(key: string, text: string): Promise<string> {
   };
   return data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
 }
-
-/* ----------------------------------------------------------------- shaping -- */
 
 function extractJson(raw: string): unknown {
   const start = raw.indexOf("{");
