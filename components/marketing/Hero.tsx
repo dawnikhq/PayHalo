@@ -111,7 +111,7 @@ export function Hero() {
         </div>
 
         {/* photographs, changing on their own */}
-        <div className="hero-float relative mx-auto w-full max-w-[440px] lg:mx-0 lg:max-w-none">
+        <div className="hero-float relative mx-auto w-full max-w-[440px] lg:mx-0 lg:max-w-[480px] lg:justify-self-end">
           <div className="relative aspect-[5/4] w-full overflow-hidden rounded-[26px] border border-white/12 shadow-[0_50px_90px_-50px_rgba(0,0,0,0.9)] sm:aspect-[4/5] lg:aspect-[4/5]">
             {FRAMES.map((f, i) => (
               <Image

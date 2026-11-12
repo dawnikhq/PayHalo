@@ -100,7 +100,7 @@ export function CookieConsent({ lift = false }: { lift?: boolean }) {
           aria-modal={panel ? true : undefined}
           aria-label="Cookie preferences"
           className={`fixed inset-x-3 z-[80] sm:inset-x-auto sm:right-5 sm:bottom-5 sm:w-[400px] ${
-            lift ? "bottom-[86px]" : "bottom-3"
+            lift ? "bottom-[86px] lg:bottom-5" : "bottom-3"
           }`}
           style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         >
