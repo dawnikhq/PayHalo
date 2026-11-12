@@ -24,7 +24,7 @@ This creates a gap between what someone has built and what their beneficiaries k
 
 Inheritance is not simply a question of who receives what. It also involves making sure that relevant information is available, intentions are documented and the people involved have a practical way to navigate the process.
 
-### PayHalo exists to help close that gap.
+**PayHalo exists to help close that gap.**
 
 
 ## 2. What PayHalo makes possible
@@ -57,37 +57,22 @@ You don't need to own multiple properties or have an enormous estate. Savings, i
 
 The platform brings together three important roles.
 
-\*Account holders\* are the people preparing an inheritance plan. They document their holdings, select beneficiaries, determine allocations and appoint a Trusted Key.
+**Account holders** are the people preparing an inheritance plan. They document their holdings, select beneficiaries, determine allocations and appoint a Trusted Key.
 
 
 
-\*\*Beneficiaries\*\* are the people or eligible organizations designated to benefit from the inheritance. They may eventually use the information and instructions recorded by the account holder to navigate the relevant claims process.
+**Beneficiaries** are the people or eligible organizations designated to benefit from the inheritance. They may eventually use the information and instructions recorded by the account holder to navigate the relevant claims process.
 
+**Trusted Keys** are individuals appointed to initiate the handover process by submitting the required proof of death. Their responsibility is limited to that process; the appointment does not give them access to the account holder's money or inheritance settings while the account holder is alive.
 
-
-\*\*Trusted Keys\*\* are individuals appointed to initiate the handover process by submitting the required proof of death. Their responsibility is limited to that process; the appointment does not give them access to the account holder's money or inheritance settings while the account holder is alive.
-
-
-
-\## 4. How it works
-
-
-
+## 4. How it works
 The PayHalo experience moves through four stages.
 
-
-
-\### Prepare your holdings
-
-
+### Prepare your holdings
 
 The account holder starts by recording the financial holdings they want included in their inheritance plan.
 
-
-
 These may include:
-
-
 
 \- Bank accounts
 
