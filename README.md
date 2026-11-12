@@ -18,7 +18,8 @@ through the product and the three-minute video script. The short version: `npm i
 works with no configuration at all.
 
 Sign-in is PayHalo's own: an email and password (scrypt), or a one-time emailed link, stored in
-`vivo_users` / `vivo_sessions` / `vivo_login_tokens`. Supabase is the database, not the identity
+`vivo_users` / `vivo_sessions` / `vivo_login_tokens`. A forgotten password is reset through its own
+one-time emailed link — see [Forgot password](#forgot-password). Supabase is the database, not the identity
 provider. Each account owns exactly one plan, stored as one row in `public.vivo_docs` keyed by
 `vivo_users.id`; the server never reads across owners. Keyholders and beneficiaries are given
 **signed links** (HMAC, `VIVO_SHARE_SECRET`) rather than accounts, and each link is scoped to one
@@ -193,6 +194,8 @@ per press; a live system waits for the registrar.
 | Method | Route | Purpose |
 |---|---|---|
 | POST | `/api/onboarding` | Create/replace a sealed plan |
+| POST | `/api/auth/forgot` | Email a one-time password-reset link to the address on an account (identical answer whether or not it exists) |
+| POST | `/api/auth/reset` | Spend that link and set a new password; ends every session for the account |
 | POST | `/api/verify/certificate` | Multipart `file` → verification transcript (verdict, 12 checks, fields, SHA-256). Changes nothing |
 | POST | `/api/claim` | Multipart `accessCode` + `file`: re-verifies server-side, then files the claim into the 72-hour check |
 | GET | `/api/keyholder` | Keyholder-scoped view (no balances, assets, recipients or shares) |
@@ -296,6 +299,26 @@ Env for this flow: `ADMIN_PASSCODE` (the release desk), plus `BREVO_API_KEY` and
 email. Without the mail pair the wizard shows the key to the owner exactly once so it can be handed over by
 hand — it is never stored in clear.
 
+## Forgot password
+
+**Forgot your password?** (`/forgot-password`, linked from the sign-in form) is the one way back in when the
+password is gone. It reuses the signed-link machinery rather than inventing a second identity system:
+
+- **Request** (`POST /api/auth/forgot`) takes an email and answers the same whether or not the address has an
+  account, so it cannot be used to find out who is a customer. When the address is known and email delivery is
+  configured, it mints a `set-password` token and emails a link to `/reset-password?token=…`.
+- **The link** (`/reset-password`) is one-use and good for thirty minutes. It lets that person choose a new
+  password — it does **not** open the plan, and the password still has to pass the same rules as sign-up. A
+  rejected password does not burn the link: the token is redeemed only once the new one is accepted.
+- **After** the password changes, every existing session for the account ends (`dropSessionsForUser`), so an old
+  login cannot survive a reset, and a quiet note goes to the address on file — so the account holder learns the
+  same minute if it was not them.
+- With email delivery off, no reset link can be sent and the screen says so; there is no fallback that reveals a
+  reset token. Passwords, and the sign-in code they trigger, still work without it.
+
+Env for this flow: `BREVO_API_KEY` + `MAIL_FROM` (the same pair as the sign-in link). No new configuration is
+needed beyond email delivery.
+
 ## Storage
 
 | Order | Condition | Driver | Durable |
@@ -324,9 +347,10 @@ instead of returning a 500. Each owner's plan is one JSON document under its own
   balances. Live payouts need `PAYPAL_ENV=live` **and** `PAYPAL_ALLOW_LIVE_PAYOUTS=true`, and the release
   still requires the passcode.
 - Accounts are real and self-hosted. Email goes through **Brevo** (`BREVO_API_KEY`, `MAIL_FROM`,
-  `MAIL_FROM_NAME`); it carries the sign-in link and the vault key. Until those are set the link tab says
-  delivery is off, and the wizard shows the key to the owner exactly once to hand over. There is no
-  "forgot password" flow yet — that is the next thing to build.
+  `MAIL_FROM_NAME`); it carries the sign-in link, the password-reset link and the vault key. Until those are set
+  the link tab says delivery is off, and the wizard shows the key to the owner exactly once to hand over. The
+  forgot-password flow sends its reset link through the same channel — with delivery off it cannot be sent, and
+  the screen says so rather than pretending otherwise.
 - A signed share link is a bearer credential. Anyone holding it sees that audience's view until the
   secret is rotated — which invalidates every link at once. There is no per-link revocation yet.
 - Terms, privacy, data-export and account-deletion pages are **not built** (deliberately deferred).

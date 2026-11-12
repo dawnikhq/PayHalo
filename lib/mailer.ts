@@ -172,3 +172,53 @@ export async function sendLoginNotice(
     ].join("\n"),
   });
 }
+
+/**
+ * The "forgot your password" link. One use, a short window, and it only ever
+ * sets a new password — it does not open the plan. Sent to the address on the
+ * account, so holding the link is the proof that the mailbox is theirs.
+ */
+export async function sendPasswordReset(
+  to: string,
+  details: { name: string; url: string; minutes: number },
+): Promise<MailResult> {
+  return send({
+    to,
+    toName: details.name,
+    subject: "Reset your PayHalo password",
+    text: [
+      `Hello ${details.name},`,
+      "",
+      "We received a request to change your PayHalo password. Open this link to choose a new one:",
+      "",
+      details.url,
+      "",
+      `The link works once, and for ${details.minutes} minutes.`,
+      "",
+      "If you did not ask for a new password, ignore this message — your password stays exactly as it is.",
+      "",
+      "PayHalo",
+    ].join("\n"),
+  });
+}
+
+/** A quiet note once the password has actually changed. */
+export async function sendPasswordResetNotice(
+  to: string,
+  details: { name: string; when: string; place: string },
+): Promise<MailResult> {
+  return send({
+    to,
+    toName: details.name,
+    subject: "Your PayHalo password was changed",
+    text: [
+      `Hello ${details.name},`,
+      "",
+      `Your PayHalo password was changed at ${details.when} (${details.place}).`,
+      "",
+      "If that was you, nothing to do. If it was not, request a new password straight away and tell us.",
+      "",
+      "PayHalo",
+    ].join("\n"),
+  });
+}

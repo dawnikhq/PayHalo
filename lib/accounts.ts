@@ -35,6 +35,7 @@ interface Store {
   addSession(tokenHash: string, userId: string, expiresAt: Date): Promise<void>;
   sessionUser(tokenHash: string): Promise<Account | null>;
   dropSession(tokenHash: string): Promise<void>;
+  dropSessionsForUser(userId: string): Promise<void>;
   addLoginToken(tokenHash: string, userId: string, purpose: string, expiresAt: Date): Promise<void>;
   takeLoginToken(tokenHash: string, purpose: string): Promise<string | null>;
   markVerified(id: string): Promise<void>;
@@ -145,6 +146,10 @@ function supabaseStore(): Store | null {
 
     async dropSession(tokenHash) {
       await call(`vivo_sessions?token_hash=eq.${encodeURIComponent(tokenHash)}`, { method: "DELETE" });
+    },
+
+    async dropSessionsForUser(userId) {
+      await call(`vivo_sessions?user_id=eq.${encodeURIComponent(userId)}`, { method: "DELETE" });
     },
 
     async addLoginToken(tokenHash, userId, purpose, expiresAt) {
@@ -288,6 +293,9 @@ async function sqliteStore(): Promise<Store | null> {
       async dropSession(tokenHash) {
         db.prepare("DELETE FROM vivo_sessions WHERE token_hash = ?").run(tokenHash);
       },
+      async dropSessionsForUser(userId) {
+        db.prepare("DELETE FROM vivo_sessions WHERE user_id = ?").run(userId);
+      },
       async addLoginToken(tokenHash, userId, purpose, expiresAt) {
         db.prepare(
           "INSERT INTO vivo_login_tokens (token_hash, user_id, purpose, expires_at) VALUES (?, ?, ?, ?)",
@@ -401,6 +409,16 @@ export async function sessionAccount(token: string): Promise<Account | null> {
 export async function endSession(token: string): Promise<void> {
   const s = await store();
   if (s) await s.dropSession(hashToken(token));
+}
+
+/**
+ * End every login for an account. Called when the password changes: a reset
+ * should not leave an old session — perhaps one opened by whoever prompted the
+ * reset — able to read the plan.
+ */
+export async function dropSessionsForUser(userId: string): Promise<void> {
+  const s = await store();
+  if (s) await s.dropSessionsForUser(userId);
 }
 
 export async function startLoginToken(userId: string, purpose: LoginPurpose, minutes = 20): Promise<string> {

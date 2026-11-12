@@ -259,6 +259,13 @@ export function SignInForm({ next }: { next: string }) {
         </a>
         .
       </p>
+      <p className="t-small mt-2">
+        Forgot your password?{" "}
+        <a href="/forgot-password" className="font-semibold text-[var(--color-brand)]">
+          Reset it
+        </a>
+        .
+      </p>
     </form>
   );
 }

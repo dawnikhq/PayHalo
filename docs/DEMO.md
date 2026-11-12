@@ -20,7 +20,8 @@ npm run dev                    # http://localhost:3000
 
 With **no** `.env.local` at all the app still runs: the in-memory driver holds the plan for the life of
 the process, PayPal is off, and the "describe your plan" reader uses the deterministic fallback. Sign up
-with any email address — there is no verification step in the way.
+with any email address — there is no verification step in the way. The forgot-password flow needs email
+delivery (`BREVO_API_KEY` + `MAIL_FROM`) to send its reset link; with delivery off it says so instead.
 
 ### Environment, if you want the full path
 
@@ -37,7 +38,7 @@ PAYPAL_PAYOUT_PASSCODE=any phrase    # required: payouts fail closed without it
 OPENAI_API_KEY=...                   # or ANTHROPIC_API_KEY / GEMINI_API_KEY
 AI_MODEL=gpt-4o-mini
 
-# Email — Brevo transactional (sign-in link + vault key)
+# Email — Brevo transactional (sign-in link, password reset + vault key)
 BREVO_API_KEY=...
 MAIL_FROM=hello@yourdomain.com
 MAIL_FROM_NAME=PayHalo
@@ -72,6 +73,12 @@ account owns one plan; nothing is shared between accounts.
 8. **Release desk** (`/admin`, `ADMIN_PASSCODE`) → hold for research, or **Approve release** with a note.
    Approval flips the vault to `released` and shows on the owner's own screens.
 
+**Sign-in and password reset.** Sign-in takes a password *and* a six-digit code by email, or a one-time
+emailed link. If the password is forgotten, **Forgot your password?** (on the sign-in form) emails a
+one-time, thirty-minute link to the address on the account; opening it lets that person set a new password,
+ends every other session, and sends a note so the account holder knows it happened. Both the sign-in link
+and the reset link need email delivery configured.
+
 ---
 
 ## 3. Three-minute video script
@@ -102,5 +109,4 @@ account owns one plan; nothing is shared between accounts.
   named beneficiaries through Payouts. Approval carries no amount and no destination, so it cannot be
   redirected. Where Payouts is not enabled for an account, the release is recorded and the screens say
   the transfer is waiting on PayPal rather than pretending it happened.
-- **Not built, deliberately** — terms, privacy, export and account deletion; per-link revocation;
-  a "forgot password" flow.
+- **Not built, deliberately** — terms, privacy, export and account deletion; per-link revocation.
