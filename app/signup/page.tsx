@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MarketingFooter, MarketingHeader } from "@/components/marketing/Chrome";
 import { redirect } from "next/navigation";
 import { SignUpForm } from "@/components/auth/SignUpForm";
 import { currentUser } from "@/lib/auth";
@@ -13,19 +14,8 @@ export default async function SignUpPage() {
   const configured = await accountsAvailable();
 
   return (
-    <div className="min-h-screen bg-[var(--color-canvas)]">
-      <header className="mx-auto flex h-[68px] w-full max-w-[1120px] items-center justify-between px-5 sm:px-8">
-        <Link
-          href="/"
-          aria-label="PayHalo home"
-          className="font-[var(--font-display)] text-[22px] font-extrabold tracking-[-0.055em] text-[var(--color-brand)]"
-        >
-          payhalo
-        </Link>
-        <Link href="/" className="text-[12.5px] font-semibold text-[var(--color-muted)]">
-          ← Back to the site
-        </Link>
-      </header>
+    <div className="paper min-h-screen">
+      <MarketingHeader />
 
       <main className="mx-auto grid w-full max-w-[1120px] items-start gap-10 px-5 pb-24 pt-6 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:pt-16">
         <div>
@@ -64,6 +54,8 @@ export default async function SignUpPage() {
           )}
         </div>
       </main>
+
+      <MarketingFooter />
     </div>
   );
 }

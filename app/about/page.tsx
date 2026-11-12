@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { MarketingFooter, MarketingHeader } from "@/components/marketing/Chrome";
 
 export const metadata = {
   title: "About PayHalo — a simpler way to prepare your inheritance.",
@@ -10,21 +11,7 @@ export const metadata = {
 export default function AboutPage() {
   return (
     <div className="paper min-h-screen">
-      <header className="sticky top-0 z-30 bg-[#fcfbf7]/85 backdrop-blur-xl">
-        <div className="mx-auto flex h-[68px] w-full max-w-[1200px] items-center justify-between gap-4 px-4 sm:px-8">
-          <Link href="/" aria-label="PayHalo home" className="font-[var(--font-display)] text-[21px] font-extrabold tracking-[-0.05em] text-[var(--color-forest)]">
-            PayHalo
-          </Link>
-          <div className="flex items-center gap-3">
-            <Link href="/signin" className="hidden text-[12.5px] font-medium text-[var(--color-ink)] sm:block">
-              Sign in
-            </Link>
-            <Link href="/signup" className="btn btn-ink btn-sm">
-              Create my plan
-            </Link>
-          </div>
-        </div>
-      </header>
+      <MarketingHeader />
 
       <main id="main">
         <section className="mx-auto w-full max-w-[900px] px-4 pb-4 pt-14 text-center sm:px-8 sm:pt-20">
@@ -132,19 +119,7 @@ export default function AboutPage() {
         </section>
       </main>
 
-      <footer className="mt-20 border-t border-[rgba(21,63,53,0.10)] sm:mt-28">
-        <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-3 px-4 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-8">
-          <p className="font-[var(--font-display)] text-[14px] font-medium tracking-[-0.01em] text-[var(--color-forest)]">
-            Make your decisions while you can still make them.
-          </p>
-          <div className="flex flex-wrap items-center gap-4 text-[12px] text-[var(--color-muted)]">
-            <Link href="/">Home</Link>
-            <Link href="/legal#privacy">Privacy Policy</Link>
-            <Link href="/legal#terms">Terms of Service</Link>
-            <Link href="/help">Contact</Link>
-          </div>
-        </div>
-      </footer>
+      <MarketingFooter />
     </div>
   );
 }

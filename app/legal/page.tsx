@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MarketingFooter, MarketingHeader } from "@/components/marketing/Chrome";
 
 export const metadata = {
   title: "PayHalo — Privacy Policy and Terms of Service",
@@ -8,16 +9,7 @@ export const metadata = {
 export default function LegalPage() {
   return (
     <div className="paper min-h-screen">
-      <header className="sticky top-0 z-30 bg-[#fcfbf7]/85 backdrop-blur-xl">
-        <div className="mx-auto flex h-[68px] w-full max-w-[900px] items-center justify-between gap-4 px-4 sm:px-8">
-          <Link href="/" aria-label="PayHalo home" className="font-[var(--font-display)] text-[21px] font-extrabold tracking-[-0.05em] text-[var(--color-forest)]">
-            PayHalo
-          </Link>
-          <Link href="/signup" className="btn btn-ink btn-sm">
-            Create my plan
-          </Link>
-        </div>
-      </header>
+      <MarketingHeader />
 
       <main id="main" className="mx-auto w-full max-w-[760px] px-4 py-14 sm:px-8 sm:py-20">
         <span className="eyebrow-pill">Legal</span>
@@ -93,6 +85,8 @@ export default function LegalPage() {
           </Link>
         </div>
       </main>
+
+      <MarketingFooter />
     </div>
   );
 }
