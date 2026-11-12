@@ -4,9 +4,9 @@ import "@fontsource-variable/manrope";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "PayHalo — Your legacy, considered.",
+  title: "PayHalo — Your arrangements, considered.",
   description:
-    "PayHalo is the calm handover for your digital estate. Decide where your digital wealth goes, name a trusted keyholder, and give your family a plan instead of a puzzle.",
+    "PayHalo is the calm handover for your digital estate. Decide where your digital wealth goes, name a Trusted Key, and give your family a plan instead of a puzzle.",
   applicationName: "PayHalo",
 };
 

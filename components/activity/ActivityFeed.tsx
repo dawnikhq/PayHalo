@@ -11,7 +11,7 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: "plan", label: "Plan" },
   { key: "assets", label: "Assets" },
   { key: "people", label: "People" },
-  { key: "claims", label: "Claims" },
+  { key: "claims", label: "Handover requests" },
 ];
 
 const TONE: Record<string, string> = {
@@ -119,7 +119,7 @@ export function ActivityFeed({ events }: { events: EventRow[] }) {
       )}
 
       <p className="t-meta mt-6 border-t border-[var(--color-line)] pt-4">
-        The account holder is never shown a claim that is still inside
+        The account holder is never shown a handover request that is still inside
         its 72-hour registry check.
       </p>
     </section>

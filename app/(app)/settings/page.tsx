@@ -13,12 +13,12 @@ export const dynamic = "force-dynamic";
 const ROLES = [
   {
     role: "Account holder",
-    can: "Create and edit the plan, seal it, respond to a claim.",
-    cannot: "See a claim that is still inside its registry check.",
+    can: "Create and edit the plan, confirm it, respond to a handover request.",
+    cannot: "See a handover request still inside its registry check.",
   },
   {
-    role: "Keyholder",
-    can: "Start a claim and submit supporting evidence.",
+    role: "Trusted Key",
+    can: "Start a handover request and submit supporting evidence.",
     cannot: "See balances, edit recipients, move assets or open documents.",
   },
   {
@@ -70,7 +70,7 @@ export default async function SettingsPage({
             <h2 className="h2 mt-2">Signed in as</h2>
             <p className="mt-2 break-all text-[13px] font-medium text-[var(--color-ink)]">{owner.email}</p>
             <p className="t-small mt-1">
-              Sign-in is by emailed link. Nothing is shared with a keyholder or beneficiary unless you send them a link
+              Sign-in is by emailed link. Nothing is shared with a Trusted Key or beneficiary unless you send them a link
               below.
             </p>
           </section>
@@ -114,8 +114,8 @@ export default async function SettingsPage({
           <section id="keyholder" className="card p-6 md:p-7">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="eyebrow">Trusted keyholder</p>
-                <h2 className="h2 mt-2">Someone who can start a claim</h2>
+                <p className="eyebrow">Trusted Key</p>
+                <h2 className="h2 mt-2">Someone who can start a handover request</h2>
               </div>
               <Link href="/keyholder" className="text-[12.5px] font-semibold text-[var(--color-brand)]">
                 Open portal →
@@ -145,11 +145,11 @@ export default async function SettingsPage({
                   <CopyButton value={s.keyholder.accessCode} />
                 </div>
                 <p className="t-meta mt-3">
-                  The code starts a claim. It is not a password, and it grants no access to balances or assets.
+                  The code starts a handover request. It is not a password, and it grants no access to balances or assets.
                 </p>
               </>
             ) : (
-              <p className="t-body mt-3">No keyholder is assigned. Nothing can start without one.</p>
+              <p className="t-body mt-3">No Trusted Key is assigned. Nothing can start without one.</p>
             )}
           </section>
         </div>
@@ -164,7 +164,7 @@ export default async function SettingsPage({
             <div className="my-5 h-px bg-white/12" />
             <h3 className="h3 text-[var(--color-lime)]">Sessions are real.</h3>
             <p className="t-body mt-2 text-[#b7cfbd]">
-              You are signed in with an emailed link. Each portal is scoped on the server: a keyholder link carries no
+              You are signed in with an emailed link. Each portal is scoped on the server: a Trusted Key link carries no
               balances, a beneficiary link carries nothing until the window closes.
             </p>
           </section>

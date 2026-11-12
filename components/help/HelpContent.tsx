@@ -7,15 +7,15 @@ const FAQ = [
     a: "No. Setup is optional. Save your draft, explore the dashboard and return whenever you are ready.",
   },
   {
-    q: "What can my keyholder see?",
-    a: "Only claim-related information. Not balances, recipient details or asset access. They cannot edit or move assets.",
+    q: "What can my Trusted Key see?",
+    a: "Only handover request information. Not balances, recipient details or asset access. They cannot edit or move assets.",
   },
   {
     q: "How does the safety window work?",
-    a: "A verified claim notifies the account holder. No release before 14 full days. An owner response stops the handover.",
+    a: "A verified handover request notifies the account holder. No release before 14 full days. An owner response stops the handover.",
   },
   {
-    q: "Who receives my legacy?",
+    q: "Who receives my inheritance?",
     a: "Your primary receives 100%. Backups apply only if needed. If no named person can inherit, your final cause receives 100%.",
   },
   {
@@ -36,7 +36,7 @@ export function HelpContent({
   role?: "owner" | "keyholder" | "beneficiary";
 }) {
   const backHref = role === "keyholder" ? "/keyholder" : role === "beneficiary" ? "/beneficiary" : "/dashboard";
-  const backLabel = role === "keyholder" ? "Keyholder home" : role === "beneficiary" ? "Beneficiary home" : "Dashboard";
+  const backLabel = role === "keyholder" ? "Trusted Key home" : role === "beneficiary" ? "Beneficiary home" : "Overview";
 
   return (
     <>
@@ -91,7 +91,7 @@ export function HelpContent({
             <h2 className="h3">The safety notice</h2>
             <ol className="mt-3 space-y-2.5">
               {[
-                "A keyholder submits evidence.",
+                "A Trusted Key submits evidence.",
                 "Evidence is verified before anything else.",
                 "The account holder is notified, and 14 days begin.",
                 "A response stops the handover.",

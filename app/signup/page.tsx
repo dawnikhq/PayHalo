@@ -29,7 +29,7 @@ export default async function SignUpPage() {
           <ul className="mt-8 space-y-3">
             {[
               "Your assets, people and instructions, only under your login.",
-              "A keyholder link that shows claims and nothing else.",
+              "A Trusted Key link that shows handover requests and nothing else.",
               "A beneficiary link that reveals an entitlement only after the window closes.",
             ].map((line) => (
               <li key={line} className="flex gap-3 text-[13px] text-[var(--color-ink)]">

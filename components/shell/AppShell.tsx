@@ -19,30 +19,28 @@ export type Role = "owner" | "keyholder" | "beneficiary";
 
 type NavItem = { href: string; label: string; icon: ReactNode; exact?: boolean };
 
-const NAV: Record<Role, { primary: NavItem[]; secondary: NavItem[]; workspace: string; promo: { title: string; body: string; href: string; cta: string } }> = {
+const NAV: Record<Role, { primary: NavItem[]; secondary: NavItem[]; promo: { title: string; body: string; href: string; cta: string } }> = {
   owner: {
-    workspace: "Personal workspace",
     primary: [
-      { href: "/dashboard", label: "Dashboard", icon: <IconDashboard /> },
-      { href: "/assets", label: "Assets", icon: <IconAssets /> },
+      { href: "/dashboard", label: "Overview", icon: <IconDashboard /> },
+      { href: "/assets", label: "My assets", icon: <IconAssets /> },
       { href: "/beneficiaries", label: "Beneficiaries", icon: <IconBeneficiaries /> },
-      { href: "/plan", label: "My Plan", icon: <IconPlan /> },
+      { href: "/plan", label: "My instructions", icon: <IconPlan /> },
       { href: "/activity", label: "Activity", icon: <IconActivity /> },
     ],
     secondary: [
-      { href: "/settings", label: "Profile & security", icon: <IconShield /> },
+      { href: "/settings", label: "Account settings", icon: <IconShield /> },
       { href: "/help", label: "Help & support", icon: <IconHelp /> },
     ],
     promo: {
       title: "On your terms.",
-      body: "Start small. Save as you go. Your plan is always yours.",
+      body: "Start small. Save as you go. Your arrangements are always yours.",
       href: "/plan",
-      cta: "Explore My Plan",
+      cta: "Review my arrangements",
     },
   },
   keyholder: {
-    workspace: "Keyholder portal",
-    primary: [{ href: "/keyholder", label: "Keyholder home", icon: <IconDashboard />, exact: true }],
+    primary: [{ href: "/keyholder", label: "Trusted Key home", icon: <IconDashboard />, exact: true }],
     secondary: [
       { href: "/keyholder#role", label: "Your role & permissions", icon: <IconShield /> },
       { href: "/keyholder/support", label: "Help & support", icon: <IconHelp /> },
@@ -55,7 +53,6 @@ const NAV: Record<Role, { primary: NavItem[]; secondary: NavItem[]; workspace: s
     },
   },
   beneficiary: {
-    workspace: "Beneficiary portal",
     primary: [{ href: "/beneficiary", label: "Beneficiary home", icon: <IconDashboard />, exact: true }],
     secondary: [
       { href: "/beneficiary#role", label: "Your role & permissions", icon: <IconShield /> },
@@ -128,7 +125,7 @@ function NavList({
 
 const ROLE_LABEL: Record<Role, string> = {
   owner: "Account holder",
-  keyholder: "Keyholder",
+  keyholder: "Trusted Key",
   beneficiary: "Beneficiary",
 };
 
@@ -171,9 +168,9 @@ export function AppShell({
       <div className="-mt-2 px-2">
         <p className="text-[9.5px] font-semibold uppercase tracking-[0.13em] text-[#94a29a]">
           {role === "owner"
-            ? "Your personal legacy"
+            ? "Your inheritance arrangements"
             : role === "keyholder"
-              ? "Your keyholder role"
+              ? "Your Trusted Key role"
               : "Your beneficiary role"}
         </p>
       </div>
@@ -255,7 +252,6 @@ export function AppShell({
             <div className="flex items-center gap-2 lg:hidden">
               <Wordmark small />
             </div>
-            <p className="hidden text-[13px] font-medium text-[var(--color-ink)] lg:block">{nav.workspace}</p>
 
             <div className="ml-auto flex items-center gap-3 sm:gap-5">
               {role === "owner" ? (
@@ -284,7 +280,7 @@ export function AppShell({
           <div className="mx-auto flex max-w-[1180px] flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
             <p>Help is a click away if anything here is unclear.</p>
             <p className="font-[var(--font-display)] font-semibold tracking-[0.02em] text-[var(--color-forest)]">
-              PayHalo / Your legacy, considered.
+              PayHalo / Your arrangements, considered.
             </p>
           </div>
         </footer>
@@ -306,7 +302,7 @@ function MobileTabs({ role }: { role: Role }) {
     role === "owner"
       ? [
           { href: "/dashboard", label: "Home", icon: <IconDashboard /> },
-          { href: "/assets", label: "Assets", icon: <IconAssets /> },
+          { href: "/assets", label: "My assets", icon: <IconAssets /> },
           { href: "/plan", label: "Plan", icon: <IconPlan /> },
           { href: "/settings", label: "Profile", icon: <IconShield /> },
         ]

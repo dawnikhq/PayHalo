@@ -9,12 +9,12 @@ import { clockLabel, shortDate } from "@/lib/format";
 import { Countdown } from "./Countdown";
 import { Badge, Field } from "./ui";
 
-const CAN = ["Initiate a claim", "Submit supporting evidence", "Track the verification status"];
+const CAN = ["Start a handover request", "Submit supporting evidence", "Track the verification status"];
 const CANNOT = ["View balances or asset details", "Edit plans or beneficiaries", "Move or release any assets"];
 
 const CARE = [
   {
-    title: "Claim review",
+    title: "Handover request review",
     body: "Evidence is reviewed before a safety window can begin. Nothing is assumed from a filename.",
   },
   { title: "Owner notice", body: "If verified, the account holder is notified and has 14 full days to respond." },
@@ -96,7 +96,7 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
       return;
     }
     if (!understood) {
-      setError("Confirm you understand what a claim does — and does not — give you.");
+      setError("Confirm you understand what a handover request does — and does not — give you.");
       return;
     }
     setBusy(true);
@@ -109,13 +109,13 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
       const data = await res.json();
       if (!res.ok) {
         if (data?.report) setReport(data.report as CertReport);
-        throw new Error(data?.error ?? "The claim couldn't be filed.");
+        throw new Error(data?.error ?? "The handover request couldn't be filed.");
       }
       setFile(null);
       setReport(null);
       await refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "The claim couldn't be filed.");
+      setError(e instanceof Error ? e.message : "The handover request couldn't be filed.");
     } finally {
       setBusy(false);
     }
@@ -128,7 +128,7 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
       <>
         <header className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="eyebrow">Trusted keyholder</p>
+            <p className="eyebrow">Trusted Key</p>
             <h1 className="h1 mt-2.5">A little trust. A clear role.</h1>
             <p className="t-body mt-2">
               Welcome, {view.keyholder?.name.split(" ")[0] ?? "there"}. You are the trusted contact on{" "}
@@ -142,7 +142,7 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
 
         <div className="grid gap-5 lg:grid-cols-3">
           <section className="card-forest p-6 md:p-7 lg:col-span-2">
-            <p className="label">You are a keyholder for</p>
+            <p className="label">You are a Trusted Key for</p>
             <h2 className="mt-4 font-[var(--font-display)] text-[clamp(1.9rem,4vw,2.5rem)] font-medium leading-none text-white">
               {view.ownerName}
             </h2>
@@ -155,10 +155,10 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
           </section>
 
           <section className="card-mint p-6">
-            <span className="pill badge-mint bg-white/70">No claim in progress</span>
+            <span className="pill badge-mint bg-white/70">No handover request in progress</span>
             <h2 className="h2 mt-4 text-[var(--color-forest)]">No action needed.</h2>
             <p className="t-body mt-2 text-[#3c5a4e]">
-              Being a keyholder does not grant access to {view.ownerFirstName}&apos;s assets or balances.
+              Being a Trusted Key does not grant access to {view.ownerFirstName}&apos;s assets or balances.
             </p>
           </section>
 
@@ -195,10 +195,10 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
           <section className="card flex flex-col p-6">
             <h2 className="h2">When help is needed.</h2>
             <p className="t-body mt-2 flex-1">
-              A claim requires evidence and verification. It never releases assets immediately.
+              A handover request requires evidence and verification. It never releases assets immediately.
             </p>
             <button onClick={() => setIntake(true)} className="btn btn-primary mt-5 w-full">
-              Start a claim
+              Start a handover request
             </button>
             <p className="t-meta mt-2.5">Filing tells the account holder. Nothing is transferred.</p>
           </section>
@@ -208,7 +208,7 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
           <h2 className="h2">A careful process. Not a shortcut.</h2>
           <div className="mt-5 grid gap-6 sm:grid-cols-3">
             {[
-              ["01", "Submit evidence", "Claim enters review."],
+              ["01", "Submit evidence", "The handover request enters review."],
               ["02", "Verification & notice", "Owner gets 14 full days to respond."],
               ["03", "Eligible handover", "Only after all safeguards are met."],
             ].map(([n, title, body]) => (
@@ -239,7 +239,7 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
     <>
       <header className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="eyebrow">Keyholder / Claim intake</p>
+          <p className="eyebrow">Trusted Key / Handover request</p>
           <h1 className="h1 mt-2.5">
             {stage === "none"
               ? "Begin with the facts."
@@ -250,7 +250,7 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
                   : "Your part is complete."}
           </h1>
           <p className="t-body mt-2">
-            A claim notifies the account holder and starts a 72-hour registry check. Nothing is transferred by filing it.
+            A handover request notifies the account holder and starts a 72-hour registry check. Nothing is transferred by filing it.
           </p>
         </div>
         {stage === "none" && (
@@ -268,7 +268,7 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
               <div className="mt-4 rounded-[14px] bg-[#f6f8f5] p-4">
                 <p className="text-[13.5px] font-medium text-[var(--color-ink)]">{view.ownerName}</p>
                 <p className="t-small mt-0.5">
-                  You are listed as the trusted keyholder · {view.keyholder?.name ?? "Unknown"}
+                  You are listed as the Trusted Key · {view.keyholder?.name ?? "Unknown"}
                 </p>
               </div>
 
@@ -374,7 +374,7 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
                   className="mt-0.5 h-4 w-4 rounded border-[var(--color-line-strong)] accent-[var(--color-brand)]"
                 />
                 <span className="t-small max-w-[62ch]">
-                  I understand that a claim must be verified, does not give me access to balances, recipients or
+                  I understand that a handover request must be verified, does not give me access to balances, recipients or
                   assets, and cannot release anything before 14 full days.
                 </span>
               </label>
@@ -385,7 +385,7 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
                   disabled={!report || report.verdict === "rejected" || checking || busy}
                   className="btn btn-primary"
                 >
-                  {busy ? "Filing…" : "File the claim"}
+                  {busy ? "Filing…" : "File the handover request"}
                 </button>
                 <p className="t-meta">No real service is connected.</p>
               </div>
@@ -478,7 +478,7 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
                 <h2 className="h2">Nothing moves until the clock runs out.</h2>
                 <p className="t-body mt-2 max-w-[54ch]">
                   The registry check cleared on {shortDate(claim.verifiedAt)} and {view.ownerFirstName} was
-                  notified. They have 14 days to stop this. If they respond, the claim is void and you will see it
+                  notified. They have 14 days to stop this. If they respond, the handover request is void and you will see it
                   here.
                 </p>
 
@@ -533,7 +533,7 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
                 {view.recipientCount} people named on the plan, each with only their own entitlement.
               </p>
               <p className="body mt-4 border-t border-white/10 pt-4 text-[12px] text-[#8fb098]">
-                What was released, and to whom, is not visible to a keyholder. That boundary does not change
+                What was released, and to whom, is not visible to a Trusted Key. That boundary does not change
                 after a handover.
               </p>
               <Link href="/beneficiary" className="btn mt-5 bg-white text-[var(--color-forest)] hover:bg-[#f2f7f2]">

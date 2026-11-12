@@ -41,14 +41,14 @@ export default async function DashboardPage({
     <Page>
       <header className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="eyebrow">Your legacy, at a glance</p>
+          <p className="eyebrow">Your arrangements, at a glance</p>
           <h1 className="h1 mt-2.5">
             {greeting(new Date().getUTCHours() + 1)}, {firstName}.
           </h1>
           <p className="t-body mt-2">A little more clarity. A lot more peace of mind.</p>
         </div>
         <Link href="/assets" className="btn btn-primary self-start">
-          Manage assets <span aria-hidden>→</span>
+          Manage my assets <span aria-hidden>→</span>
         </Link>
       </header>
 
@@ -56,8 +56,8 @@ export default async function DashboardPage({
         <div className="card-mint mb-5 flex items-start gap-3 p-5">
           <span aria-hidden className="text-[15px] text-[var(--color-brand)]">✓</span>
           <p className="t-body text-[var(--color-forest)]">
-            Your plan is sealed. {s.beneficiaries.length} recipient
-            {s.beneficiaries.length === 1 ? "" : "s"} on file and {s.keyholder?.name ?? "your keyholder"} can
+            Your arrangements are confirmed. {s.beneficiaries.length} recipient
+            {s.beneficiaries.length === 1 ? "" : "s"} on file and {s.keyholder?.name ?? "your Trusted Key"} can
             start a handover whenever it&apos;s needed.
           </p>
         </div>
@@ -221,7 +221,7 @@ export default async function DashboardPage({
         {/* assets table */}
         <section className="card p-6 md:p-7">
           <div className="flex items-start justify-between gap-4">
-            <h2 className="h2">Everything in one place</h2>
+            <h2 className="h2">Everything accounted for</h2>
             <Link href="/assets" className="text-[12.5px] font-semibold text-[var(--color-brand)]">
               Manage →
             </Link>
@@ -269,7 +269,7 @@ export default async function DashboardPage({
             </p>
           </div>
           <p className="t-body mt-4">
-            A verified claim sends you a notice first. No assets are released before 14 full days.
+            A verified handover request sends you a notice first. No assets are released before 14 full days.
           </p>
           <div className="mt-4 border-t border-[var(--color-line)] pt-4">
             <p className="text-[12.5px] font-medium text-[var(--color-ink)]">Your response stops the handover.</p>
@@ -281,7 +281,7 @@ export default async function DashboardPage({
       </div>
 
       <section className="card mt-5 p-6 md:p-7">
-        <h2 className="h2">A plan for the people who matter.</h2>
+        <h2 className="h2">Arrangements for the people who matter.</h2>
         <div className="mt-6 grid gap-6 sm:grid-cols-3">
           <div>
             <p className="label">01 First choice</p>

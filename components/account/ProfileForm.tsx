@@ -39,7 +39,7 @@ export function ProfileForm({ user }: { user: User }) {
     <form onSubmit={submit} className="card p-6 md:p-7">
       <h2 className="h2">Your details</h2>
       <p className="t-small mt-1">
-        Kept current so a safety notice can reach you. Never shown to a keyholder or beneficiary.
+        Kept current so a safety notice can reach you. Never shown to a Trusted Key or beneficiary.
       </p>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -56,7 +56,7 @@ export function ProfileForm({ user }: { user: User }) {
             required
           />
         </Field>
-        <Field label="Phone" htmlFor="pr-phone" optional help="Never shared with a keyholder or beneficiary.">
+        <Field label="Phone" htmlFor="pr-phone" optional help="Never shared with a Trusted Key or beneficiary.">
           <input id="pr-phone" className="input" value={phone} onChange={(e) => setPhone(e.target.value)} />
         </Field>
         <Field label="Time zone" htmlFor="pr-tz" optional>

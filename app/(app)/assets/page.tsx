@@ -58,7 +58,7 @@ export default async function AssetsPage() {
         <div className="card-mint p-6">
           <h2 className="h3 text-[var(--color-forest)]">Your assets. Your control.</h2>
           <p className="t-body mt-2 text-[#3c5a4e]">
-            Keyholders cannot see your balances or move your assets. Beneficiaries only see their own
+            Trusted Keys cannot see your balances or move your assets. Beneficiaries only see their own
             entitlement after a verified handover and the full safety window.
           </p>
         </div>

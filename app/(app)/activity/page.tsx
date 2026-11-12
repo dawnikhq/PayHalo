@@ -36,13 +36,13 @@ export default async function ActivityPage() {
             </div>
             <p className="t-body mt-3">
               {announced && claim?.status === "window"
-                ? `A verified claim is inside its safety window. The earliest anything could move is ${shortDate(claim.windowEndsAt)}.`
+                ? `A verified handover request is inside its safety window. The earliest anything could move is ${shortDate(claim.windowEndsAt)}.`
                 : announced && claim?.status === "distributed"
                   ? `The handover completed on ${shortDate(claim.distributedAt)}. Each recipient sees only their own entitlement.`
                   : "No safety-window action is required in this account state."}
             </p>
             <p className="t-small mt-3">
-              If a claim is verified, a prominent notice will appear here and in your dashboard.
+              If a handover request is verified, a prominent notice will appear here and in your dashboard.
             </p>
           </section>
 
@@ -50,7 +50,7 @@ export default async function ActivityPage() {
             <h2 className="h2 text-white">Important by design.</h2>
             <h3 className="h3 mt-5 text-[var(--color-lime)]">You will be notified first.</h3>
             <p className="t-body mt-2 text-[#b7cfbd]">
-              A verified claim starts a 14-day safety window. Respond during that window to stop the handover.
+              A verified handover request starts a 14-day safety window. Respond during that window to stop the handover.
             </p>
             {announced && claim && (
               <p className="mt-4 text-[11.5px] text-[#8fb098]">Notice issued {clockLabel(claim.verifiedAt)}.</p>

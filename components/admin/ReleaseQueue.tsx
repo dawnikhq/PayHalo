@@ -77,7 +77,7 @@ export function ReleaseQueue({ rows }: { rows: Row[] }) {
     return (
       <div className="card p-6">
         <p className="text-[13px] font-semibold text-[var(--color-ink)]">Nothing waiting.</p>
-        <p className="t-small mt-1">No plan has a release request open. Requests arrive here the moment a keyholder or beneficiary asks.</p>
+        <p className="t-small mt-1">No plan has a release request open. Requests arrive here the moment a Trusted Key or beneficiary asks.</p>
       </div>
     );
   }

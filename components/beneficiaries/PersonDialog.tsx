@@ -6,9 +6,9 @@ import { Field } from "@/components/ui";
 import type { Beneficiary, Role } from "@/lib/types";
 
 const ROLE_OPTIONS: { value: Role; label: string; hint: string }[] = [
-  { value: "primary", label: "First choice", hint: "Receives everything if able to inherit." },
+  { value: "primary", label: "Primary beneficiaries", hint: "Receives everything if able to inherit." },
   { value: "backup", label: "Family backup", hint: "Shares the estate only if the first choice can't." },
-  { value: "charity", label: "Final cause", hint: "Receives 100% only if no named person can." },
+  { value: "charity", label: "Final beneficiary", hint: "Receives 100% only if no named person can." },
 ];
 
 export function PersonDialog({

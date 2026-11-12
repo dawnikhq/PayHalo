@@ -24,7 +24,7 @@ export function SealPlan({
     const data = await res.json().catch(() => ({ ok: false, error: "Something went wrong." }));
     setBusy(false);
     if (!res.ok || !data.ok) {
-      setError(data.error ?? "The plan could not be sealed yet.");
+      setError(data.error ?? "The plan could not be confirmed yet.");
       return;
     }
     router.push("/dashboard?sealed=1");
@@ -34,7 +34,7 @@ export function SealPlan({
   if (sealed) {
     return (
       <div className={`card-mint p-5 ${className}`}>
-        <p className="text-[13px] font-semibold text-[var(--color-forest)]">This plan is sealed.</p>
+        <p className="text-[13px] font-semibold text-[var(--color-forest)]">These arrangements are confirmed.</p>
         <p className="t-small mt-1 text-[#3c5a4e]">
           Your instructions are recorded. You can still edit them — any change is dated on the trail.
         </p>
@@ -48,7 +48,7 @@ export function SealPlan({
         confirming ? (
           <div className="flex flex-wrap gap-2">
             <button onClick={seal} disabled={busy} className="btn btn-primary flex-1">
-              {busy ? "Sealing…" : "Yes, seal the plan"}
+              {busy ? "Confirming…" : "Yes, confirm my plan"}
             </button>
             <button onClick={() => setConfirming(false)} className="btn btn-secondary">
               Not yet
@@ -56,18 +56,18 @@ export function SealPlan({
           </div>
         ) : (
           <button onClick={() => setConfirming(true)} className="btn btn-primary w-full">
-            Review &amp; seal <span aria-hidden>→</span>
+            Review &amp; confirm <span aria-hidden>→</span>
           </button>
         )
       ) : (
         <p className="t-small">
-          Finish the remaining steps and the seal button unlocks. Nothing is locked in the meantime.
+          Finish the remaining steps and the confirm button unlocks. Nothing is locked in the meantime.
         </p>
       )}
       {error && <p className="field-error mt-2">{error}</p>}
       {confirming && (
         <p className="t-meta mt-2">
-          Sealing records your instructions as final. Nothing is released without a verified claim and 14
+          Confirming records your instructions as final. Nothing is released without a verified claim and 14
           full days.
         </p>
       )}

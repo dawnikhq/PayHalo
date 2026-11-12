@@ -55,7 +55,7 @@ export default async function BeneficiariesPage() {
                   </div>
                   <div className="text-right">
                     <p className="t-num text-[30px] leading-none text-[var(--color-lime)]">{pct(primary.share)}</p>
-                    <p className="mt-1 text-[11.5px] text-[#a9c4b0]">of your legacy</p>
+                    <p className="mt-1 text-[11.5px] text-[#a9c4b0]">of your inheritance</p>
                   </div>
                 </div>
                 <p className="mt-5 border-t border-white/10 pt-4 text-[12px] text-[#b7cfbd]">
@@ -107,7 +107,7 @@ export default async function BeneficiariesPage() {
           </section>
 
           <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-            <p className="t-meta">Saved · Only you can edit or seal.</p>
+            <p className="t-meta">Saved · Only you can edit or confirm.</p>
             <Link href="/plan" className="text-[12.5px] font-semibold text-[var(--color-brand)]">
               Review the plan →
             </Link>

@@ -135,7 +135,7 @@ export default async function SheetPage() {
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <p className="text-[14px]">{s.keyholder.name}</p>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-brand)]">
-                  trusted keyholder
+                  Trusted Key
                 </p>
               </div>
               <p className="mt-1 text-[11.5px] text-[var(--color-muted)]">
@@ -143,12 +143,12 @@ export default async function SheetPage() {
                 {s.keyholder.email ? ` · ${s.keyholder.email}` : ""}
               </p>
               <p className="mt-2 text-[11.5px] leading-relaxed text-[#3a4c45]">
-                They hold the access code, which is deliberately not printed here. They can file the claim,
+                They hold the access code, which is deliberately not printed here. They can file the handover request,
                 but cannot see balances, change these instructions, or move anything.
               </p>
             </div>
           ) : (
-            <p className="t-small mt-2">No keyholder is recorded.</p>
+            <p className="t-small mt-2">No Trusted Key is recorded.</p>
           )}
         </section>
 
@@ -156,7 +156,7 @@ export default async function SheetPage() {
           <SectionHeading n="05" title="What happens, in order" />
           <ol className="mt-3 space-y-2 text-[12.5px] leading-relaxed text-[#3a4c45]">
             {[
-              "The keyholder submits proof of death through the portal.",
+              "The Trusted Key submits proof of death through the portal.",
               "The certificate is verified: format, text, name and registry details.",
               "The record then spends 72 hours in registry review.",
               "Only when that review clears is the account holder notified — never before.",
@@ -220,7 +220,7 @@ export default async function SheetPage() {
       </article>
 
       <p className="mt-4 text-center text-[11px] text-[var(--color-muted)] print:hidden">
-        PayHalo / Your legacy, considered.
+        PayHalo / Your arrangements, considered.
       </p>
     </main>
   );

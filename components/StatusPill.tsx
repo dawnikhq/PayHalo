@@ -8,7 +8,7 @@ const MAP: Record<string, { label: string; tone: "forest" | "lime" | "mint" | "w
   window: { label: "Safety window open", tone: "warn" },
   cancelled: { label: "Stopped by owner", tone: "neutral" },
   distributed: { label: "Handover complete", tone: "lime" },
-  sealed: { label: "Sealed", tone: "mint" },
+  sealed: { label: "Confirmed", tone: "mint" },
 };
 
 export function StatusPill({ status }: { status: string }) {

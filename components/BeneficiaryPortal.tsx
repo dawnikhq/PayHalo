@@ -65,7 +65,7 @@ export function BeneficiaryPortal({ view }: { view: BeneficiaryView }) {
             </p>
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
               {[
-                ["01", "A claim is filed", "The keyholder submits evidence."],
+                ["01", "A handover request is filed", "The Trusted Key submits evidence."],
                 ["02", "It is verified", "The account holder is notified first."],
                 ["03", "14 full days pass", "Only then is anything released."],
               ].map(([n, title, body]) => (
@@ -138,7 +138,7 @@ export function BeneficiaryPortal({ view }: { view: BeneficiaryView }) {
               <ol className="mt-5 space-y-5">
                 <li>
                   <p className="text-[13px] font-semibold text-[var(--color-ink)]">
-                    <span className="mr-2 text-[var(--color-brand)]">✓</span>Claim verified
+                    <span className="mr-2 text-[var(--color-brand)]">✓</span>Handover request verified
                   </p>
                   <p className="t-meta mt-0.5 pl-5">
                     {shortDate(view.verifiedAt)} · account holder notified
@@ -251,7 +251,7 @@ export function BeneficiaryPortal({ view }: { view: BeneficiaryView }) {
             <section className="card-lime p-6">
               <h2 className="h2 text-[var(--color-forest)]">Safeguards complete.</h2>
               <ul className="mt-4 space-y-2.5">
-                {["Claim verified", "14 full days elapsed", "No owner stop recorded"].map((item) => (
+                {["Handover request verified", "14 full days elapsed", "No owner stop recorded"].map((item) => (
                   <li key={item} className="flex items-center gap-2 text-[12.5px] text-[#35502f]">
                     <span aria-hidden>✓</span>
                     {item}

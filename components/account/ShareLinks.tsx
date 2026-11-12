@@ -22,11 +22,11 @@ export function ShareLinks({
 
   const rows = [
     {
-      label: "Keyholder link",
-      hint: "Shows claim status, evidence and the safety window. Never balances, assets or other people.",
+      label: "Trusted Key link",
+      hint: "Shows handover request status, evidence and the safety window. Never balances, assets or other people.",
       path: `/keyholder?share=${keyholderToken}`,
       disabled: !hasKeyholder,
-      disabledNote: "Add a keyholder first.",
+      disabledNote: "Add a Trusted Key first.",
     },
     {
       label: "Beneficiary link",

@@ -109,12 +109,12 @@ export function latestClaim(doc: StateDoc): Claim | null {
 export function planSteps(doc: StateDoc): PlanStep[] {
   const has = (role: Role) => doc.beneficiaries.some((b) => b.role === role);
   return [
-    { key: "first_choice", label: "First choice", done: has("primary") },
+    { key: "first_choice", label: "Primary beneficiaries", done: has("primary") },
     { key: "assets", label: "What you own", done: doc.assets.length > 0 },
-    { key: "backups", label: "Family backups", done: has("backup") },
-    { key: "charity", label: "Final cause", done: has("charity") },
-    { key: "keyholder", label: "Trusted keyholder", done: Boolean(doc.keyholder) },
-    { key: "review", label: "Review & seal", done: Boolean(doc.plan.sealedAt) },
+    { key: "backups", label: "Backup beneficiaries", done: has("backup") },
+    { key: "charity", label: "Final beneficiary", done: has("charity") },
+    { key: "keyholder", label: "Trusted Key", done: Boolean(doc.keyholder) },
+    { key: "review", label: "Review & confirm", done: Boolean(doc.plan.sealedAt) },
   ];
 }
 

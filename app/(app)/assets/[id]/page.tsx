@@ -162,7 +162,7 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
       <section className="card-mint mt-5 p-6">
         <h2 className="h3 text-[var(--color-forest)]">14 days. Always time to respond.</h2>
         <p className="t-body mt-1.5 text-[#3c5a4e]">
-          A verified claim notifies the account holder. Nothing is released before 14 full days. An owner
+          A verified handover request notifies the account holder. Nothing is released before 14 full days. An owner
           response stops the handover.
         </p>
       </section>

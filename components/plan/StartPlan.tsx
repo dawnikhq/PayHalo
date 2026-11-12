@@ -44,11 +44,11 @@ const COPY: Record<WizardStep["key"], { title: string; body: string }> = {
   },
   keyholder: {
     title: "Who holds the door?",
-    body: "Someone trusted who can start a claim. They will never see your balances, your shares, or anyone's details.",
+    body: "Someone trusted who can start a handover request. They will never see your balances, your shares, or anyone's details.",
   },
   review: {
     title: "Read it back.",
-    body: "This is the whole plan. Sealing it means it is ready — the vault comes next.",
+    body: "This is the whole plan. Confirming it means it is ready — the vault comes next.",
   },
 };
 
@@ -228,7 +228,7 @@ export function StartPlan(props: Props) {
         <p className="label">Plan</p>
         <h2 className="h2 mt-2">Everything is in place.</h2>
         <p className="t-small mt-2 max-w-[58ch]">
-          Your vault is open and your plan is sealed. Make a change whenever you like — nothing moves while you are here.
+          Your vault is open and your arrangements are confirmed. Make a change whenever you like — nothing moves while you are here.
         </p>
         <Link href="/dashboard" className="btn btn-primary btn-sm mt-4">
           Back to my dashboard
@@ -383,7 +383,7 @@ export function StartPlan(props: Props) {
                 <p className="mt-2 text-[13px] text-[var(--color-ink)]">
                   {props.assetCount} {props.assetCount === 1 ? "thing" : "things"} · {money(props.totalCents)}
                 </p>
-                <p className="t-meta mt-1">{props.keyholderName ? `${props.keyholderName} holds the key` : "No keyholder"}</p>
+                <p className="t-meta mt-1">{props.keyholderName ? `${props.keyholderName} holds the key` : "No Trusted Key"}</p>
               </div>
             </div>
           </div>
@@ -401,7 +401,7 @@ export function StartPlan(props: Props) {
             {busy
               ? "Saving…"
               : step.key === "review"
-                ? "Seal my plan"
+                ? "Confirm my plan"
                 : index === props.steps.length - 1
                   ? "Continue"
                   : "Continue"}

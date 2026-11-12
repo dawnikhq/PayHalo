@@ -179,22 +179,22 @@ export default async function PlanPage() {
 
           <section className="card p-6 md:p-7">
             <div className="flex items-start justify-between gap-3">
-              <p className="eyebrow">The keyholder</p>
+              <p className="eyebrow">The Trusted Key</p>
               <Link href="/settings#keyholder" className="text-[12.5px] font-semibold text-[var(--color-brand)]">
                 {s.keyholder ? "View →" : "Assign →"}
               </Link>
             </div>
             <h2 className="h2 mt-2">Someone you trust</h2>
             <p className="mt-2 text-[13px] font-medium text-[var(--color-brand)]">
-              {s.keyholder ? `${s.keyholder.name} · ${s.keyholder.relationship} · Assigned` : "No keyholder assigned"}
+              {s.keyholder ? `${s.keyholder.name} · ${s.keyholder.relationship} · Assigned` : "No Trusted Key assigned"}
             </p>
-            <p className="t-small mt-1">May initiate a claim only. Cannot see balances or move assets.</p>
+            <p className="t-small mt-1">May start a handover request only. Cannot see balances or move assets.</p>
           </section>
 
           <section className="card-mint p-6">
             <h2 className="h3 text-[var(--color-forest)]">14 days. Always time to respond.</h2>
             <p className="t-body mt-1.5 text-[#3c5a4e]">
-              A verified claim notifies the account holder. Nothing is released before 14 full days. An owner
+              A verified handover request notifies the account holder. Nothing is released before 14 full days. An owner
               response stops the handover.
             </p>
           </section>
@@ -244,7 +244,7 @@ export default async function PlanPage() {
           <section className="card p-6">
             <h2 className="h3">Guidance, not secrets.</h2>
             <p className="t-small mt-2">
-              PayHalo never asks for a password, private key or recovery phrase. A keyholder can start a claim and
+              PayHalo never asks for a password, private key or recovery phrase. A Trusted Key can start a handover request and
               nothing more.
             </p>
 
