@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { aiKey, aiProvider, groqFallbackModels, groqModels } from "@/lib/ai";
 import { isAdmin } from "@/lib/admin";
+import { HALO_SYSTEM } from "@/lib/halo";
+import { PAYHALO_KNOWLEDGE } from "@/lib/halo-knowledge";
 
 export const dynamic = "force-dynamic";
 
@@ -70,8 +72,11 @@ export async function GET(request: Request) {
             body: JSON.stringify({
               model,
               messages: [
-                { role: "system", content: "Answer in one short sentence." },
-                { role: "user", content: "In one sentence, what is PayHalo for?" },
+                { role: "system", content: HALO_SYSTEM },
+                {
+                  role: "user",
+                  content: "In one sentence, what is PayHalo for? Answer only from what you know.",
+                },
               ],
               temperature: 0.2,
               max_tokens: 80,
@@ -110,6 +115,7 @@ export async function GET(request: Request) {
       status: res.status,
       reachable,
       live,
+      knowledgeChars: PAYHALO_KNOWLEDGE.length,
       qwen: ids.filter((id) => id.toLowerCase().includes("qwen")),
       gptOss: ids.filter((id) => id.toLowerCase().includes("gpt-oss")),
     });

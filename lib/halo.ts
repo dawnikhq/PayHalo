@@ -278,7 +278,7 @@ export function answerWithoutModel(question: string, f: HaloFacts): HaloAnswer {
 
 /* ------------------------------------------------------------------- model -- */
 
-const SYSTEM = `You are Halo, the assistant inside PayHalo, a digital inheritance product. You are speaking to a person using the product right now: an owner, a Trusted Key, a beneficiary, or PayHalo's own operator.
+export const HALO_SYSTEM = `You are Halo, the assistant inside PayHalo, a digital inheritance product. You are speaking to a person using the product right now: an owner, a Trusted Key, a beneficiary, or PayHalo's own operator.
 
 You know the whole product. The PRODUCT section below is your source of truth about how PayHalo works; the FACTS block is your only source of truth about this person's own plan. Read both before answering, and answer the question that was asked rather than the nearest one you recognise.
 
@@ -324,7 +324,7 @@ async function askGroq(question: string, f: HaloFacts): Promise<{ text: string; 
       body: JSON.stringify({
         model,
         messages: [
-          { role: "system", content: `${SYSTEM}\n\n${factsBlock(f)}` },
+          { role: "system", content: `${HALO_SYSTEM}\n\n${factsBlock(f)}` },
           { role: "user", content: question },
         ],
         temperature: 0.3,
