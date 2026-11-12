@@ -648,7 +648,10 @@ function identityFrom(payload: UserInfoPayload): PayPalIdentity | null {
  * PayPal already granted, so every route to the same three facts is tried, and
  * the last refusal is quoted so the next attempt has a lead.
  */
-export async function userInfo(accessToken: string, idToken: string | null = null): Promise<PayPalIdentity> {
+async function readIdentity(
+  accessToken: string,
+  idToken: string | null = null,
+): Promise<{ identity: PayPalIdentity | null; lastError: string }> {
   const endpoints = [
     /* The documented OpenID Connect address carries a slash before the query. */
     "/v1/identity/openidconnect/userinfo/?schema=openid",
@@ -668,7 +671,7 @@ export async function userInfo(accessToken: string, idToken: string | null = nul
 
       const json = (await res.json().catch(() => null)) as UserInfoPayload | null;
       const identity = json && res.ok ? identityFrom(json) : null;
-      if (identity) return identity;
+      if (identity) return { identity, lastError };
 
       const said = json?.error_description ?? json?.error ?? "";
       lastError = `${path.split("?")[1] ?? path} · ${res.status}${said ? ` · ${said}` : ""}`;
@@ -679,12 +682,37 @@ export async function userInfo(accessToken: string, idToken: string | null = nul
 
   /* Last resort: the id_token is issued to this app by PayPal itself. */
   const identity = identityFrom(claimsFromIdToken(idToken) ?? {});
+  if (identity) return { identity, lastError };
+
+  return { identity: null, lastError: lastError || "no profile returned" };
+}
+
+export async function userInfo(accessToken: string, idToken: string | null = null): Promise<PayPalIdentity> {
+  const { identity, lastError } = await readIdentity(accessToken, idToken);
   if (identity) return identity;
 
-  throw new PayPalError(
-    `PayPal signed you in but would not return the profile (${lastError || "no profile returned"}).`,
-    502,
-  );
+  throw new PayPalError(`PayPal signed you in but would not return the profile (${lastError}).`, 502);
+}
+
+/**
+ * The same read, without the throw.
+ *
+ * A sign-in that comes back with a PayPal account id and no address is still a
+ * sign-in: there is a person behind it, and the only missing piece is the thing
+ * they can type in ten seconds. Treating that as an error threw away a session
+ * PayPal had already granted, so the callback asks this instead and handles the
+ * half-answer itself.
+ */
+export async function tryUserInfo(
+  accessToken: string,
+  idToken: string | null = null,
+): Promise<PayPalIdentity | null> {
+  try {
+    const { identity } = await readIdentity(accessToken, idToken);
+    return identity;
+  } catch {
+    return null;
+  }
 }
 
 /* ------------------------------------------------------- signed oauth state */

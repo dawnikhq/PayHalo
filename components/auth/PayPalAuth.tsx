@@ -30,10 +30,13 @@ export function PayPalAuthButton({
 }
 
 const WORDS: Record<string, string> = {
-  noemail: "PayPal did not share an email address, so there is no account to open. Try again, or use your email below.",
+  noemail: "PayPal did not pass on an address and the extra step could not start. Try again, or use your email below.",
   cancelled: "You cancelled at PayPal. Nothing was created and nothing changed.",
   failed: "PayPal could not finish that sign-in. Nothing changed — try again, or use your password below.",
   unavailable: "PayPal sign-in is not available just now. Use your password or a one-time link.",
+  checkemail:
+    "That PayPal account is already linked here. We emailed the confirmation link again — one click and the plan opens.",
+  expired: "That PayPal sign-in timed out before it was finished. Press the button again — nothing was lost.",
 };
 
 /** The sentence for whatever PayPal sent us back with. */
