@@ -204,7 +204,7 @@ export default async function AdminPage() {
               <p className="t-num text-[12px] text-[var(--color-muted)]">{customers.length} rows</p>
             </div>
 
-            <div className="overflow-x-auto rounded-[16px] border border-[rgba(21,63,53,0.08)] bg-white">
+            <div className="scroll-slim overflow-x-auto rounded-[16px] border border-[rgba(21,63,53,0.08)] bg-white">
               <table className="w-full min-w-[880px] border-collapse text-left">
                 <thead>
                   <tr className="border-b border-[rgba(21,63,53,0.08)] text-[10px] uppercase tracking-[0.12em] text-[var(--color-muted)]">

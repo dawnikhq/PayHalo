@@ -112,7 +112,7 @@ export function HaloLauncher({ role }: { role: "owner" | "keyholder" | "benefici
             </div>
           </header>
 
-          <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+          <div ref={scrollRef} className="scroll-slim flex-1 space-y-3 overflow-y-auto px-4 py-4">
             {turns.map((turn, i) => (
               <div
                 key={i}

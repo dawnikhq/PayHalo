@@ -195,7 +195,7 @@ export function AppShell({
   return (
     <div className="min-h-screen">
       {/* desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[264px] overflow-y-auto overscroll-contain border-r border-white/70 bg-white/65 backdrop-blur-xl [scrollbar-width:thin] lg:block">
+      <aside className="scroll-slim fixed inset-y-0 left-0 z-30 hidden w-[264px] overflow-y-auto overscroll-contain border-r border-white/70 bg-white/65 backdrop-blur-xl lg:block">
         {sidebar}
       </aside>
 

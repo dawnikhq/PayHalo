@@ -63,6 +63,13 @@
 
 html {
   scroll-behavior: smooth;
+  /* the page still scrolls — wheel, trackpad, keys and touch all work — but the
+     browser no longer paints a bar down the right-hand edge over the design */
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar {
+  display: none;
 }
 
 body {
@@ -677,6 +684,39 @@ body {
 }
 
 /* ------------------------------------------------------------ new language */
+
+/*
+ * Inner panes keep their scrollbar, because a pane with no visible edge reads as
+ * broken. It is 6px, transparent track, a forest thumb that darkens under the
+ * cursor — the same language as the rest of the interface.
+ */
+.scroll-slim {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(21, 63, 53, 0.24) transparent;
+  scrollbar-gutter: stable;
+}
+
+.scroll-slim::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scroll-slim::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll-slim::-webkit-scrollbar-thumb {
+  background: rgba(21, 63, 53, 0.2);
+  border-radius: 999px;
+}
+
+.scroll-slim::-webkit-scrollbar-thumb:hover {
+  background: rgba(21, 63, 53, 0.42);
+}
+
+.scroll-slim::-webkit-scrollbar-corner {
+  background: transparent;
+}
 
 /* A single tile in the marketing bento grid. */
 .tile {
