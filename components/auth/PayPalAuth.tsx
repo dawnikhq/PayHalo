@@ -33,10 +33,6 @@ export function PayPalAuthButton({
           </span>
         )}
       </a>
-      <p className="t-meta mt-2">
-        PayPal confirms the address for us, so there is no password to invent and no email to wait for. We ask for your
-        name and address only — never access to your money.
-      </p>
     </div>
   );
 }
