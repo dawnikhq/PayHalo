@@ -31,9 +31,25 @@ async function write<T>(ownerId: string, fn: (doc: StateDoc) => T): Promise<T> {
   return result;
 }
 
+/**
+ * The connection for this browser.
+ *
+ * The sid lives in a cookie that is set while redirecting to paypal.com and read
+ * again on the way back. Browsers that refuse to keep a cookie set on a
+ * cross-site redirect would then look "connected" to nobody — the link exists,
+ * the screen says it does not. So when there is no sid, the most recent link on
+ * the account is the answer: one person, one PayPal account, one link.
+ */
 export async function getPayPalConnection(ownerId: string, sid: string | null): Promise<PayPalConnection | null> {
-  if (!sid) return null;
-  return read(ownerId, (doc) => paypalOf(doc).connections.find((c) => c.sid === sid) ?? null);
+  return read(ownerId, (doc) => {
+    const rows = paypalOf(doc).connections;
+    if (sid) {
+      const exact = rows.find((c) => c.sid === sid);
+      if (exact) return exact;
+    }
+    const latest = [...rows].sort((a, b) => b.connectedAt.localeCompare(a.connectedAt))[0];
+    return latest ?? null;
+  });
 }
 
 export async function savePayPalConnection(ownerId: string, connection: PayPalConnection): Promise<void> {

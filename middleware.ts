@@ -34,6 +34,13 @@ function isOwnerRoute(pathname: string) {
   /* The diagnostic route checks its own key or the owner session, because a
      machine probe has no cookie to present. */
   if (pathname === "/api/paypal/diagnose") return false;
+  /*
+   * PayPal sends the browser back to these two without any of our cookies to
+   * rely on. A JSON 401 here would be the last thing a person sees after
+   * signing in to PayPal, so the handler is left to redirect them to sign in
+   * with a sentence instead.
+   */
+  if (pathname === "/api/paypal/callback" || pathname === "/api/paypal/oauth/callback") return false;
   if (OWNER_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return true;
   if (OWNER_APIS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return true;
   return false;

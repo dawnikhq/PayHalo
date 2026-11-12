@@ -8,7 +8,7 @@ import {
   releasePasscodeConfigured,
   PayPalError,
 } from "@/lib/paypal";
-import { readSid } from "@/lib/paypal-session";
+import { PAYPAL_COOKIE, cookieOptions, readSid } from "@/lib/paypal-session";
 import { requireOwner } from "@/lib/scope";
 import { getPayPalConnection, listPayPalPayouts } from "@/lib/paypal-store";
 import { getReleaseLedger } from "@/lib/store";
@@ -57,7 +57,7 @@ async function handleGET() {
   const ledger = await getReleaseLedger();
   const ledgerPayouts = ledger ? await listPayPalPayouts(owner.id, ledger.claimId) : [];
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     configured,
     mode,
     payouts: {
@@ -65,16 +65,15 @@ async function handleGET() {
       blockedReason: payoutsBlockedReason(),
       passcodeRequired: releasePasscodeConfigured(),
     },
-    connection:
-      connection && sid
-        ? {
+    connection: connection
+      ? {
             email: connection.email,
             name: connection.name,
             payerId: connection.payerId,
             connectedAt: connection.connectedAt,
-            expired,
-          }
-        : null,
+          expired,
+        }
+      : null,
     payoutAccount,
     ledger: ledger
       ? {
@@ -95,6 +94,13 @@ async function handleGET() {
         }
       : null,
   });
+
+  /* Keep the browser pointing at the link it is being shown. Without this a
+     browser that dropped the cookie during the PayPal round trip would look
+     connected on screen and then fail to disconnect. */
+  if (!sid && connection) response.cookies.set(PAYPAL_COOKIE, connection.sid, cookieOptions());
+
+  return response;
 }
 
 export const GET = guarded(handleGET);

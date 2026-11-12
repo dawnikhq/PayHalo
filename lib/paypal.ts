@@ -576,26 +576,59 @@ export interface PayPalIdentity {
   name: string | null;
 }
 
+type UserInfoPayload = {
+  sub?: string;
+  user_id?: string;
+  payer_id?: string;
+  email?: string;
+  emails?: { value?: string; primary?: boolean }[];
+  name?: string;
+  given_name?: string;
+  family_name?: string;
+};
+
+/**
+ * Who just signed in.
+ *
+ * PayPal answers this in two shapes — OpenID (`sub`, `email`) and v1.1
+ * (`user_id`, `emails[0].value`) — and which one arrives depends on how the app
+ * was set up, not on anything this code controls. Asking for one schema and
+ * failing if it is refused would throw away a sign-in PayPal already granted,
+ * so both are tried and both shapes are read.
+ */
 export async function userInfo(accessToken: string): Promise<PayPalIdentity> {
-  const res = await fetch(`${API[paypalMode()]}/v1/identity/oauth2/userinfo?schema=openid`, {
-    headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
-    cache: "no-store",
-  });
+  let lastError = "";
 
-  const json = (await res.json().catch(() => null)) as
-    | { user_id?: string; email?: string; name?: string; given_name?: string; family_name?: string }
-    | null;
+  for (const schema of ["openid", "paypalv1.1"]) {
+    const res = await fetch(`${API[paypalMode()]}/v1/identity/oauth2/userinfo?schema=${schema}`, {
+      headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
+      cache: "no-store",
+    });
 
-  if (!res.ok || !json) throw new PayPalError(`Could not read the PayPal profile (${res.status})`, res.status);
+    const json = (await res.json().catch(() => null)) as UserInfoPayload | null;
+    if (!res.ok || !json) {
+      lastError = `${res.status} ${schema}`;
+      continue;
+    }
 
-  const assembled = [json.given_name, json.family_name].filter(Boolean).join(" ");
-  const name = json.name ?? (assembled || null);
+    const email = json.email ?? json.emails?.find((e) => e.primary)?.value ?? json.emails?.[0]?.value ?? "";
+    if (!email) {
+      lastError = `no email (${schema})`;
+      continue;
+    }
 
-  return {
-    payerId: json.user_id ?? "unknown",
-    email: json.email ?? "unknown",
-    name: name || null,
-  };
+    const assembled = [json.given_name, json.family_name].filter(Boolean).join(" ");
+    return {
+      payerId: json.sub ?? json.user_id ?? json.payer_id ?? "unknown",
+      email,
+      name: json.name ?? (assembled || null),
+    };
+  }
+
+  throw new PayPalError(
+    `PayPal signed you in but would not share the profile (${lastError}). The app needs the Email scope under Log in with PayPal.`,
+    502,
+  );
 }
 
 /* ------------------------------------------------------- signed oauth state */
