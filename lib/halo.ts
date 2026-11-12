@@ -199,7 +199,7 @@ const RULES: Rule[] = [
     topic: "security",
     keys: /password|private key|seed|recovery phrase|secure|safe|hack|encrypt/i,
     answer: () =>
-      "PayHalo never asks for a password, a private key or a recovery phrase, and stores none of them. Your sign-in is a password you choose plus a six-digit code by email. A Trusted Key holds an access code that can only start a request — not open anything.",
+      "Your sign-in is a password you choose plus a six-digit code by email. A record should hold the account, where it lives and who should receive it — not the password, private key or recovery phrase that opens it. A Trusted Key holds an access code that can only start a request.",
   },
   {
     topic: "legal",

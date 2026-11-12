@@ -215,7 +215,7 @@ export default async function SheetPage() {
 
         <p className="mt-6 border-t border-[var(--color-line)] pt-4 text-[10px] leading-relaxed text-[var(--color-muted)]">
           This sheet records instructions, not a legal instrument. It is not a will and does not replace legal
-          advice. PayHalo never asks for passwords, private keys or recovery phrases.
+          advice. Never write a password, private key or recovery phrase on this sheet.
         </p>
       </article>
 

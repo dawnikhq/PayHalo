@@ -69,7 +69,7 @@ export function UploadDocument({ related }: { related: string[] }) {
             <p className="eyebrow">New document</p>
             <h2 className="h2 mt-2">Add guidance</h2>
             <p className="t-small mt-1">
-              Never upload passwords, private keys or wallet recovery phrases. PayHalo never asks for them.
+              Never upload passwords, private keys or wallet recovery phrases.
             </p>
 
             <label

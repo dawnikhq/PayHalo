@@ -29,8 +29,9 @@ export default function LegalPage() {
               the plan needs.
             </p>
             <p>
-              <span className="font-semibold text-[var(--color-ink)]">What we never ask for.</span> Account passwords,
-              cryptocurrency private keys or recovery phrases. If a screen ever asks you for one, it is not PayHalo.
+              <span className="font-semibold text-[var(--color-ink)]">What to keep out.</span> Account passwords,
+              cryptocurrency private keys or recovery phrases. A record needs the account, the institution and who
+              should receive it — never the secret that opens it.
             </p>
             <p>
               <span className="font-semibold text-[var(--color-ink)]">Who can see it.</span> You. A Trusted Key sees

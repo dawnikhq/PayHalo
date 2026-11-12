@@ -132,7 +132,8 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
           </dl>
 
           <p className="t-meta mt-5 border-t border-[var(--color-line)] pt-4">
-            Guidance only. PayHalo never asks for a password, private key or recovery phrase.
+            Guidance only: what the account is, where it lives and who should receive it. Never the password, private
+            key or recovery phrase itself.
           </p>
         </section>
 

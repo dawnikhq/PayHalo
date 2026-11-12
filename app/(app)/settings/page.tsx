@@ -202,7 +202,7 @@ export default async function SettingsPage({
           </section>
 
           <section className="card-mint p-4 sm:p-6">
-            <h2 className="h3 text-[var(--color-forest)]">What PayHalo never asks for</h2>
+            <h2 className="h3 text-[var(--color-forest)]">What to keep out of a record</h2>
             <ul className="mt-3 space-y-2">
               {["Passwords or PINs", "Private keys", "Wallet recovery phrases", "Bank logins"].map((item) => (
                 <li key={item} className="flex items-center gap-2 text-[12.5px] text-[#3c5a4e]">

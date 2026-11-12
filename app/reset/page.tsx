@@ -35,9 +35,6 @@ export default async function ResetPage({
           />
         </div>
 
-        <p className="mt-5 text-[11px] leading-relaxed text-[var(--color-muted)]">
-          PayHalo never asks for your PayPal password, a private key or a recovery phrase — on this screen or any other.
-        </p>
       </main>
 
       <MarketingFooter />

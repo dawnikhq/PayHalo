@@ -61,7 +61,7 @@ Sign-in, accounts and email
 - PayHalo emails: address confirmation, sign-in code and link, password reset, the Trusted Key introduction at sealing (never with the code), the acceptance and refusal of a handover request, and release notices. Email is a courtesy; the portal is the record.
 
 Privacy and safety
-- PayHalo never asks for a password, private key, seed phrase or recovery phrase, and stores none of them. It stores asset descriptions, figures the owner typed, and instructions.
+- A record holds asset descriptions, figures the owner typed and instructions — not passwords, private keys, seed phrases or recovery phrases.
 - A Trusted Key sees the plan exists, the owner's name, and the assets' names and providers — never balances, shares or recipients' details.
 - A beneficiary sees only their own entitlement, and only after a release.
 - The operator sees documents and totals, not passwords.

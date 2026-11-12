@@ -247,9 +247,6 @@ ${parts.preheader ? `<div style="display:none;max-height:0;overflow:hidden;opaci
                 "You received this because someone used your address on PayHalo. If it was not you, ignore it and nothing changes.",
             )}
           </p>
-          <p style="margin:8px 0 0;font:400 11px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#84968f;">
-            PayHalo never asks for a password, a private key or a recovery phrase.
-          </p>
         </td>
       </tr>
 

@@ -189,8 +189,8 @@ export function PayPalCard() {
       </div>
 
       <p className="t-small mt-2 max-w-[62ch]">
-        PayHalo reads nothing about your money and never asks for a password. Connecting only proves which PayPal account is
-        yours; the handover payout is sent from the plan&apos;s own business account, in {modeLabel.toLowerCase()} mode.
+        Connecting only proves which PayPal account is yours — PayHalo reads nothing about your money. The handover
+        payout is sent from the plan&apos;s own business account, in {modeLabel.toLowerCase()} mode.
       </p>
 
       <p className="mt-2 max-w-[62ch] text-[11.5px] text-[var(--color-muted)]">
