@@ -29,11 +29,6 @@ export default function LegalPage() {
               the plan needs.
             </p>
             <p>
-              <span className="font-semibold text-[var(--color-ink)]">What to keep out.</span> Account passwords,
-              cryptocurrency private keys or recovery phrases. A record needs the account, the institution and who
-              should receive it — never the secret that opens it.
-            </p>
-            <p>
               <span className="font-semibold text-[var(--color-ink)]">Who can see it.</span> You. A Trusted Key sees
               that a plan exists and may start a handover request, and nothing else. A beneficiary sees their own
               allocation after the safety window. No account holder sees another&apos;s plan.

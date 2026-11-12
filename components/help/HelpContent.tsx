@@ -21,7 +21,7 @@ const FAQ = [
   },
   {
     q: "What documents should I add?",
-    a: "Recovery instructions and practical guidance — never passwords, private keys or wallet recovery phrases.",
+    a: "Recovery instructions, contact points and practical guidance: which institution to approach, what it will ask for and who to call first.",
   },
   {
     q: "Is any of this connected to real accounts?",

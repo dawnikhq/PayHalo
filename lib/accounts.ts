@@ -344,7 +344,7 @@ export async function createAccount(
   passwordHash: string | null,
 ): Promise<Account | "exists"> {
   const s = await store();
-  if (!s) throw new Error("Accounts are not configured on this deployment.");
+  if (!s) throw new Error("Accounts are unavailable right now.");
   return s.create(email.trim().toLowerCase(), name?.trim() || null, passwordHash);
 }
 
@@ -386,7 +386,7 @@ export async function setPassword(userId: string, passwordHash: string): Promise
 /** Returns the raw token; only its hash is stored. */
 export async function startSession(userId: string, days = 30): Promise<string> {
   const s = await store();
-  if (!s) throw new Error("Accounts are not configured on this deployment.");
+  if (!s) throw new Error("Accounts are unavailable right now.");
   const token = newToken();
   const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
   await s.addSession(hashToken(token), userId, expiresAt);
@@ -405,7 +405,7 @@ export async function endSession(token: string): Promise<void> {
 
 export async function startLoginToken(userId: string, purpose: LoginPurpose, minutes = 20): Promise<string> {
   const s = await store();
-  if (!s) throw new Error("Accounts are not configured on this deployment.");
+  if (!s) throw new Error("Accounts are unavailable right now.");
   const token = newToken();
   await s.addLoginToken(hashToken(token), userId, purpose, new Date(Date.now() + minutes * 60 * 1000));
   return token;
@@ -426,7 +426,7 @@ export async function redeemLoginToken(token: string, purpose: LoginPurpose): Pr
  */
 export async function startLoginCode(userId: string, code: string, minutes = 10): Promise<void> {
   const s = await store();
-  if (!s) throw new Error("Accounts are not configured on this deployment.");
+  if (!s) throw new Error("Accounts are unavailable right now.");
   await s.addLoginToken(hashToken(`code:${userId}:${code}`), userId, "signin-code", new Date(Date.now() + minutes * 60 * 1000));
 }
 

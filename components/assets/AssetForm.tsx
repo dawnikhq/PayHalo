@@ -211,7 +211,7 @@ export function AssetForm({ asset }: { asset?: Asset }) {
                 label="Handover instructions"
                 htmlFor="asset-handover"
                 optional
-                help="How the recovery starts. Never a password, private key or recovery phrase."
+                help="How the recovery starts, and who to approach first."
               >
                 <textarea
                   id="asset-handover"
@@ -260,17 +260,18 @@ export function AssetForm({ asset }: { asset?: Asset }) {
             what should happen later.
           </p>
           <div className="my-5 h-px bg-white/12" />
-          <h3 className="h3 text-[var(--color-lime)]">Keep secrets out.</h3>
+          <h3 className="h3 text-[var(--color-lime)]">How a handover works.</h3>
           <p className="t-body mt-2 text-[#c4d8c8]">
-            Use recovery instructions, not private keys. Recipients are guided through a verified handover.
+            Whoever inherits is guided through a verified handover, with the institution holding the asset setting
+            what it needs.
           </p>
         </div>
 
         <div className="card-warn p-6">
-          <h3 className="h3 text-[#6a4712]">Descriptions, not credentials.</h3>
+          <h3 className="h3 text-[#6a4712]">What a record needs.</h3>
           <p className="mt-2 text-[12.5px] leading-relaxed text-[#7a5418]">
-            Record what the account is and how to find it. Never paste a password, private key or recovery phrase —
-            PayHalo cannot use them and will not store them.
+            The account, the institution it sits with, where it is documented and who should receive it. That is
+            enough for someone to find it later.
           </p>
         </div>
 

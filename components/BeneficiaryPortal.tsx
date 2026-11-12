@@ -232,8 +232,7 @@ export function BeneficiaryPortal({ view }: { view: BeneficiaryView }) {
                 <p className="t-body mt-2">No documents were shared with beneficiaries.</p>
               )}
               <p className="t-meta mt-4 border-t border-[var(--color-line)] pt-3">
-                Only the documents the account holder marked for handover appear here — descriptions and papers, never
-                passwords, keys or recovery phrases.
+                Only the documents the account holder marked for handover appear here.
               </p>
             </section>
 

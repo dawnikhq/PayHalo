@@ -267,8 +267,8 @@ export function seedDoc(): StateDoc {
       detail: "0.0842 BTC · 3.10 ETH",
       connected: 1,
       url: "wallet address on file",
-      handoverNote: "Instructions live in Documents. The seed phrase is written down offline, not here.",
-      accessNote: "Follow the recovery instructions stored in Documents. Never enter a seed phrase into a website.",
+      handoverNote: "The instructions live in Documents. The wallet itself stays where it is kept.",
+      accessNote: "Follow the recovery instructions stored in Documents, in the order written.",
       reviewed: 0,
     },
     {
@@ -1022,7 +1022,7 @@ export function addDocument(
     updatedAt: stamp,
     createdAt: stamp,
   });
-  addEvent(doc, "document.added", `${name} added`, `Guidance for ${input.relatedTo || "the plan"}. Never upload passwords or recovery phrases.`);
+  addEvent(doc, "document.added", `${name} added`, `Guidance for ${input.relatedTo || "the plan"}.`);
   return { ok: true };
 }
 

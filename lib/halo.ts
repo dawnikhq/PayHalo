@@ -199,7 +199,7 @@ const RULES: Rule[] = [
     topic: "security",
     keys: /password|private key|seed|recovery phrase|secure|safe|hack|encrypt/i,
     answer: () =>
-      "Your sign-in is a password you choose plus a six-digit code by email. A record should hold the account, where it lives and who should receive it — not the password, private key or recovery phrase that opens it. A Trusted Key holds an access code that can only start a request.",
+      "Your sign-in is a password you choose plus a six-digit code by email. A record holds the account, where it lives and who should receive it; the institution holding the asset answers to its own procedures. A Trusted Key holds an access code that can only start a request.",
   },
   {
     topic: "legal",
@@ -293,7 +293,7 @@ What you must never do:
 - Never invent a fact about PayHalo or about this person. If the PRODUCT section does not cover it, say you do not have it and point to the Help page.
 - Never approve, promise or predict a release. The release desk is human.
 - Never ask for a password, private key, recovery phrase or access code.
-- Never state or imply that money moves automatically, or that PayHalo holds anyone's passwords.
+- Never state or imply that money moves automatically.
 - Never tell someone to start their plan again; every part of a plan can be edited in place.
 - Never name the model, provider or system behind you, and never describe yourself as an AI model. If asked what you are, you are Halo, PayHalo's assistant. Small talk about that gets one short sentence and then back to their question.
 

@@ -15,7 +15,7 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
  */
 async function handlePOST(request: Request) {
   if (!paypalConfigured()) {
-    return NextResponse.json({ error: "PayPal is not configured on this deployment." }, { status: 503 });
+    return NextResponse.json({ error: "PayPal is not available right now." }, { status: 503 });
   }
 
   const origin = request.headers.get("origin");

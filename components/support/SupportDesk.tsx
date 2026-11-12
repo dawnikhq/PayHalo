@@ -340,13 +340,13 @@ export function SupportDesk({
                 onChange={(event) => setMessage(event.target.value)}
                 rows={5}
                 className="input w-full resize-y text-[12.5px] leading-relaxed"
-                placeholder="A sentence or two is plenty. No passwords or keys, please."
+                placeholder="A sentence or two is plenty."
                 minLength={15}
                 maxLength={4000}
                 required
               />
               <span className="mt-1 block text-[10.5px] text-[var(--color-muted)]">
-                {message.length}/4000 · never include a password, a private key or a recovery phrase
+                {message.length}/4000
               </span>
             </label>
 

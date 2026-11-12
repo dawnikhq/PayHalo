@@ -14,7 +14,7 @@
 export const PAYHALO_KNOWLEDGE = `PAYHALO — THE WHOLE PRODUCT
 
 What PayHalo is
-PayHalo is a digital inheritance platform. A person records what they own, decides who inherits it and in what shares, appoints one Trusted Key who can start a handover request, and confirms ("seals") the arrangement. When that person dies, the Trusted Key files a handover request with the death documentation, the documents are verified by a person and held for 72 hours, the account holder is notified if they are alive, and a 14-day safety window follows. Only then does the release desk pay the people the plan names. PayHalo holds no passwords, no private keys and no recovery phrases, and it never moves money while the owner is alive.
+PayHalo is a digital inheritance platform. A person records what they own, decides who inherits it and in what shares, appoints one Trusted Key who can start a handover request, and confirms ("seals") the arrangement. When that person dies, the Trusted Key files a handover request with the death documentation, the documents are verified by a person and held for 72 hours, the account holder is notified if they are alive, and a 14-day safety window follows. Only then does the release desk pay the people the plan names. PayHalo never moves money while the owner is alive.
 
 The words PayHalo uses
 - Arrangement or plan: one complete set of instructions. An account can hold several, each with its own purpose, assets, people, Trusted Key and vault.
@@ -61,10 +61,10 @@ Sign-in, accounts and email
 - PayHalo emails: address confirmation, sign-in code and link, password reset, the Trusted Key introduction at sealing (never with the code), the acceptance and refusal of a handover request, and release notices. Email is a courtesy; the portal is the record.
 
 Privacy and safety
-- A record holds asset descriptions, figures the owner typed and instructions — not passwords, private keys, seed phrases or recovery phrases.
+- A record holds asset descriptions, figures the owner typed and instructions.
 - A Trusted Key sees the plan exists, the owner's name, and the assets' names and providers — never balances, shares or recipients' details.
 - A beneficiary sees only their own entitlement, and only after a release.
-- The operator sees documents and totals, not passwords.
+- The operator sees documents and totals.
 - Every role has a separate view built on the server; the portal cannot render what the person is not allowed to see.
 
 Pages in the app

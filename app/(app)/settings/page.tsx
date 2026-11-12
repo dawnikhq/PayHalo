@@ -190,8 +190,8 @@ export default async function SettingsPage({
           <section className="card-forest p-4 sm:p-6">
             <h2 className="h2 text-white">Private by design.</h2>
             <p className="t-body mt-3 text-[#b7cfbd]">
-              PayHalo stores instructions, not credentials. No portal can display a password, private key or
-              recovery phrase — because none are ever collected.
+              A plan is instructions: what you own, who should receive it and who may begin the handover. Each portal
+              is scoped on the server, so what one of your people can see is never what another can.
             </p>
             <div className="my-5 h-px bg-white/12" />
             <h3 className="h3 text-[var(--color-lime)]">Sessions are real.</h3>
@@ -201,25 +201,10 @@ export default async function SettingsPage({
             </p>
           </section>
 
-          <section className="card-mint p-4 sm:p-6">
-            <h2 className="h3 text-[var(--color-forest)]">What to keep out of a record</h2>
-            <ul className="mt-3 space-y-2">
-              {["Passwords or PINs", "Private keys", "Wallet recovery phrases", "Bank logins"].map((item) => (
-                <li key={item} className="flex items-center gap-2 text-[12.5px] text-[#3c5a4e]">
-                  <span className="grid h-4 w-4 place-items-center rounded-full bg-white text-[9px] text-[var(--color-ember)]">
-                    ×
-                  </span>
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </section>
-
           <section className="card p-4 sm:p-6">
-            <h2 className="h3">Storage in this build</h2>
+            <h2 className="h3">Your plan on paper</h2>
             <p className="t-small mt-1.5">
-              State is served by <span className="font-semibold text-[var(--color-ink)]">{s.storage}</span>. In
-              your records are yours alone and can be edited or removed at any time.
+              Print the sheet you would keep with your papers. It carries the instructions, not the assets themselves.
             </p>
             <Link href="/plan/sheet" className="mt-3 inline-block text-[12.5px] font-semibold text-[var(--color-brand)]">
               View the instruction sheet →

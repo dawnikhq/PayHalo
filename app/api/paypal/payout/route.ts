@@ -31,7 +31,7 @@ export const maxDuration = 30;
  */
 async function handlePOST(request: Request) {
   if (!paypalConfigured()) {
-    return NextResponse.json({ error: "PayPal is not configured on this deployment." }, { status: 503 });
+    return NextResponse.json({ error: "PayPal is not available right now." }, { status: 503 });
   }
   if (!payoutsEnabled()) {
     return NextResponse.json({ error: payoutsBlockedReason() ?? "Payouts are disabled." }, { status: 403 });

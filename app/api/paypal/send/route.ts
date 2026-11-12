@@ -30,7 +30,7 @@ const MAX_CENTS = 500_000;
  */
 async function handlePOST(request: Request) {
   if (!paypalConfigured()) {
-    return NextResponse.json({ error: "PayPal is not configured on this deployment." }, { status: 503 });
+    return NextResponse.json({ error: "PayPal is not available right now." }, { status: 503 });
   }
   if (!payoutsEnabled()) {
     return NextResponse.json({ error: payoutsBlockedReason() ?? "Sending money is switched off." }, { status: 403 });

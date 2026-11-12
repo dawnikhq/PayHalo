@@ -130,11 +130,6 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
               </dd>
             </div>
           </dl>
-
-          <p className="t-meta mt-5 border-t border-[var(--color-line)] pt-4">
-            Guidance only: what the account is, where it lives and who should receive it. Never the password, private
-            key or recovery phrase itself.
-          </p>
         </section>
 
         <section className="card p-6">

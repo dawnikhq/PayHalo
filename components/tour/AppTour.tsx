@@ -17,7 +17,7 @@ const OWNER_STEPS: TourStep[] = [
     target: "nav-assets",
     kicker: "Step 1 of 4",
     title: "Record what you own.",
-    body: "Payment accounts, wallets and online businesses. Enough identifying detail that someone else could find them — never a password or a private key.",
+    body: "Payment accounts, wallets and online businesses. Enough identifying detail that someone else could find them.",
   },
   {
     target: "nav-people",

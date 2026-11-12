@@ -27,7 +27,7 @@ export async function POST(request: Request) {
       {
         ok: true,
         delivered: false,
-        message: "Email delivery is not configured on this deployment. Sign in with your password instead.",
+        message: "Email delivery is unavailable right now. Sign in with your password instead.",
       },
       { status: 200 },
     );

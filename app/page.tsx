@@ -13,7 +13,7 @@ export const metadata = {
 const STATS = [
   ["4", "decisions to a finished plan"],
   ["14", "days to cancel a wrong request"],
-  ["0", "passwords or private keys stored"],
+  ["0", "decisions made for you"],
   ["1", "Trusted Key to start the process"],
 ];
 
@@ -107,10 +107,6 @@ const FAQ = [
   {
     q: "Does PayHalo hold my money or cryptocurrency?",
     a: "No. PayHalo is not a wallet, bank or custodian. It records information about your digital assets and your inheritance instructions. Actual access and transfer depend on the provider holding each asset and its applicable procedures.",
-  },
-  {
-    q: "Does PayHalo need my passwords or private keys?",
-    a: "No. You should never provide your account passwords, cryptocurrency private keys or recovery phrases. PayHalo is designed to record asset information and inheritance preferences, not collect credentials that grant direct access to your accounts.",
   },
   {
     q: "Can I leave different amounts to different people?",
@@ -476,9 +472,12 @@ export default function LandingPage() {
                   ],
                 },
                 {
-                  title: "Nothing secret is stored",
-                  lead: "You should never provide your account passwords, cryptocurrency private keys or recovery phrases. PayHalo is designed to record asset information and inheritance preferences, not collect credentials that grant direct access to your accounts.",
-                  points: ["No passwords", "No private keys", "No recovery phrases"],
+                  title: "A record, not a vault",
+                  lead: "PayHalo keeps the map of your wealth — the account, where it lives and who should receive it. The institutions holding each asset answer to their own procedures, and your instructions travel alongside them.",
+                  points: [
+                    "Every account has a name, a place and a destination",
+                    "Your instructions move with the record you wrote",
+                  ],
                 },
               ].map((col) => (
                 <div key={col.title} className="border-t border-white/15 pt-5">

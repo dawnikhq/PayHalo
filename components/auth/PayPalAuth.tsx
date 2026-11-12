@@ -1,5 +1,3 @@
-import { paypalMode } from "@/lib/paypal";
-
 /**
  * Signing in with PayPal instead of a password.
  *
@@ -15,7 +13,6 @@ export function PayPalAuthButton({
   next?: string;
 }) {
   const href = `/api/auth/paypal/start?from=${from}&next=${encodeURIComponent(next)}`;
-  const sandbox = paypalMode() === "sandbox";
 
   return (
     <div>
@@ -27,22 +24,16 @@ export function PayPalAuthButton({
           P
         </span>
         {from === "signup" ? "Sign up with PayPal" : "Continue with PayPal"}
-        {sandbox && (
-          <span className="rounded-full bg-[var(--color-mint)] px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.08em] text-[var(--color-forest)]">
-            Sandbox
-          </span>
-        )}
       </a>
     </div>
   );
 }
 
 const WORDS: Record<string, string> = {
-  noemail:
-    "PayPal signed you in but did not hand over an email address, so there is no account to open. In the PayPal app used for this site, tick Email under Log in with PayPal → Advanced options, then try again.",
+  noemail: "PayPal did not share an email address, so there is no account to open. Try again, or use your email below.",
   cancelled: "You cancelled at PayPal. Nothing was created and nothing changed.",
   failed: "PayPal could not finish that sign-in. Nothing changed — try again, or use your password below.",
-  unavailable: "Signing in with PayPal is not configured on this deployment. Use your password or a one-time link.",
+  unavailable: "PayPal sign-in is not available just now. Use your password or a one-time link.",
 };
 
 /** The sentence for whatever PayPal sent us back with. */

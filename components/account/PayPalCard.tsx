@@ -24,28 +24,10 @@ interface StatusPayload {
 export function PayPalCard() {
   const router = useRouter();
   const [status, setStatus] = useState<StatusPayload | null>(null);
-  /** Only used to show the exact return URL to register; empty until mounted. */
-  const [origin, setOrigin] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [passcode, setPasscode] = useState("");
   const [note, setNote] = useState<{ tone: "ok" | "bad"; body: string } | null>(null);
   const [amount, setAmount] = useState("50");
-  const [diagnosis, setDiagnosis] = useState<
-    | {
-        mode: string;
-        api: string;
-        redirectUri: string;
-        token: { ok: boolean; status: number; message: string };
-        balances: { ok: boolean; status: number; message: string };
-        payoutCapability: { ok: boolean; status: number; message: string };
-        invoicing: { ok: boolean; status: number; message: string };
-        oauth: { host: string; status: number; finalHost: string; title: string | null; hint: string };
-        otherEnvironment: { mode: string; ok: boolean; message: string } | null;
-        verdict: string;
-      }
-    | { error: string }
-    | null
-  >(null);
 
   const load = useCallback(async () => {
     try {
@@ -61,10 +43,6 @@ export function PayPalCard() {
   }, [load]);
 
   useEffect(() => {
-    setOrigin(window.location.origin);
-  }, []);
-
-  useEffect(() => {
     const funded = new URLSearchParams(window.location.search).get("funded");
     if (!funded) return;
     if (funded === "cancelled") {
@@ -77,20 +55,6 @@ export function PayPalCard() {
       setNote({ tone: "ok", body: `Added ${funded} USD to the release account.` });
     }
   }, []);
-
-  async function testConnection() {
-    setBusy("diagnose");
-    setDiagnosis(null);
-    try {
-      const res = await fetch("/api/paypal/diagnose", { cache: "no-store" });
-      const data = (await res.json()) as Record<string, unknown>;
-      setDiagnosis(res.ok ? (data as never) : { error: (data.error as string) ?? "PayPal did not answer." });
-    } catch {
-      setDiagnosis({ error: "Could not reach the diagnostic route." });
-    } finally {
-      setBusy(null);
-    }
-  }
 
   async function disconnect() {
     setBusy("disconnect");
@@ -130,7 +94,6 @@ export function PayPalCard() {
     const count = status?.ledger?.rows.length ?? 0;
     const confirmed = window.confirm(
       `Release ${money(total)} to ${count} recipient${count === 1 ? "" : "s"} through PayPal?\n\n` +
-        `Mode: ${status?.mode === "live" ? "LIVE — real money" : "sandbox — no real money moves"}.\n` +
         `Each recipient is paid the amount on the plan. This cannot be undone from here.`,
     );
     if (!confirmed) return;
@@ -145,7 +108,7 @@ export function PayPalCard() {
       });
       const json = (await res.json()) as { ok?: boolean; batchId?: string; sent?: number; error?: string; alreadySent?: boolean };
       if (!res.ok) {
-        setNote({ tone: "bad", body: json.error ?? "PayPal rejected the payout." });
+        setNote({ tone: "bad", body: json.error ?? "PayPal could not send that release." });
         setPasscode("");
       } else if (json.alreadySent) {
         setNote({ tone: "ok", body: "Already released — nothing was sent twice." });
@@ -158,14 +121,16 @@ export function PayPalCard() {
       await load();
       router.refresh();
     } catch {
-      setNote({ tone: "bad", body: "The payout request failed before reaching PayPal." });
+      setNote({ tone: "bad", body: "The payout request did not go through. Try again." });
     } finally {
       setBusy(null);
     }
   }
 
-  const modeLabel = status?.mode === "live" ? "Live" : "Sandbox";
   const unpaid = status?.ledger?.rows.filter((r) => !r.paid) ?? [];
+
+  /** Nothing to offer if the account cannot be connected from here. */
+  if (status && !status.configured) return null;
 
   return (
     <section className="card p-6 md:p-7" id="paypal">
@@ -174,71 +139,17 @@ export function PayPalCard() {
           <p className="eyebrow">Connected account</p>
           <h2 className="h2 mt-2">PayPal</h2>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className={`pill ${status?.connection ? "badge-lime" : "badge-neutral"}`}>
-            {status === null ? "Checking…" : status.connection ? `Connected · ${modeLabel.toLowerCase()}` : "Not connected"}
-          </span>
-          <button
-            onClick={testConnection}
-            disabled={busy !== null}
-            className="text-[12.5px] font-semibold text-[var(--color-brand)] transition hover:underline disabled:opacity-50"
-          >
-            {busy === "diagnose" ? "Testing…" : "Test connection"}
-          </button>
-        </div>
+        <span className={`pill ${status?.connection ? "badge-lime" : "badge-neutral"}`}>
+          {status === null ? "Checking…" : status.connection ? "Connected" : "Not connected"}
+        </span>
       </div>
 
       <p className="t-small mt-2 max-w-[62ch]">
         Connecting only proves which PayPal account is yours — PayHalo reads nothing about your money. The handover
-        payout is sent from the plan&apos;s own business account, in {modeLabel.toLowerCase()} mode.
+        payout is sent from the plan&apos;s own business account.
       </p>
-
-      <p className="mt-2 max-w-[62ch] text-[11.5px] text-[var(--color-muted)]">
-        Connecting is optional: Send and Receive use the deployment&apos;s own API credentials, not this link. Sandbox apps need
-        no PayPal review; <em>Log in with PayPal</em> on a Live app is reviewed by PayPal and that review is what takes weeks.
-      </p>
-
-      {diagnosis && (
-        <div className="mt-4 rounded-[14px] border border-[var(--color-line-strong)] bg-[#fbfdfb] p-4">
-          {"error" in diagnosis ? (
-            <p className="text-[12.5px] font-semibold text-[var(--color-ember)]">
-              We could not reach PayPal just now. Nothing has changed.
-            </p>
-          ) : (
-            <>
-              <p className="text-[12.5px] font-semibold text-[var(--color-ink)]">
-                {diagnosis.token.ok && diagnosis.payoutCapability.ok
-                  ? "PayPal is answering this deployment normally."
-                  : diagnosis.token.ok
-                    ? "PayPal recognises this deployment, but sending is not available on this account yet."
-                    : "PayPal did not recognise this deployment's credentials."}
-              </p>
-              {!diagnosis.oauth.hint.includes("log-in form") && !diagnosis.oauth.hint.includes("sign-in form") && (
-                <p className="mt-1.5 text-[11.5px] leading-relaxed text-[var(--color-muted)]">
-                  Connecting a personal account is a separate step from sending money: PayPal&apos;s own sign-in page has to
-                  accept this app. {diagnosis.oauth.hint}
-                </p>
-              )}
-              <p className="mt-1.5 text-[11px] text-[var(--color-muted)]">
-                The full report is on the operator console, under PayPal.
-              </p>
-            </>
-          )}
-        </div>
-      )}
 
       {status === null && <div className="mt-5 h-16 animate-pulse rounded-[14px] bg-[#f6f9f5]" />}
-
-      {status && !status.configured && (
-        <div className="mt-5 rounded-[14px] border border-[var(--color-line)] bg-[#fbfdfb] p-4">
-          <p className="text-[12.5px] font-semibold text-[var(--color-ink)]">Not configured on this deployment</p>
-          <p className="t-small mt-1">
-            Add <code className="rounded bg-[var(--color-mint)] px-1">PAYPAL_CLIENT_ID</code>,{" "}
-            <code className="rounded bg-[var(--color-mint)] px-1">PAYPAL_CLIENT_SECRET</code> and{" "}
-            <code className="rounded bg-[var(--color-mint)] px-1">PAYPAL_ENV=sandbox</code> to the environment, then redeploy.
-          </p>
-        </div>
-      )}
 
       {status?.configured && (
         <div className="mt-5 space-y-4">
@@ -254,7 +165,7 @@ export function PayPalCard() {
                 </p>
                 {status.connection.expired && (
                   <p className="mt-1 text-[11.5px] font-semibold text-[var(--color-warnink)]">
-                    The token has expired — reconnect to refresh it.
+                    The connection has lapsed — reconnect to refresh it.
                   </p>
                 )}
               </div>
@@ -275,45 +186,13 @@ export function PayPalCard() {
             <div className="rounded-[14px] border border-dashed border-[var(--color-line-strong)] p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="t-small max-w-[46ch]">
-                  Connect the PayPal account this plan should pay from. PayHalo asks for no password and no permissions over your money.
+                  Connect the PayPal account this plan should pay from. PayHalo asks for no password and no permissions
+                  over your money.
                 </p>
                 <a href="/api/paypal/oauth/start" className="btn btn-primary btn-sm">
                   Connect PayPal <span aria-hidden>→</span>
                 </a>
               </div>
-
-              {/*
-                The three things PayPal checks before it shows its login form.
-                Almost every failed connect is one of them, and none of them is
-                visible from the button itself.
-              */}
-              <details className="mt-3 border-t border-[var(--color-line)] pt-3">
-                <summary className="cursor-pointer text-[11.5px] font-semibold text-[var(--color-ink)]">
-                  Using a sandbox account? Three things PayPal checks
-                </summary>
-                <ol className="mt-2 space-y-2 text-[11.5px] leading-relaxed text-[var(--color-muted)]">
-                  <li>
-                    <span className="font-semibold text-[var(--color-ink)]">1 · Sign in with a sandbox test account.</span>{" "}
-                    Your normal PayPal login is refused on the sandbox. Use a Personal account from Developer Dashboard →
-                    Sandbox → Accounts.
-                  </li>
-                  <li>
-                    <span className="font-semibold text-[var(--color-ink)]">2 · Turn on Log in with PayPal.</span> Apps &
-                    Credentials → your app → Features → Log in with PayPal, with the Email scope.
-                  </li>
-                  <li>
-                    <span className="font-semibold text-[var(--color-ink)]">3 · Register this exact return URL.</span> The
-                    same screen takes it, and it must match to the character:{" "}
-                    <code className="rounded bg-[#f2f7f2] px-1 text-[11px] text-[var(--color-forest)]">
-                      {origin}/api/paypal/callback
-                    </code>
-                  </li>
-                </ol>
-                <p className="mt-2 text-[11px] text-[var(--color-muted)]">
-                  If it still refuses, the operator&apos;s connection test says exactly which of the three PayPal is
-                  unhappy about.
-                </p>
-              </details>
             </div>
           )}
 
@@ -328,58 +207,49 @@ export function PayPalCard() {
                     </p>
                   ))
                 ) : (
-                  <p className="t-small mt-2">PayPal returned no balance for this account yet.</p>
+                  <p className="t-small mt-2">No balance is showing yet.</p>
                 )
               ) : (
-                <p className="t-small mt-2">
-                  {status.payoutAccount?.reason ??
-                    "Unavailable — the PayPal app needs the reporting/balances scope to read this."}
-                </p>
+                <p className="t-small mt-2">The balance is not available just now.</p>
               )}
             </div>
 
             <div className="rounded-[14px] border border-[var(--color-line)] p-4">
               <p className="label">Transfers</p>
-              {status.payouts.enabled ? (
+              {!status.ledger ? (
+                <p className="t-small mt-2">No completed handover yet.</p>
+              ) : status.payouts.enabled ? (
                 <>
-                  <p className="t-small mt-2">
-                    Enabled in {modeLabel.toLowerCase()} mode. A payout only runs after the 14-day window closes.
-                  </p>
-                  {status.ledger ? (
-                    <div className="mt-3 space-y-2">
-                      <label htmlFor="release-passcode" className="block text-[11px] font-semibold text-[var(--color-muted)]">
-                        Release passcode
-                      </label>
-                      <input
-                        id="release-passcode"
-                        type="password"
-                        value={passcode}
-                        onChange={(event) => setPasscode(event.target.value)}
-                        autoComplete="off"
-                        spellCheck={false}
-                        placeholder="Required to release"
-                        className="h-9 w-full rounded-[10px] border border-[var(--color-line-strong)] bg-white px-2.5 text-[12.5px] text-[var(--color-ink)] placeholder:text-[#94a29a] focus:border-[var(--color-brand)] focus:outline-none"
-                      />
-                      <button
-                        onClick={release}
-                        disabled={busy !== null || !unpaid.length || !passcode.trim()}
-                        className="btn btn-primary btn-sm"
-                      >
-                        {busy === "release"
-                          ? "Sending…"
-                          : unpaid.length
-                            ? `Release ${money(unpaid.reduce((sum, r) => sum + r.amountCents, 0))}`
-                            : "Already released"}
-                      </button>
-                    </div>
-                  ) : (
-                    <p className="mt-2 text-[11.5px] font-semibold text-[var(--color-muted)]">
-                      No completed handover yet.
-                    </p>
-                  )}
+                  <p className="t-small mt-2">A payout only runs after the safety window closes.</p>
+                  <div className="mt-3 space-y-2">
+                    <label htmlFor="release-passcode" className="block text-[11px] font-semibold text-[var(--color-muted)]">
+                      Release passcode
+                    </label>
+                    <input
+                      id="release-passcode"
+                      type="password"
+                      value={passcode}
+                      onChange={(event) => setPasscode(event.target.value)}
+                      autoComplete="off"
+                      spellCheck={false}
+                      placeholder="Required to release"
+                      className="h-9 w-full rounded-[10px] border border-[var(--color-line-strong)] bg-white px-2.5 text-[12.5px] text-[var(--color-ink)] placeholder:text-[#94a29a] focus:border-[var(--color-brand)] focus:outline-none"
+                    />
+                    <button
+                      onClick={release}
+                      disabled={busy !== null || !unpaid.length || !passcode.trim()}
+                      className="btn btn-primary btn-sm"
+                    >
+                      {busy === "release"
+                        ? "Sending…"
+                        : unpaid.length
+                          ? `Release ${money(unpaid.reduce((sum, r) => sum + r.amountCents, 0))}`
+                          : "Already released"}
+                    </button>
+                  </div>
                 </>
               ) : (
-                <p className="t-small mt-2">{status.payouts.blockedReason ?? "Payouts are switched off."}</p>
+                <p className="t-small mt-2">A release opens once the handover has cleared its safety window.</p>
               )}
             </div>
           </div>
@@ -452,12 +322,6 @@ export function PayPalCard() {
           {note.body}
         </p>
       )}
-
-      <p className="mt-4 border-t border-[var(--color-line)] pt-3 text-[11px] leading-relaxed text-[var(--color-muted)]">
-        {status?.mode === "live"
-          ? "Live mode. A release moves real money and cannot be undone here."
-          : "Sandbox mode. PayPal test accounts only — no real money moves, whatever the ledger says."}
-      </p>
     </section>
   );
 }

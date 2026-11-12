@@ -25,10 +25,10 @@ export const dynamic = "force-dynamic";
 const PLAIN_REASONS: [RegExp, string][] = [
   [/access_denied|cancell?ed/i, "You cancelled at PayPal, so nothing was linked."],
   [/invalid_grant/i, "The sign-in code expired before it reached us. Codes last minutes — press Connect and finish in one go."],
-  [/invalid_client|unauthorized_client/i, "PayPal did not recognise this deployment's app. Check the sandbox client id and secret."],
-  [/invalid_scope|insufficient_scope/i, "PayPal did not share the email address, so the app cannot show whose account it is. Enable the Email scope on the app."],
-  [/invalid_redirect_uri|redirect_uri/i, "PayPal did not accept the return URL. It must be registered exactly on the app."],
-  [/not (linked|associated)|consent_required/i, "That PayPal account has not agreed to share its email with this app."],
+  [/invalid_client|unauthorized_client/i, "PayPal could not confirm the connection. Nothing was linked — try again."],
+  [/invalid_scope|insufficient_scope/i, "PayPal did not share the email address, so there is no account to show. Nothing was linked."],
+  [/invalid_redirect_uri|redirect_uri/i, "PayPal did not send you back to the right place. Nothing was linked — try again."],
+  [/not (linked|associated)|consent_required/i, "That PayPal account has not agreed to share its email, so nothing could be linked."],
   [/timed? ?out|fetch failed|ENOTFOUND|EAI_AGAIN|socket/i, "PayPal did not answer in time. Nothing was linked — try again."],
 ];
 

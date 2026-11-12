@@ -32,7 +32,7 @@ async function handlePOST(request: NextRequest) {
   }
 
   if (!paypalConfigured()) {
-    return NextResponse.json({ error: "PayPal is not configured on this deployment." }, { status: 503 });
+    return NextResponse.json({ error: "PayPal is not available right now." }, { status: 503 });
   }
   if (!sameOrigin(request)) {
     return NextResponse.json({ error: "Cross-site request refused." }, { status: 403 });

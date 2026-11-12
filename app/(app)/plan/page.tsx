@@ -309,15 +309,6 @@ export default async function PlanPage() {
               Back to dashboard
             </Link>
           </section>
-
-          <section className="card p-6">
-            <h2 className="h3">Guidance, not secrets.</h2>
-            <p className="t-small mt-2">
-              Record where an account lives and who should receive it — never the password, private key or recovery
-              phrase. A Trusted Key can start a handover request and nothing more.
-            </p>
-
-          </section>
         </aside>
       </div>
     </Page>
