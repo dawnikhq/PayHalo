@@ -45,17 +45,11 @@ Through the platform, users can:
 
 \- Appoint a Trusted Key to initiate the inheritance handover process.
 
-
-
 These decisions form an organized inheritance plan that can help beneficiaries understand the account holder's intentions and navigate the next steps.
-
-
 
 PayHalo is not designed to take control of someone's wealth. It helps them prepare what happens to it.
 
-
-
-\## 3. Who it's for
+## 3. Who it's for
 
 
 
