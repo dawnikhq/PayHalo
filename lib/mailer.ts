@@ -15,20 +15,23 @@ export interface MailResult {
 const apiKey = () => (process.env.BREVO_API_KEY ?? "").trim();
 
 /**
- * The sender. `MAIL_FROM` when it is set, otherwise the address Brevo has been
- * verified for PayHalo.
+ * The sender. `MAIL_FROM` when it is set, otherwise the address this Brevo
+ * account is actually verified for.
  *
  * Vercel scopes an environment variable to specific targets, and this project
- * sets MAIL_FROM for production only — which meant every preview deployment
+ * once set MAIL_FROM for production only — which meant every preview deployment
  * (the branch aliases, where this product actually gets tested) believed email
  * was unavailable and refused to send anything. A sender we can always name is
  * better than a sender that disappears with a deployment target.
+ *
+ * Whatever this says is still only a default: `authorisedSender()` below asks
+ * Brevo which addresses it will accept, and sends from one of those.
  */
-const VERIFIED_SENDER = "hello@dawnik.com";
+const DEFAULT_SENDER = "admin.payhalo@gmail.com";
 
 const fromEmail = () =>
   (process.env.MAIL_FROM ?? process.env.MAIL_FROM_EMAIL ?? process.env.BREVO_SENDER_EMAIL ?? "").trim() ||
-  VERIFIED_SENDER;
+  DEFAULT_SENDER;
 
 const fromName = () => (process.env.MAIL_FROM_NAME ?? "").trim() || "PayHalo";
 
