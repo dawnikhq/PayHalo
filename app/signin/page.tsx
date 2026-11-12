@@ -10,9 +10,9 @@ export const dynamic = "force-dynamic";
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; unconfigured?: string; link?: string }>;
+  searchParams: Promise<{ next?: string; unconfigured?: string; link?: string; confirm?: string }>;
 }) {
-  const { next, unconfigured, link } = await searchParams;
+  const { next, unconfigured, link, confirm } = await searchParams;
   const user = await currentUser();
   if (user) redirect(next && next.startsWith("/") ? next : "/dashboard");
 
@@ -59,6 +59,11 @@ export default async function SignInPage({
               {link === "invalid" && (
                 <p className="mb-4 rounded-[12px] bg-[#fdf1ee] px-3 py-2 text-[12px] text-[var(--color-ember)]">
                   That link has expired or was already used. Ask for a new one.
+                </p>
+              )}
+              {confirm === "expired" && (
+                <p className="mb-4 rounded-[12px] bg-[#fdf1ee] px-3 py-2 text-[12px] text-[var(--color-ember)]">
+                  That confirmation link has expired or was already used. Sign in, or sign up again for a fresh one.
                 </p>
               )}
               <SignInForm next={next && next.startsWith("/") ? next : "/dashboard"} />

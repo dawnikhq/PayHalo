@@ -100,3 +100,75 @@ export async function sendSignInLink(to: string, url: string): Promise<MailResul
     ].join("\n"),
   });
 }
+
+/**
+ * Create the account: the link is the key. Nothing exists for the person until
+ * they open it, so a typo in an address cannot leave a half-made account behind.
+ */
+export async function sendConfirmAddress(to: string, details: { name: string; url: string; hours: number }): Promise<MailResult> {
+  return send({
+    to,
+    toName: details.name,
+    subject: "Confirm your email and open your PayHalo account",
+    text: [
+      `Hello ${details.name},`,
+      "",
+      "One step left. Open this link to confirm this is your email address and create your PayHalo account:",
+      "",
+      details.url,
+      "",
+      `The link works once, and for ${details.hours} hours.`,
+      "",
+      "If you did not ask to join PayHalo, ignore this message — no account is made without the link.",
+      "",
+      "PayHalo",
+    ].join("\n"),
+  });
+}
+
+/**
+ * The second factor at sign-in. Six digits, ten minutes, one use. It goes to the
+ * address on the account, so a stolen password on its own opens nothing.
+ */
+export async function sendLoginCode(
+  to: string,
+  details: { name: string; code: string; minutes: number; when: string },
+): Promise<MailResult> {
+  return send({
+    to,
+    toName: details.name,
+    subject: `${details.code} is your PayHalo sign-in code`,
+    text: [
+      `Hello ${details.name},`,
+      "",
+      `Your sign-in code is ${details.code}.`,
+      "",
+      `It works once, and for ${details.minutes} minutes. Someone asked to sign in at ${details.when}.`,
+      "",
+      "If that was not you, do not use the code — change your password and tell us straight away.",
+      "",
+      "PayHalo",
+    ].join("\n"),
+  });
+}
+
+/** A quiet note that the sign-in happened, once it has. */
+export async function sendLoginNotice(
+  to: string,
+  details: { name: string; when: string; place: string },
+): Promise<MailResult> {
+  return send({
+    to,
+    toName: details.name,
+    subject: "You signed in to PayHalo",
+    text: [
+      `Hello ${details.name},`,
+      "",
+      `Your account was signed in to at ${details.when} (${details.place}).`,
+      "",
+      "If that was you, nothing to do. If it was not, change your password now and reply to this message.",
+      "",
+      "PayHalo",
+    ].join("\n"),
+  });
+}

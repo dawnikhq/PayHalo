@@ -1,14 +1,26 @@
 import { NextResponse } from "next/server";
-import { accountByEmail, startSession } from "@/lib/accounts";
+import { accountByEmail, startLoginCode, sixDigits } from "@/lib/accounts";
 import { verifyPassword } from "@/lib/passwords";
-import { setSessionCookie } from "@/lib/session";
+import { mailConfigured, sendLoginCode } from "@/lib/mailer";
 import { clientKey, tooMany } from "@/lib/throttle";
 
 export const dynamic = "force-dynamic";
 
 /** A hash to compare against when the email is unknown, so timing says nothing. */
 const DECOY = "scrypt$16384$8$1$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+const CODE_MINUTES = 10;
 
+function when() {
+  return new Date().toISOString().replace("T", " ").slice(0, 16) + " UTC";
+}
+
+/**
+ * Password first, then a code by email.
+ *
+ * A correct password does not open the account: it asks for a six-digit code,
+ * which goes to the address on file and is good for ten minutes and one use.
+ * Both factors are needed, so a leaked password on its own reaches nothing.
+ */
 export async function POST(request: Request) {
   const key = clientKey(request, "signin");
   if (tooMany(key, 8, 10 * 60 * 1000)) {
@@ -31,8 +43,38 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "That email and password do not match." }, { status: 401 });
     }
 
-    await setSessionCookie(await startSession(account.id));
-    return NextResponse.json({ ok: true });
+    if (!account.emailVerifiedAt) {
+      return NextResponse.json(
+        {
+          error: "This address has not been confirmed yet. Check your inbox for the link we sent when you signed up.",
+          unconfirmed: true,
+        },
+        { status: 403 },
+      );
+    }
+
+    if (!mailConfigured()) {
+      return NextResponse.json(
+        { error: "Email delivery is not available on this deployment, so the sign-in code cannot be sent." },
+        { status: 503 },
+      );
+    }
+
+    const code = sixDigits();
+    await startLoginCode(account.id, code, CODE_MINUTES);
+
+    const mail = await sendLoginCode(account.email, {
+      name: account.name ?? "there",
+      code,
+      minutes: CODE_MINUTES,
+      when: when(),
+    });
+
+    if (!mail.sent) {
+      return NextResponse.json({ error: mail.reason ?? "We could not send your code. Try again." }, { status: 502 });
+    }
+
+    return NextResponse.json({ ok: true, code: true, email: account.email });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Could not sign you in." },

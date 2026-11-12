@@ -193,7 +193,7 @@ export default function LandingPage() {
 
       <main id="main">
         {/* ---------------------------------------------------------- hero */}
-        <section className="mx-auto w-full max-w-[1000px] px-4 pt-12 text-center sm:px-8 sm:pt-20">
+        <section className="mx-auto flex min-h-[calc(100svh-68px)] w-full max-w-[1000px] flex-col justify-center px-4 py-10 text-center sm:min-h-0 sm:px-8 sm:pb-0 sm:pt-20">
           <h1 className="display mx-auto text-[var(--color-ink)]">
             Your wealth deserves more than
             <br className="hidden sm:block" /> <span className="text-[var(--color-forest)]">a forgotten password and a hopeful guess.</span>
@@ -209,6 +209,15 @@ export default function LandingPage() {
             <Link href="#how" className="btn btn-secondary w-full sm:w-auto">
               See how PayHalo works
             </Link>
+          </div>
+
+          {/* the hero is the whole first screen on a phone: one idea, two doors,
+              and a quiet cue that the rest is a scroll away */}
+          <div className="mt-10 flex flex-col items-center gap-2 sm:hidden" aria-hidden>
+            <span className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-[#98a69d]">
+              Scroll to see the rest
+            </span>
+            <span className="h-8 w-px bg-gradient-to-b from-[rgba(21,63,53,0.28)] to-transparent" />
           </div>
         </section>
 

@@ -504,6 +504,12 @@ body {
   border-color: #f4d2c9;
 }
 
+.badge-sand {
+  background: #f6f1e3;
+  color: #6b5a2a;
+  border-color: #e8dfc6;
+}
+
 .badge-neutral {
   background: #f4f6f4;
   color: var(--color-muted);

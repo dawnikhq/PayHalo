@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { cookies } from "next/headers";
+import { OPERATOR_PASSCODE } from "./operator-passcode";
 
 /**
  * The operator side.
@@ -11,8 +12,14 @@ import { cookies } from "next/headers";
  */
 export const ADMIN_COOKIE = "payhalo_admin";
 
+/** The passcode in lib/operator-passcode.ts wins; otherwise the environment. */
+export function operatorPasscode(): string {
+  const fromCode = OPERATOR_PASSCODE.trim();
+  return fromCode || (process.env.ADMIN_PASSCODE ?? "").trim();
+}
+
 export function adminConfigured(): boolean {
-  return Boolean((process.env.ADMIN_PASSCODE ?? "").trim());
+  return Boolean(operatorPasscode());
 }
 
 function digest(value: string): Buffer {
@@ -20,14 +27,14 @@ function digest(value: string): Buffer {
 }
 
 export function checkAdminPasscode(candidate: string): boolean {
-  const expected = (process.env.ADMIN_PASSCODE ?? "").trim();
+  const expected = operatorPasscode();
   if (!expected || !candidate) return false;
   return crypto.timingSafeEqual(digest(candidate.trim()), digest(expected));
 }
 
 /** The cookie never carries the passcode: only a hash of it. */
 export function adminCookieValue(): string {
-  const expected = (process.env.ADMIN_PASSCODE ?? "").trim();
+  const expected = operatorPasscode();
   const salt = (process.env.VIVO_SHARE_SECRET ?? "payhalo-admin").trim();
   return crypto.createHash("sha256").update(`operator:${expected}:${salt}`, "utf8").digest("hex");
 }

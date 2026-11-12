@@ -2,15 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import {
   IconActivity,
   IconAssets,
   IconBeneficiaries,
-  IconClose,
+  IconChat,
   IconDashboard,
   IconHelp,
-  IconMenu,
   IconPlan,
   IconShield,
 } from "./icons";
@@ -19,7 +18,7 @@ export type Role = "owner" | "keyholder" | "beneficiary";
 
 type NavItem = { href: string; label: string; icon: ReactNode; exact?: boolean };
 
-const NAV: Record<Role, { primary: NavItem[]; secondary: NavItem[]; promo: { title: string; body: string; href: string; cta: string } }> = {
+const NAV: Record<Role, { primary: NavItem[]; secondary: NavItem[] }> = {
   owner: {
     primary: [
       { href: "/dashboard", label: "Overview", icon: <IconDashboard /> },
@@ -32,12 +31,6 @@ const NAV: Record<Role, { primary: NavItem[]; secondary: NavItem[]; promo: { tit
       { href: "/settings", label: "Account settings", icon: <IconShield /> },
       { href: "/help", label: "Help & support", icon: <IconHelp /> },
     ],
-    promo: {
-      title: "On your terms.",
-      body: "Start small. Save as you go. Your arrangements are always yours.",
-      href: "/plan",
-      cta: "Review my arrangements",
-    },
   },
   keyholder: {
     primary: [{ href: "/keyholder", label: "Trusted Key home", icon: <IconDashboard />, exact: true }],
@@ -45,12 +38,6 @@ const NAV: Record<Role, { primary: NavItem[]; secondary: NavItem[]; promo: { tit
       { href: "/keyholder#role", label: "Your role & permissions", icon: <IconShield /> },
       { href: "/keyholder/support", label: "Help & support", icon: <IconHelp /> },
     ],
-    promo: {
-      title: "Trust, with limits.",
-      body: "Your access is limited to the role you have been given.",
-      href: "/help",
-      cta: "Get support",
-    },
   },
   beneficiary: {
     primary: [{ href: "/beneficiary", label: "Beneficiary home", icon: <IconDashboard />, exact: true }],
@@ -58,12 +45,6 @@ const NAV: Record<Role, { primary: NavItem[]; secondary: NavItem[]; promo: { tit
       { href: "/beneficiary#role", label: "Your role & permissions", icon: <IconShield /> },
       { href: "/beneficiary/support", label: "Help & support", icon: <IconHelp /> },
     ],
-    promo: {
-      title: "Trust, with limits.",
-      body: "Your access is limited to the role you have been given.",
-      href: "/help",
-      cta: "Get support",
-    },
   },
 };
 
@@ -143,25 +124,15 @@ export function AppShell({
   name: string;
 }) {
   const pathname = usePathname() ?? "/";
-  const [open, setOpen] = useState(false);
   const nav = NAV[role];
 
-  useEffect(() => setOpen(false), [pathname]);
 
-  useEffect(() => {
-    if (!open) return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previous;
-    };
-  }, [open]);
 
   const person = { name, role: ROLE_LABEL[role] };
 
   const sidebar = (
     <div className="flex min-h-full flex-col gap-6 px-4 py-6">
-      <Link href="/dashboard" className="flex px-1" onClick={() => setOpen(false)} aria-label="PayHalo home">
+      <Link href="/dashboard" className="flex px-1" aria-label="PayHalo home">
         <Wordmark />
       </Link>
 
@@ -176,28 +147,16 @@ export function AppShell({
       </div>
 
       <nav aria-label="Primary" className="space-y-1">
-        <NavList items={nav.primary} pathname={pathname} onNavigate={() => setOpen(false)} />
+        <NavList items={nav.primary} pathname={pathname} />
       </nav>
 
       <div className="hairline" />
 
       <nav aria-label="Secondary" className="space-y-1">
-        <NavList items={nav.secondary} pathname={pathname} onNavigate={() => setOpen(false)} bare />
+        <NavList items={nav.secondary} pathname={pathname} bare />
       </nav>
 
       <div className="mt-auto space-y-4">
-        <div className="rounded-[18px] bg-[var(--color-forest)] p-5 text-[#eef5ee]">
-          <p className="font-[var(--font-display)] text-[15px] font-bold tracking-[-0.01em]">{nav.promo.title}</p>
-          <p className="mt-1.5 text-[12px] leading-relaxed text-[#c9dccd]">{nav.promo.body}</p>
-          <Link
-            href={nav.promo.href}
-            onClick={() => setOpen(false)}
-            className="mt-3 inline-flex items-center gap-1.5 text-[12px] font-semibold text-[var(--color-lime)] transition hover:gap-2.5"
-          >
-            {nav.promo.cta} <span aria-hidden>→</span>
-          </Link>
-        </div>
-
         <div className="flex items-center gap-3 px-2">
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--color-mint)] text-[11.5px] font-bold text-[var(--color-forest)]">
             {initials(person.name)}
@@ -218,37 +177,10 @@ export function AppShell({
         {sidebar}
       </aside>
 
-      {/* mobile drawer */}
-      {open && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <button
-            aria-label="Close navigation"
-            onClick={() => setOpen(false)}
-            className="absolute inset-0 bg-[#172d29]/35 backdrop-blur-[2px]"
-          />
-          <div className="absolute inset-y-0 left-0 w-[290px] max-w-[86vw] overflow-y-auto border-r border-white/70 bg-white/85 backdrop-blur-2xl shadow-2xl">
-            <button
-              onClick={() => setOpen(false)}
-              aria-label="Close navigation"
-              className="absolute right-3 top-5 grid h-9 w-9 place-items-center rounded-full text-[var(--color-muted)] hover:bg-[var(--color-mint)]"
-            >
-              <IconClose />
-            </button>
-            {sidebar}
-          </div>
-        </div>
-      )}
 
       <div className="lg:pl-[264px]">
         <header className="sticky top-0 z-20 border-b border-white/70 bg-white/60 backdrop-blur-xl">
           <div className="flex h-[64px] items-center gap-3 px-4 sm:px-8">
-            <button
-              onClick={() => setOpen(true)}
-              aria-label="Open navigation"
-              className="grid h-9 w-9 place-items-center rounded-full border border-[var(--color-line)] text-[var(--color-ink)] lg:hidden"
-            >
-              <IconMenu />
-            </button>
             <div className="flex items-center gap-2 lg:hidden">
               <Wordmark small />
             </div>
@@ -292,19 +224,22 @@ export function AppShell({
 }
 
 /**
- * The phone shell: five thumb-reachable destinations, floating above the page
- * with the canvas showing through. Nothing here duplicates the desktop
- * sidebar's secondary items — those live in the drawer.
+ * The phone shell.
+ *
+ * Everything the product offers is in the bar at the bottom of the screen, in
+ * thumb reach, and nothing hides behind a drawer. Support is a floating button
+ * just above the bar, so asking for help never means hunting through a menu.
  */
 function MobileTabs({ role }: { role: Role }) {
   const pathname = usePathname();
   const tabs: NavItem[] =
     role === "owner"
       ? [
-          { href: "/dashboard", label: "Home", icon: <IconDashboard /> },
-          { href: "/assets", label: "My assets", icon: <IconAssets /> },
+          { href: "/dashboard", label: "Overview", icon: <IconDashboard /> },
+          { href: "/assets", label: "Assets", icon: <IconAssets /> },
+          { href: "/beneficiaries", label: "People", icon: <IconBeneficiaries /> },
           { href: "/plan", label: "Plan", icon: <IconPlan /> },
-          { href: "/settings", label: "Profile", icon: <IconShield /> },
+          { href: "/settings", label: "Account", icon: <IconShield /> },
         ]
       : role === "keyholder"
         ? [
@@ -316,38 +251,51 @@ function MobileTabs({ role }: { role: Role }) {
             { href: "/beneficiary/support", label: "Support", icon: <IconHelp /> },
           ];
 
+  const supportHref = role === "owner" ? "/help" : role === "keyholder" ? "/keyholder/support" : "/beneficiary/support";
+
   return (
-    <nav
-      aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-white/70 bg-white/80 backdrop-blur-2xl lg:hidden"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-    >
-      <ul className="mx-auto flex max-w-[560px] items-stretch justify-between px-2">
-        {tabs.map((tab) => {
-          const active = tab.exact ? pathname === tab.href : pathname === tab.href || pathname.startsWith(`${tab.href}/`);
-          return (
-            <li key={tab.href} className="flex-1">
-              <Link
-                href={tab.href}
-                aria-current={active ? "page" : undefined}
-                className={`flex flex-col items-center gap-1 rounded-[14px] px-1 py-2.5 text-[10.5px] font-semibold transition ${
-                  active ? "text-[var(--color-brand)]" : "text-[var(--color-muted)]"
-                }`}
-              >
-                <span
-                  className={`grid h-8 w-8 place-items-center rounded-full transition ${
-                    active ? "bg-[var(--color-mint)]" : ""
+    <>
+      <Link
+        href={supportHref}
+        aria-label="Message support"
+        className="fixed bottom-[calc(env(safe-area-inset-bottom)+76px)] right-4 z-40 flex items-center gap-2 rounded-full bg-[var(--color-forest)] px-4 py-3 text-[12.5px] font-semibold text-[#f4f8f0] shadow-[0_16px_36px_-16px_rgba(21,63,53,0.65)] transition active:scale-[0.98] lg:hidden"
+      >
+        <IconChat />
+        <span>Support</span>
+      </Link>
+
+      <nav
+        aria-label="Primary"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-white/70 bg-white/85 backdrop-blur-2xl lg:hidden"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
+        <ul className="mx-auto flex max-w-[560px] items-stretch justify-between px-2">
+          {tabs.map((tab) => {
+            const active = tab.exact ? pathname === tab.href : pathname === tab.href || pathname.startsWith(`${tab.href}/`);
+            return (
+              <li key={tab.href} className="flex-1">
+                <Link
+                  href={tab.href}
+                  aria-current={active ? "page" : undefined}
+                  className={`flex flex-col items-center gap-1 rounded-[14px] px-1 py-2.5 text-[10.5px] font-semibold transition ${
+                    active ? "text-[var(--color-brand)]" : "text-[var(--color-muted)]"
                   }`}
                 >
-                  {tab.icon}
-                </span>
-                {tab.label}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
+                  <span
+                    className={`grid h-8 w-8 place-items-center rounded-full transition ${
+                      active ? "bg-[var(--color-mint)]" : ""
+                    }`}
+                  >
+                    {tab.icon}
+                  </span>
+                  {tab.label}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+    </>
   );
 }
 

@@ -14,11 +14,17 @@ import { hashToken, newToken } from "./session";
  * A SQLite driver mirrors them for local development, so the whole sign-in
  * flow can be exercised without a network.
  */
+export type LoginPurpose = "signin" | "set-password" | "confirm-email";
+
 export interface Account {
   id: string;
   email: string;
   name: string | null;
   passwordHash: string | null;
+  /** Null until the person has clicked the link we emailed them. */
+  emailVerifiedAt?: string | null;
+  lastLoginAt?: string | null;
+  createdAt?: string | null;
 }
 
 interface Store {
@@ -31,6 +37,9 @@ interface Store {
   dropSession(tokenHash: string): Promise<void>;
   addLoginToken(tokenHash: string, userId: string, purpose: string, expiresAt: Date): Promise<void>;
   takeLoginToken(tokenHash: string, purpose: string): Promise<string | null>;
+  markVerified(id: string): Promise<void>;
+  markLogin(id: string): Promise<void>;
+  list(): Promise<Account[]>;
 }
 
 /* --------------------------------------------------------------- postgres */
@@ -71,11 +80,16 @@ function supabaseStore(): Store | null {
     email: String(r.email),
     name: (r.name as string | null) ?? null,
     passwordHash: (r.password_hash as string | null) ?? null,
+    emailVerifiedAt: (r.email_verified_at as string | null) ?? null,
+    lastLoginAt: (r.last_login_at as string | null) ?? null,
+    createdAt: (r.created_at as string | null) ?? null,
   });
+
+  const SHAPE = "id,email,name,password_hash,email_verified_at,last_login_at,created_at";
 
   const api: Store = {
     async create(email, name, passwordHash) {
-      const rows = await call<Record<string, unknown>[] | "exists">("vivo_users?select=id,email,name,password_hash", {
+      const rows = await call<Record<string, unknown>[] | "exists">(`vivo_users?select=${SHAPE}`, {
         method: "POST",
         headers: { Prefer: "return=representation" },
         body: JSON.stringify([{ email, name, password_hash: passwordHash }]),
@@ -88,14 +102,14 @@ function supabaseStore(): Store | null {
 
     async byEmail(email) {
       const rows = await call<Record<string, unknown>[]>(
-        `vivo_users?email=ilike.${encodeURIComponent(email)}&select=id,email,name,password_hash&limit=1`,
+        `vivo_users?email=ilike.${encodeURIComponent(email)}&select=${SHAPE}&limit=1`,
       );
       return rows?.[0] ? row(rows[0]) : null;
     },
 
     async byId(id) {
       const rows = await call<Record<string, unknown>[]>(
-        `vivo_users?id=eq.${encodeURIComponent(id)}&select=id,email,name,password_hash&limit=1`,
+        `vivo_users?id=eq.${encodeURIComponent(id)}&select=${SHAPE}&limit=1`,
       );
       return rows?.[0] ? row(rows[0]) : null;
     },
@@ -157,6 +171,27 @@ function supabaseStore(): Store | null {
       });
       return hit.user_id;
     },
+
+    async markVerified(id) {
+      await call(`vivo_users?id=eq.${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        headers: { Prefer: "return=minimal" },
+        body: JSON.stringify({ email_verified_at: new Date().toISOString() }),
+      });
+    },
+
+    async markLogin(id) {
+      await call(`vivo_users?id=eq.${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        headers: { Prefer: "return=minimal" },
+        body: JSON.stringify({ last_login_at: new Date().toISOString() }),
+      });
+    },
+
+    async list() {
+      const rows = await call<Record<string, unknown>[]>(`vivo_users?select=${SHAPE}&order=created_at.desc&limit=500`);
+      return (rows ?? []).map(row);
+    },
   };
 
   return api;
@@ -175,7 +210,8 @@ async function sqliteStore(): Promise<Store | null> {
       const db = new DatabaseSync(path.join(dir, "hack1.db"));
       db.exec(`
         CREATE TABLE IF NOT EXISTS vivo_users (
-          id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE, name TEXT, password_hash TEXT
+          id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE, name TEXT, password_hash TEXT,
+          email_verified_at TEXT, last_login_at TEXT, created_at TEXT
         );
         CREATE TABLE IF NOT EXISTS vivo_sessions (
           token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at TEXT NOT NULL
@@ -188,21 +224,39 @@ async function sqliteStore(): Promise<Store | null> {
       sqliteDb = db;
     }
     const db = sqliteDb;
+    // a database created before confirmation existed gets the new columns
+    const cols = db.prepare("PRAGMA table_info(vivo_users)").all() as { name: string }[];
+    for (const [name, type] of [
+      ["email_verified_at", "TEXT"],
+      ["last_login_at", "TEXT"],
+      ["created_at", "TEXT"],
+    ] as const) {
+      if (!cols.some((c) => c.name === name)) db.exec(`ALTER TABLE vivo_users ADD COLUMN ${name} ${type}`);
+    }
+
     const map = (r: Record<string, unknown> | undefined): Account | null =>
-      r ? { id: String(r.id), email: String(r.email), name: (r.name as string | null) ?? null, passwordHash: (r.password_hash as string | null) ?? null } : null;
+      r
+        ? {
+            id: String(r.id),
+            email: String(r.email),
+            name: (r.name as string | null) ?? null,
+            passwordHash: (r.password_hash as string | null) ?? null,
+            emailVerifiedAt: (r.email_verified_at as string | null) ?? null,
+            lastLoginAt: (r.last_login_at as string | null) ?? null,
+            createdAt: (r.created_at as string | null) ?? null,
+          }
+        : null;
 
     const api: Store = {
       async create(email, name, passwordHash) {
         const exists = db.prepare("SELECT id FROM vivo_users WHERE lower(email) = lower(?)").get(email);
         if (exists) return "exists";
         const id = crypto.randomUUID();
-        db.prepare("INSERT INTO vivo_users (id, email, name, password_hash) VALUES (?, ?, ?, ?)").run(
-          id,
-          email,
-          name,
-          passwordHash,
-        );
-        return { id, email, name, passwordHash };
+        const createdAt = new Date().toISOString();
+        db.prepare(
+          "INSERT INTO vivo_users (id, email, name, password_hash, created_at) VALUES (?, ?, ?, ?, ?)",
+        ).run(id, email, name, passwordHash, createdAt);
+        return { id, email, name, passwordHash, emailVerifiedAt: null, lastLoginAt: null, createdAt };
       },
       async byEmail(email) {
         return map(db.prepare("SELECT * FROM vivo_users WHERE lower(email) = lower(?)").get(email) as never);
@@ -251,6 +305,18 @@ async function sqliteStore(): Promise<Store | null> {
         );
         return row.user_id;
       },
+
+      async markVerified(id) {
+        db.prepare("UPDATE vivo_users SET email_verified_at = ? WHERE id = ?").run(new Date().toISOString(), id);
+      },
+      async markLogin(id) {
+        db.prepare("UPDATE vivo_users SET last_login_at = ? WHERE id = ?").run(new Date().toISOString(), id);
+      },
+      async list() {
+        return (
+          db.prepare("SELECT * FROM vivo_users ORDER BY created_at DESC LIMIT 500").all() as Record<string, unknown>[]
+        ).map((r) => map(r) as Account);
+      },
     };
 
     return api;
@@ -292,6 +358,26 @@ export async function accountById(id: string): Promise<Account | null> {
   return s ? s.byId(id) : null;
 }
 
+export async function listAccounts(): Promise<Account[]> {
+  const s = await store();
+  if (!s) return [];
+  try {
+    return await s.list();
+  } catch {
+    return [];
+  }
+}
+
+export async function markEmailVerified(userId: string): Promise<void> {
+  const s = await store();
+  if (s) await s.markVerified(userId);
+}
+
+export async function markLogin(userId: string): Promise<void> {
+  const s = await store();
+  if (s) await s.markLogin(userId);
+}
+
 export async function setPassword(userId: string, passwordHash: string): Promise<void> {
   const s = await store();
   if (s) await s.setPassword(userId, passwordHash);
@@ -317,7 +403,7 @@ export async function endSession(token: string): Promise<void> {
   if (s) await s.dropSession(hashToken(token));
 }
 
-export async function startLoginToken(userId: string, purpose: "signin" | "set-password", minutes = 20): Promise<string> {
+export async function startLoginToken(userId: string, purpose: LoginPurpose, minutes = 20): Promise<string> {
   const s = await store();
   if (!s) throw new Error("Accounts are not configured on this deployment.");
   const token = newToken();
@@ -325,8 +411,32 @@ export async function startLoginToken(userId: string, purpose: "signin" | "set-p
   return token;
 }
 
-export async function redeemLoginToken(token: string, purpose: "signin" | "set-password"): Promise<string | null> {
+export async function redeemLoginToken(token: string, purpose: LoginPurpose): Promise<string | null> {
   const s = await store();
   return s ? s.takeLoginToken(hashToken(token), purpose) : null;
 }
 
+
+/* ------------------------------------------------------- sign-in codes ---- */
+
+/**
+ * The six-digit second factor. Only the hash of `code + user` is stored, so a
+ * read of the table cannot be replayed as a code, and a code minted for one
+ * account is useless on another.
+ */
+export async function startLoginCode(userId: string, code: string, minutes = 10): Promise<void> {
+  const s = await store();
+  if (!s) throw new Error("Accounts are not configured on this deployment.");
+  await s.addLoginToken(hashToken(`code:${userId}:${code}`), userId, "signin-code", new Date(Date.now() + minutes * 60 * 1000));
+}
+
+export async function redeemLoginCode(userId: string, code: string): Promise<boolean> {
+  const s = await store();
+  if (!s) return false;
+  return Boolean(await s.takeLoginToken(hashToken(`code:${userId}:${code}`), "signin-code"));
+}
+
+/** Six digits, from the system's own randomness. */
+export function sixDigits(): string {
+  return String(crypto.randomInt(0, 1_000_000)).padStart(6, "0");
+}
