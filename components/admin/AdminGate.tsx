@@ -32,10 +32,11 @@ export function AdminGate({ configured }: { configured: boolean }) {
   return (
     <form onSubmit={submit} className="card mx-auto mt-10 max-w-[440px] p-7">
       <p className="eyebrow">Operators</p>
-      <h1 className="h2 mt-2">Release desk</h1>
+      <h1 className="h2 mt-2">The operator desk</h1>
       <p className="t-small mt-2">
-        This is where a death is confirmed and a vault is opened. Operators can read documentation, hold a request for
-        research, and approve or decline. They cannot move money anywhere or change who a plan pays.
+        One passcode opens the console: who has joined, how far each arrangement has got, and every handover request
+        waiting on a decision. Operators can read documentation, hold a request for research, and approve or decline.
+        They cannot move money anywhere, name a recipient, or see a vault key.
       </p>
       {!configured && (
         <p className="field-error mt-3">No operator passcode is set on this deployment (ADMIN_PASSCODE).</p>
