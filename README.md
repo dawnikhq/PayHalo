@@ -269,7 +269,6 @@ It gives people a way to prepare that answer, record their intentions and make t
 
 
 
-\
 
 
 ## Glossary
@@ -296,7 +295,6 @@ It gives people a way to prepare that answer, record their intentions and make t
 
 
 
-\
 
 
 
