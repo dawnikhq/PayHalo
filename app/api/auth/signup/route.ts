@@ -47,7 +47,7 @@ export async function POST(request: Request) {
   try {
     const account = await createAccount(email, name, await hashPassword(password));
     if (account === "exists") {
-      return NextResponse.json({ error: "An account with that email already exists. Sign in instead." }, { status: 409 });
+      return NextResponse.json({ error: "That address already has a plan. Sign in instead." }, { status: 409 });
     }
 
     /*

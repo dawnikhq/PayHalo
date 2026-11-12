@@ -4,7 +4,8 @@ import {
   paypalMode,
   paypalConfigured,
   paypalRedirectUri,
-  userInfo,
+  signTicket,
+  tryUserInfo,
   verifyAuthState,
   verifyState,
   PayPalError,
@@ -13,7 +14,16 @@ import {
 import { PAYPAL_COOKIE, cookieOptions, mintSid, readSid } from "@/lib/paypal-session";
 import { savePayPalConnection } from "@/lib/paypal-store";
 import { UnauthorizedError, requireOwner } from "@/lib/scope";
-import { accountByEmail, createAccount, markEmailVerified, markLogin, startLoginToken } from "@/lib/accounts";
+import {
+  accountByEmail,
+  accountById,
+  createAccount,
+  markEmailVerified,
+  markLogin,
+  startLoginToken,
+} from "@/lib/accounts";
+import { payerLink } from "@/lib/paypal-identity";
+import { mailConfigured, sendConfirmAddress } from "@/lib/mailer";
 import { ensureWallet } from "@/lib/wallet";
 
 export const dynamic = "force-dynamic";
@@ -77,19 +87,75 @@ async function handleSignIn(request: Request, url: URL, auth: PayPalAuthState) {
   if (!code) return back("failed");
 
   let email = "";
+  let payerId = "";
   let name: string | null = null;
 
   try {
     const tokens = await exchangeCode(code, paypalRedirectUri(request.url));
-    const identity = await userInfo(tokens.accessToken, tokens.idToken);
-    email = identity.email.trim().toLowerCase();
-    name = identity.name;
-  } catch (error) {
-    const said = error instanceof PayPalError ? error.message : "";
-    return back(/email|profile|scope/i.test(said) ? "noemail" : "failed");
+    const identity = await tryUserInfo(tokens.accessToken, tokens.idToken);
+    email = (identity?.email ?? "").trim().toLowerCase();
+    payerId = identity?.payerId && identity.payerId !== "unknown" ? identity.payerId : "";
+    name = identity?.name ?? null;
+  } catch {
+    return back("failed");
   }
 
-  if (!email) return back("noemail");
+  /*
+   * PayPal proved who this is but not where to reach them. That happens when
+   * the app has not been granted the Email scope, and it used to end the
+   * sign-in on an apology. Instead: if we already know this PayPal account,
+   * use the address it is bound to; if we do not, ask for it once, then prove
+   * it with the same emailed link a password sign-up uses.
+   */
+  if (!email) {
+    try {
+      if (payerId) {
+        const known = await payerLink(payerId);
+        if (known) {
+          const account = await accountById(known.accountId).catch(() => null);
+          if (account?.emailVerifiedAt) {
+            await markLogin(account.id).catch(() => undefined);
+            const token = await startLoginToken(account.id, "signin");
+            const landing = new URL("/auth/link", auth.origin);
+            landing.searchParams.set("token", token);
+            landing.searchParams.set("next", auth.next);
+            return NextResponse.redirect(landing);
+          }
+          if (account && mailConfigured()) {
+            /* Bound but never confirmed — send the proof again rather than trust it. */
+            const token = await startLoginToken(account.id, "confirm-email", 24 * 60);
+            const confirm = new URL(
+              `/auth/confirm?token=${encodeURIComponent(token)}&next=${encodeURIComponent(auth.next)}`,
+              auth.origin,
+            ).toString();
+            await sendConfirmAddress(account.email, {
+              name: account.name ?? nameFromEmail(account.email) ?? "there",
+              url: confirm,
+              hours: 24,
+            }).catch(() => undefined);
+            return back("checkemail");
+          }
+        }
+      }
+
+      const ask = new URL("/auth/paypal", auth.origin);
+      ask.searchParams.set(
+        "t",
+        signTicket({
+          pid: payerId,
+          name,
+          from: auth.from,
+          next: auth.next,
+          origin: auth.origin,
+          iat: Date.now(),
+        }),
+      );
+      return NextResponse.redirect(ask);
+    } catch {
+      /* The store said no: fall back to the sentence, not a stack trace. */
+      return back("noemail");
+    }
+  }
 
   try {
     let account = await accountByEmail(email);
@@ -144,11 +210,11 @@ async function handleConnect(request: Request, url: URL, sid: string) {
      * still identified by the grant itself, so it is linked and the card says
      * the email was not shared.
      */
-    const identity = await userInfo(tokens.accessToken, tokens.idToken).catch(() => ({
+    const identity = (await tryUserInfo(tokens.accessToken, tokens.idToken)) ?? {
       payerId: "unknown",
       email: "",
       name: null,
-    }));
+    };
 
     const owner = await requireOwner();
     await savePayPalConnection(owner.id, {

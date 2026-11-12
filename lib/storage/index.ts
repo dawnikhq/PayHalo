@@ -64,7 +64,7 @@ function guarded(primary: Driver): Driver {
  * prefix is what keeps them out of every plan read. `scan` sees plans only;
  * `scanAll` sees everything, for the modules that own these rows.
  */
-const AUX = /^(wallet|support):/;
+const AUX = /^(wallet|support|paypal):/;
 
 function withoutAux(primary: Driver): Driver {
   const raw = primary.scan?.bind(primary);

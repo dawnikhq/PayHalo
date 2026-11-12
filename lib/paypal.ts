@@ -648,7 +648,10 @@ function identityFrom(payload: UserInfoPayload): PayPalIdentity | null {
  * PayPal already granted, so every route to the same three facts is tried, and
  * the last refusal is quoted so the next attempt has a lead.
  */
-export async function userInfo(accessToken: string, idToken: string | null = null): Promise<PayPalIdentity> {
+async function readIdentity(
+  accessToken: string,
+  idToken: string | null = null,
+): Promise<{ identity: PayPalIdentity | null; lastError: string }> {
   const endpoints = [
     /* The documented OpenID Connect address carries a slash before the query. */
     "/v1/identity/openidconnect/userinfo/?schema=openid",
@@ -668,7 +671,7 @@ export async function userInfo(accessToken: string, idToken: string | null = nul
 
       const json = (await res.json().catch(() => null)) as UserInfoPayload | null;
       const identity = json && res.ok ? identityFrom(json) : null;
-      if (identity) return identity;
+      if (identity) return { identity, lastError };
 
       const said = json?.error_description ?? json?.error ?? "";
       lastError = `${path.split("?")[1] ?? path} · ${res.status}${said ? ` · ${said}` : ""}`;
@@ -679,12 +682,37 @@ export async function userInfo(accessToken: string, idToken: string | null = nul
 
   /* Last resort: the id_token is issued to this app by PayPal itself. */
   const identity = identityFrom(claimsFromIdToken(idToken) ?? {});
+  if (identity) return { identity, lastError };
+
+  return { identity: null, lastError: lastError || "no profile returned" };
+}
+
+export async function userInfo(accessToken: string, idToken: string | null = null): Promise<PayPalIdentity> {
+  const { identity, lastError } = await readIdentity(accessToken, idToken);
   if (identity) return identity;
 
-  throw new PayPalError(
-    `PayPal signed you in but would not return the profile (${lastError || "no profile returned"}).`,
-    502,
-  );
+  throw new PayPalError(`PayPal signed you in but would not return the profile (${lastError}).`, 502);
+}
+
+/**
+ * The same read, without the throw.
+ *
+ * A sign-in that comes back with a PayPal account id and no address is still a
+ * sign-in: there is a person behind it, and the only missing piece is the thing
+ * they can type in ten seconds. Treating that as an error threw away a session
+ * PayPal had already granted, so the callback asks this instead and handles the
+ * half-answer itself.
+ */
+export async function tryUserInfo(
+  accessToken: string,
+  idToken: string | null = null,
+): Promise<PayPalIdentity | null> {
+  try {
+    const { identity } = await readIdentity(accessToken, idToken);
+    return identity;
+  } catch {
+    return null;
+  }
 }
 
 /* ------------------------------------------------------- signed oauth state */
@@ -702,6 +730,58 @@ export function verifyState(state: string): string | null {
   const b = Buffer.from(expected);
   if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
   return sid;
+}
+
+/* ------------------------------------------------------------ the hand-off */
+
+/**
+ * A ticket that carries its own contents.
+ *
+ * The callback sometimes has to hand the browser to a page that runs on a
+ * different machine, and "remember this for ten minutes" is exactly the kind of
+ * state a serverless deployment is bad at. So the note travels in the URL:
+ * signed with the same secret that signs the PayPal state, readable only by us,
+ * and useless once `iat` is a quarter of an hour old.
+ *
+ * It grants nothing on its own. The most a live ticket allows is typing an
+ * address, and the address still has to prove itself through the inbox.
+ */
+export interface PayPalTicketPayload {
+  /** The PayPal account id, when PayPal shared one. */
+  pid: string;
+  name: string | null;
+  from: "signin" | "signup";
+  next: string;
+  /** The host the person started on. */
+  origin: string;
+  /** Issued at, milliseconds. */
+  iat: number;
+}
+
+export const TICKET_MINUTES = 15;
+
+export function signTicket(payload: PayPalTicketPayload): string {
+  const body = Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
+  const mac = crypto.createHmac("sha256", clientSecret()).update(body).digest("base64url").slice(0, 32);
+  return `${body}.${mac}`;
+}
+
+export function openTicket(token: string): PayPalTicketPayload | null {
+  const [body, mac] = token.split(".");
+  if (!body || !mac) return null;
+  const expected = crypto.createHmac("sha256", clientSecret()).update(body).digest("base64url").slice(0, 32);
+  const a = Buffer.from(mac);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+
+  try {
+    const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as PayPalTicketPayload;
+    if (!payload || typeof payload.iat !== "number") return null;
+    if (Date.now() - payload.iat > TICKET_MINUTES * 60 * 1000) return null;
+    return payload;
+  } catch {
+    return null;
+  }
 }
 
 /* ------------------------------------------------- signing in with PayPal */
