@@ -650,6 +650,8 @@ function identityFrom(payload: UserInfoPayload): PayPalIdentity | null {
  */
 export async function userInfo(accessToken: string, idToken: string | null = null): Promise<PayPalIdentity> {
   const endpoints = [
+    /* The documented OpenID Connect address carries a slash before the query. */
+    "/v1/identity/openidconnect/userinfo/?schema=openid",
     "/v1/identity/openidconnect/userinfo?schema=openid",
     "/v1/identity/oauth2/userinfo?schema=openid",
     "/v1/identity/oauth2/userinfo?schema=paypalv1.1",
@@ -867,7 +869,7 @@ async function probeConnect(redirectUri: string): Promise<OAuthProbe> {
   };
 
   const paths = [
-    "/v1/identity/openidconnect/userinfo?schema=openid",
+    "/v1/identity/openidconnect/userinfo/?schema=openid",
     "/v1/identity/oauth2/userinfo?schema=openid",
     "/v1/identity/oauth2/userinfo?schema=paypalv1.1",
   ];
