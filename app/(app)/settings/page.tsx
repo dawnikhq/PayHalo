@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getSnapshot } from "@/lib/store";
+import { activePlanKey, getSnapshot } from "@/lib/store";
 import { Page } from "@/components/ui";
 import { ProfileForm } from "@/components/account/ProfileForm";
 import { ShareLinks } from "@/components/account/ShareLinks";
@@ -36,6 +36,8 @@ export default async function SettingsPage({
 }) {
   const s = await getSnapshot();
   const owner = await requireOwner();
+  // a share link points at one arrangement, not the whole account
+  const planDocKey = await activePlanKey();
   const { paypal, reason } = await searchParams;
 
   return (
@@ -85,8 +87,8 @@ export default async function SettingsPage({
           </section>
 
           <ShareLinks
-            keyholderToken={shareToken(owner.id, "keyholder")}
-            beneficiaryToken={shareToken(owner.id, "beneficiary")}
+            keyholderToken={shareToken(planDocKey, "keyholder")}
+            beneficiaryToken={shareToken(planDocKey, "beneficiary")}
             hasKeyholder={Boolean(s.keyholder)}
           />
 

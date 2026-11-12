@@ -173,6 +173,12 @@ export async function savePlan(input: PlanInput): Promise<Snapshot> {
   return { ...snapshotOf(doc), storage: driver.kind };
 }
 
+/** The document key of the arrangement currently on screen — the thing a share link points at. */
+export async function activePlanKey(): Promise<string> {
+  const user = await requireOwner();
+  return planKey(user.id, await activePlanNo());
+}
+
 export interface PlanSummary {
   no: number;
   key: string;

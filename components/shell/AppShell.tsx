@@ -157,7 +157,7 @@ export function AppShell({
             </span>
           </span>
           <span className="shrink-0 rounded-full bg-[var(--color-mint)] px-2 py-0.5 text-[10px] font-bold text-[var(--color-forest)]">
-            {plans.length > 1 ? `1 of ${plans.length}` : "Switch"}
+            {plans.length > 1 ? `${activePlan.no} / ${plans.length}` : "Switch"}
           </span>
         </Link>
       ) : (

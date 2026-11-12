@@ -87,20 +87,41 @@ export async function operatorOverview(): Promise<OperatorOverview> {
   }
 
   const [accounts, queue] = await Promise.all([listAccounts(), releaseQueue().catch(() => [])]);
-  const byOwner = new Map<string, StateDoc>(docs.map((d) => [d.key, d.doc]));
+
+  /*
+   * One member may now hold several arrangements. A document key is the account
+   * id, or that id with `#p2`, `#p3`… for later plans, so the CRM has to fold
+   * them back into one row rather than counting a member once per plan.
+   */
+  const ownerOf = (key: string) => key.replace(/#p[0-9]+$/, "");
+  const docsByOwner = new Map<string, StateDoc[]>();
+  for (const { key, doc } of docs) {
+    const owner = ownerOf(key);
+    const list = docsByOwner.get(owner);
+    if (list) list.push(doc);
+    else docsByOwner.set(owner, [doc]);
+  }
+
+  const baseDoc = new Map<string, StateDoc>();
+  for (const { key, doc } of docs) {
+    const owner = ownerOf(key);
+    if (key === owner) baseDoc.set(owner, doc);
+    else if (!baseDoc.has(owner)) baseDoc.set(owner, doc);
+  }
+
+  const stepsIn = (doc: StateDoc) =>
+    [
+      doc.beneficiaries.some((b) => b.role === "primary"),
+      doc.assets.length > 0,
+      doc.beneficiaries.some((b) => b.role === "backup"),
+      doc.beneficiaries.some((b) => b.role === "charity"),
+      Boolean(doc.keyholder),
+      Boolean(doc.plan.sealedAt),
+    ].filter(Boolean).length;
 
   const customers: OperatorCustomer[] = accounts.map((a: Account) => {
-    const doc = byOwner.get(a.id);
-    const stepsDone = doc
-      ? [
-          doc.beneficiaries.some((b) => b.role === "primary"),
-          doc.assets.length > 0,
-          doc.beneficiaries.some((b) => b.role === "backup"),
-          doc.beneficiaries.some((b) => b.role === "charity"),
-          Boolean(doc.keyholder),
-          Boolean(doc.plan.sealedAt),
-        ].filter(Boolean).length
-      : 0;
+    const mine = docsByOwner.get(a.id) ?? [];
+    const doc = baseDoc.get(a.id);
 
     return {
       id: a.id,
@@ -110,19 +131,20 @@ export async function operatorOverview(): Promise<OperatorOverview> {
       joinedAt: a.createdAt ?? null,
       lastLoginAt: a.lastLoginAt ?? null,
       hasPlan: Boolean(doc),
-      stepsDone,
-      assets: doc?.assets.length ?? 0,
-      people: doc?.beneficiaries.length ?? 0,
-      hasTrustedKey: Boolean(doc?.keyholder),
-      valueCents: doc ? vaultBalanceCents(doc) : 0,
+      stepsDone: mine.reduce((best, d) => Math.max(best, stepsIn(d)), 0),
+      assets: mine.reduce((sum, d) => sum + d.assets.length, 0),
+      people: mine.reduce((sum, d) => sum + d.beneficiaries.length, 0),
+      hasTrustedKey: mine.some((d) => Boolean(d.keyholder)),
+      valueCents: mine.reduce((sum, d) => sum + vaultBalanceCents(d), 0),
       planStatus: planStatusOf(doc),
-      handovers: doc?.claims.length ?? 0,
+      handovers: mine.reduce((sum, d) => sum + d.claims.length, 0),
     };
   });
 
   // plans with no account row (a share-link visitor's document) still count
+  const accountIds = new Set(accounts.map((a) => a.id));
   for (const { key, doc } of docs) {
-    if (accounts.some((a) => a.id === key)) continue;
+    if (accountIds.has(ownerOf(key))) continue;
     customers.push({
       id: key,
       name: doc.user.name || "Unnamed",
