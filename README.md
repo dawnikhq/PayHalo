@@ -5,47 +5,25 @@
 
 PayHalo is a wealth inheritance platform that helps individuals document their financial holdings, designate beneficiaries and prepare instructions for how their wealth should be distributed when they are no longer able to manage it themselves.
 
-
-
 From savings and investments to cryptocurrency and online financial accounts, PayHalo brings the information and decisions involved in inheritance preparation into one place.
-
-
 
 The purpose is to make sure the people you intend to benefit from what you've built have a clearer understanding of what exists, what you've decided and where to begin.
 
-
-
 \---
 
-
-
-\## 1. Why PayHalo exists
-
-
+# 1. Why PayHalo exists
 
 Building wealth is a gradual process. It happens through years of working, saving, investing, taking opportunities and making decisions about the future.
 
-
-
 Along the way, financial lives become increasingly spread out. Someone might have savings in a bank, investments on different platforms, cryptocurrency in a wallet, money in PayPal and financial interests tied to a business.
-
-
 
 They may know exactly where everything is because they've spent years managing it. But the people they eventually intend to benefit from those holdings may not have the same understanding.
 
-
-
 They might know about the house but not the investment account, recognize the business but not know where its financial records are kept, or have no idea that a particular account exists.
-
-
 
 This creates a gap between what someone has built and what their beneficiaries know about it.
 
-
-
 Inheritance is not simply a question of who receives what. It also involves making sure that relevant information is available, intentions are documented and the people involved have a practical way to navigate the process.
-
-
 
 \*\*PayHalo exists to help close that gap.\*\*
 
