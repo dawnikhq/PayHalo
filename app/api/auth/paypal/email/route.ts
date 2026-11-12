@@ -39,6 +39,20 @@ export async function POST(request: Request) {
     );
   }
 
+  const origin = pending.origin || new URL(request.url).origin;
+  const next = pending.next || "/dashboard";
+  const payerId = pending.pid ?? "";
+  const signingUp = pending.from === "signup";
+
+  /* Which door this address belongs to needs no email at all, so it is answered first. */
+  const existing = await accountByEmail(email).catch(() => null);
+  if (existing && signingUp) {
+    return NextResponse.json({ ok: true, outcome: "sign-in", email: existing.email });
+  }
+  if (!existing && !signingUp) {
+    return NextResponse.json({ ok: true, outcome: "sign-up", email });
+  }
+
   if (!mailConfigured()) {
     return NextResponse.json(
       { error: "We cannot send email right now, so there is no way to prove that address. Sign in with a password instead." },
@@ -46,13 +60,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const origin = pending.origin || new URL(request.url).origin;
-  const next = pending.next || "/dashboard";
-  const payerId = pending.pid ?? "";
-
   try {
-    const existing = await accountByEmail(email);
-
     if (existing) {
       /* Never sign someone in to an account they have only named. A link is the proof. */
       const token = await startLoginToken(existing.id, "signin");
@@ -72,7 +80,7 @@ export async function POST(request: Request) {
         email: existing.email,
         linkedAt: new Date().toISOString(),
       }).catch(() => undefined);
-      return NextResponse.json({ ok: true, sentTo: existing.email, existing: true });
+      return NextResponse.json({ ok: true, outcome: "sent", sentTo: existing.email, existing: true });
     }
 
     const name = pending.name?.trim() || null;
@@ -108,7 +116,7 @@ export async function POST(request: Request) {
       linkedAt: new Date().toISOString(),
     }).catch(() => undefined);
 
-    return NextResponse.json({ ok: true, sentTo: email, existing: false });
+    return NextResponse.json({ ok: true, outcome: "sent", sentTo: email, existing: false });
   } catch {
     /* No stack traces, no provider names: a person needs the next step, not the plumbing. */
     return NextResponse.json(

@@ -28,20 +28,11 @@ export default async function PayPalEmailPage({
 
       <main className="mx-auto w-full max-w-[520px] px-5 pb-24 pt-10 sm:px-8 lg:pt-16">
         <p className="eyebrow">Your account</p>
-        <h1 className="h1 mt-3">One field left.</h1>
-        <p className="t-body mt-2">
-          PayPal knows who you are. It just did not pass on an email address, and the address is what your plan is
-          keyed to.
-        </p>
+        <h1 className="h1 mt-3">Which email should we use?</h1>
 
         <div className="mt-7">
-          <PayPalEmailForm ticket={ticket} name={pending.name} />
+          <PayPalEmailForm ticket={ticket} next={pending.next} />
         </div>
-
-        <p className="t-meta mt-6">
-          This step lasts {""}
-          fifteen minutes. If it lapses, press the PayPal button again — nothing is lost in between.
-        </p>
       </main>
 
       <MarketingFooter />
