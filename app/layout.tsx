@@ -1,13 +1,49 @@
-import type { Metadata } from "next";
-import "@fontsource-variable/manrope";
-import "@fontsource-variable/schibsted-grotesk";
+import type { Metadata, Viewport } from "next";
+import "@fontsource-variable/plus-jakarta-sans";
 import "./globals.css";
 
+/**
+ * What the link looks like when it is pasted somewhere: the mark as the tab
+ * icon, the brand line as the title, and the dark-green card as the preview.
+ */
+const SITE = "https://hack1-weld.vercel.app";
+const TITLE = "PayHalo — A life built. A legacy kept.";
+const DESCRIPTION =
+  "PayHalo is a digital inheritance platform. Record what you own, decide who inherits it, appoint a Trusted Key, and leave instructions your family can follow.";
+
 export const metadata: Metadata = {
-  title: "PayHalo — Your arrangements, considered.",
-  description:
-    "PayHalo is the calm handover for your digital estate. Decide where your digital wealth goes, name a Trusted Key, and give your family a plan instead of a puzzle.",
+  metadataBase: new URL(SITE),
+  title: { default: TITLE, template: "%s — PayHalo" },
+  description: DESCRIPTION,
   applicationName: "PayHalo",
+  authors: [{ name: "PayHalo" }],
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: "PayHalo",
+    title: TITLE,
+    description: DESCRIPTION,
+    url: "/",
+    images: [
+      { url: "/brand/payhalo-og.png", width: 1200, height: 630, alt: "PayHalo — A life built. A legacy kept." },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: ["/brand/payhalo-og.png"],
+  },
+  icons: {
+    icon: [{ url: "/icon.png", type: "image/png", sizes: "512x512" }],
+    apple: [{ url: "/icon.png", sizes: "512x512" }],
+    shortcut: ["/icon.png"],
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0B3D2E",
+  colorScheme: "light",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

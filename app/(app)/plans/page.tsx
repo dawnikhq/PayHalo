@@ -7,7 +7,7 @@ import { PlansManager } from "@/components/plan/PlansManager";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "My arrangements — PayHalo" };
+export const metadata = { title: { absolute: "My arrangements — PayHalo" } };
 
 export default async function PlansPage() {
   const plans = await listPlans().catch((err) => {

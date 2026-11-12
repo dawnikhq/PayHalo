@@ -36,20 +36,23 @@ export function ProfileForm({ user }: { user: User }) {
   }
 
   return (
-    <form onSubmit={submit} className="card p-6 md:p-7">
+    <form onSubmit={submit} className="card p-4 sm:p-6 md:p-7">
       <h2 className="h2">Your details</h2>
       <p className="t-small mt-1">
         Kept current so a safety notice can reach you. Never shown to a Trusted Key or beneficiary.
       </p>
 
-      <div className="mt-5 grid gap-4 sm:grid-cols-2">
+      <div className="mt-5 grid gap-3.5 sm:grid-cols-2 sm:gap-4">
         <Field label="Full name" htmlFor="pr-name">
-          <input id="pr-name" className="input" value={name} onChange={(e) => setName(e.target.value)} required />
+          <input id="pr-name" className="input" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} required />
         </Field>
         <Field label="Email" htmlFor="pr-email">
           <input
             id="pr-email"
             type="email"
+            inputMode="email"
+            autoComplete="email"
+            autoCapitalize="off"
             className="input"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -57,7 +60,7 @@ export function ProfileForm({ user }: { user: User }) {
           />
         </Field>
         <Field label="Phone" htmlFor="pr-phone" optional help="Never shared with a Trusted Key or beneficiary.">
-          <input id="pr-phone" className="input" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <input id="pr-phone" type="tel" inputMode="tel" autoComplete="tel" className="input" value={phone} onChange={(e) => setPhone(e.target.value)} />
         </Field>
         <Field label="Time zone" htmlFor="pr-tz" optional>
           <input
@@ -72,9 +75,9 @@ export function ProfileForm({ user }: { user: User }) {
 
       {error && <p className="field-error mt-3">{error}</p>}
 
-      <div className="mt-6 flex items-center justify-between gap-3 border-t border-[var(--color-line)] pt-4">
+      <div className="mt-5 flex flex-col gap-3 border-t border-[var(--color-line)] pt-4 sm:mt-6 sm:flex-row sm:items-center sm:justify-between">
         <p className="t-meta">Only you can see your contact details.</p>
-        <button type="submit" disabled={busy} className="btn btn-primary btn-sm">
+        <button type="submit" disabled={busy} className="btn btn-primary btn-sm w-full sm:w-auto">
           {busy ? "Saving…" : saved ? "Saved" : "Save details"}
         </button>
       </div>

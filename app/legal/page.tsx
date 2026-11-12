@@ -2,7 +2,7 @@ import Link from "next/link";
 import { MarketingFooter, MarketingHeader } from "@/components/marketing/Chrome";
 
 export const metadata = {
-  title: "PayHalo — Privacy Policy and Terms of Service",
+  title: { absolute: "Privacy Policy and Terms of Service — PayHalo" },
   description: "How PayHalo handles the information you record, and the terms that apply when you use it.",
 };
 
@@ -36,6 +36,11 @@ export default function LegalPage() {
               <span className="font-semibold text-[var(--color-ink)]">Who can see it.</span> You. A Trusted Key sees
               that a plan exists and may start a handover request, and nothing else. A beneficiary sees their own
               allocation after the safety window. No account holder sees another&apos;s plan.
+            </p>
+            <p>
+              <span className="font-semibold text-[var(--color-ink)]">Cookies.</span> One cookie keeps you signed in.
+              One remembers the choice you made in the cookie banner, so we do not ask again. Analytics and marketing
+              cookies stay off unless you turn them on, and no cookie is used to follow you to another site.
             </p>
             <p>
               <span className="font-semibold text-[var(--color-ink)]">Email.</span> We send two kinds of message: a

@@ -14,6 +14,8 @@ import {
 } from "./icons";
 import { HaloLauncher } from "@/components/halo/HaloLauncher";
 import { AppTour, AppTourButton } from "@/components/tour/AppTour";
+import { Logo } from "@/components/brand/Logo";
+import { CookieConsent, CookiePreferencesLink } from "@/components/legal/CookieConsent";
 import type { PlanSummary } from "@/lib/store";
 
 export type Role = "owner" | "keyholder" | "beneficiary";
@@ -236,9 +238,12 @@ export function AppShell({
         <footer className="mt-6 border-t border-[var(--color-line)] px-5 pb-24 pt-5 text-[11.5px] text-[var(--color-muted)] sm:px-8 sm:pb-20">
           <div className="mx-auto flex max-w-[1180px] flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
             <p>Help is a click away if anything here is unclear.</p>
-            <p className="font-[var(--font-display)] font-semibold tracking-[0.02em] text-[var(--color-forest)]">
-              PayHalo / Your arrangements, considered.
-            </p>
+            <div className="flex items-center gap-4">
+              <CookiePreferencesLink className="text-[11.5px] text-[var(--color-muted)] hover:text-[var(--color-brand)]" />
+              <p className="font-[var(--font-display)] font-semibold tracking-[0.02em] text-[var(--color-forest)]">
+                A life built. A legacy kept.
+              </p>
+            </div>
           </div>
         </footer>
       </div>
@@ -246,6 +251,7 @@ export function AppShell({
       <MobileTabs role={role} />
       <HaloLauncher role={role} />
       {role === "owner" ? <AppTour auto={fresh} /> : null}
+      <CookieConsent lift />
     </div>
   );
 }
@@ -318,26 +324,5 @@ function MobileTabs({ role }: { role: Role }) {
 }
 
 function Wordmark({ small = false }: { small?: boolean }) {
-  return (
-    <span className="flex items-center gap-2">
-      <svg width={small ? 22 : 26} height={small ? 22 : 26} viewBox="0 0 32 32" aria-hidden>
-        <path
-          d="M5 9.5c0 8 4 12.5 9.5 12.5S25 17 26.5 5.5"
-          stroke="#008477"
-          strokeWidth="4"
-          strokeLinecap="round"
-          fill="none"
-        />
-        <path d="M5.5 9.5C9 9 12 7 13.5 4" stroke="#153f35" strokeWidth="4" strokeLinecap="round" fill="none" opacity="0.25" />
-      </svg>
-      <span
-        className={`font-[var(--font-display)] font-extrabold tracking-[-0.055em] text-[var(--color-brand)] ${
-          small ? "text-[21px]" : "text-[26px]"
-        }`}
-        style={{ fontFeatureSettings: '"ss01"' }}
-      >
-        payhalo
-      </span>
-    </span>
-  );
+  return <Logo height={small ? 22 : 26} priority={!small} />;
 }

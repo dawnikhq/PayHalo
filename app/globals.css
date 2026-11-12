@@ -9,42 +9,44 @@
    ========================================================================= */
 
 @theme {
-  /* brand */
-  --color-forest: #153f35;
-  --color-forest-700: #1b4c40;
-  --color-brand: #008477;
-  --color-brand-600: #00726a;
-  --color-lime: #d9f4a5;
-  --color-mint: #ebf2e9;
-  --color-canvas: #f3f6f2;
+  /* The brand guide's palette, carried verbatim: Halo Green, Primary, Mint,
+     Light, Neutral, Dark. Everything else on the site is one of these six or a
+     tint of them. */
+  --color-forest: #0b3d2e;      /* Halo Green */
+  --color-forest-700: #0e5240;
+  --color-brand: #0e6f56;       /* Primary */
+  --color-brand-600: #0b5b46;
+  --color-lime: #a7f3d0;        /* Mint */
+  --color-mint: #e8f8f2;        /* Light */
+  --color-canvas: #f3faf7;
   --color-surface: #ffffff;
 
   /* text + lines */
-  --color-ink: #172d29;
-  --color-muted: #62716a;
-  --color-line: #e3eae3;
-  --color-line-strong: #cfdacf;
+  --color-ink: #0a0f0d;         /* Dark */
+  --color-muted: #6b7280;       /* Neutral */
+  --color-line: #dcece5;
+  --color-line-strong: #c2ded3;
 
   /* status */
   --color-sage: #2f7d5b;
   --color-ember: #b4432c;
-  --color-warn: #fbe9c7;
-  --color-warnink: #8a5a13;
+  --color-warn: #fdf3d8;
+  --color-warnink: #7d5510;
 
   /* legacy aliases */
-  --color-ink-2: #ebf2e9;
+  --color-ink-2: #e8f8f2;
   --color-panel: #ffffff;
-  --color-ivory: #172d29;
-  --color-brass: #008477;
-  --color-brass-deep: #153f35;
+  --color-ivory: #0a0f0d;
+  --color-brass: #0e6f56;
+  --color-brass-deep: #0b3d2e;
 
-  /* Two faces, blended: the display grid is a tight grotesque in the spirit of
-     the reference wallet's brand type, and every paragraph stays in Manrope. */
-  --font-display: "Schibsted Grotesk Variable", "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
+  /* One family, as the guide specifies. Plus Jakarta Sans Variable carries
+     headlines and paragraphs alike; weight and tracking do the differentiating. */
+  --font-display: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
 
-  --color-paper: #fbfcf9;
-  --color-night: #0e2a24;
+  --color-paper: #f7fdfa;
+  --color-night: #0a0f0d;
 
   --radius-card: 24px;
   --radius-panel: 30px;
@@ -61,6 +63,19 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* A tap should paint on touch-down, not after the browser has waited to see
+   whether a double-tap zoom is coming. */
+a,
+button,
+summary,
+label[for],
+[role="button"],
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
 html {
   scroll-behavior: smooth;
   /* the page still scrolls — wheel, trackpad, keys and touch all work — but the
@@ -74,9 +89,9 @@ html::-webkit-scrollbar {
 
 body {
   background:
-    radial-gradient(1100px 620px at 12% -8%, rgba(0, 132, 119, 0.16), transparent 60%),
-    radial-gradient(900px 520px at 92% 4%, rgba(217, 244, 165, 0.5), transparent 62%),
-    radial-gradient(1200px 800px at 50% 120%, rgba(0, 132, 119, 0.1), transparent 60%),
+    radial-gradient(1100px 620px at 12% -8%, rgba(14, 111, 86, 0.12), transparent 60%),
+    radial-gradient(900px 520px at 92% 4%, rgba(167, 243, 208, 0.55), transparent 62%),
+    radial-gradient(1200px 800px at 50% 120%, rgba(14, 111, 86, 0.08), transparent 60%),
     var(--color-canvas);
   background-attachment: fixed;
   color: var(--color-ink);
@@ -316,8 +331,10 @@ body {
     opacity 150ms ease, transform 120ms ease;
 }
 
-.btn:active {
-  transform: translateY(0.5px);
+/* a press should land on the same frame as the finger — no easing on the way in */
+.btn:active:not(:disabled) {
+  transform: translateY(1px) scale(0.992);
+  transition-duration: 60ms;
 }
 
 .btn:disabled,
@@ -416,13 +433,23 @@ body {
 .textarea,
 .select {
   width: 100%;
+  /* 16px on a phone stops iOS Safari zooming the page when a field is focused,
+     which used to shift the whole profile form sideways mid-tap */
+  font-size: 16px;
   background: rgba(255, 255, 255, 0.82);
   border: 1px solid var(--color-line-strong);
   border-radius: 12px;
   padding: 11px 14px;
-  font-size: 14px;
   color: var(--color-ink);
   transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+@media (min-width: 640px) {
+  .input,
+  .textarea,
+  .select {
+    font-size: 14px;
+  }
 }
 
 .input::placeholder,
@@ -600,9 +627,9 @@ body {
 /* Marketing pages sit on warm paper, not on the app's mint wash. */
 .paper {
   background:
-    radial-gradient(90% 46% at 50% -6%, rgba(217, 244, 165, 0.34), transparent 62%),
-    radial-gradient(70% 40% at 92% 2%, rgba(0, 132, 119, 0.1), transparent 60%),
-    linear-gradient(#fdfdfa, #f6faf5);
+    radial-gradient(90% 46% at 50% -6%, rgba(167, 243, 208, 0.42), transparent 62%),
+    radial-gradient(70% 40% at 92% 2%, rgba(14, 111, 86, 0.12), transparent 60%),
+    linear-gradient(#fbfefc, #eff9f4);
 }
 
 /* Headlines use the product face (Manrope), not a second typeface: scale,
@@ -786,4 +813,210 @@ body {
     }
   }
 }
+}
+
+/* ============================================================================
+   Hero — the motion language
+   Borrowed in spirit from the reference site: a statement that arrives word by
+   word, light that drifts, photographs that change, a band that runs. All of it
+   sits inside a no-preference query, so a visitor who asked for stillness gets
+   the same screen, simply already there.
+   ========================================================================= */
+
+.btn-mint {
+  background: linear-gradient(180deg, #cdfbe6 0%, var(--color-lime) 100%);
+  color: var(--color-forest);
+  border-color: rgba(167, 243, 208, 0.9);
+  box-shadow: 0 20px 40px -24px rgba(167, 243, 208, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+.btn-mint:hover:not(:disabled) {
+  background: linear-gradient(180deg, #e2fdef 0%, #b9f7dc 100%);
+}
+
+.btn-on-dark {
+  background: rgba(255, 255, 255, 0.07);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.btn-on-dark:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.13);
+  border-color: rgba(255, 255, 255, 0.36);
+}
+
+.ribbon {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(64px);
+  will-change: transform;
+}
+.ribbon-a {
+  left: -16vw;
+  top: -24vw;
+  width: 64vw;
+  height: 64vw;
+  min-width: 420px;
+  min-height: 420px;
+  opacity: 0.85;
+  background: radial-gradient(circle at 35% 35%, rgba(14, 111, 86, 0.95), rgba(14, 111, 86, 0) 66%);
+}
+.ribbon-b {
+  right: -14vw;
+  top: -10vw;
+  width: 52vw;
+  height: 52vw;
+  min-width: 340px;
+  min-height: 340px;
+  opacity: 0.55;
+  background: radial-gradient(circle at 50% 50%, rgba(167, 243, 208, 0.55), rgba(167, 243, 208, 0) 62%);
+}
+.ribbon-c {
+  left: 18vw;
+  bottom: -30vw;
+  width: 74vw;
+  height: 40vw;
+  opacity: 0.8;
+  border-radius: 48%;
+  background: radial-gradient(ellipse at 50% 50%, rgba(11, 61, 46, 0.95), rgba(11, 61, 46, 0) 70%);
+}
+
+.marquee {
+  overflow: hidden;
+}
+.marquee-track {
+  display: flex;
+  width: max-content;
+}
+
+@keyframes ph-word {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 0.55em, 0);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+@keyframes ph-fade {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes ph-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -10px, 0);
+  }
+}
+
+@keyframes ph-marquee {
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes ph-drift-a {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(6vw, 4vw, 0) scale(1.12);
+  }
+}
+
+@keyframes ph-drift-b {
+  from {
+    transform: translate3d(0, 0, 0) scale(1.08);
+  }
+  to {
+    transform: translate3d(-5vw, 5vw, 0) scale(0.96);
+  }
+}
+
+@keyframes ph-drift-c {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(-4vw, -3vw, 0) scale(1.1);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-word {
+    animation: ph-word 780ms cubic-bezier(0.22, 0.75, 0.2, 1) both;
+    animation-delay: calc(var(--i, 0) * 62ms + 40ms);
+  }
+  .hero-fade {
+    animation: ph-fade 900ms cubic-bezier(0.22, 0.75, 0.2, 1) both;
+    animation-delay: var(--d, 600ms);
+  }
+  .hero-float {
+    animation: ph-float 9s ease-in-out infinite;
+  }
+  .ribbon-a {
+    animation: ph-drift-a 26s ease-in-out infinite alternate;
+  }
+  .ribbon-b {
+    animation: ph-drift-b 32s ease-in-out infinite alternate;
+  }
+  .ribbon-c {
+    animation: ph-drift-c 38s ease-in-out infinite alternate;
+  }
+  .marquee-track {
+    animation: ph-marquee 38s linear infinite;
+  }
+  .marquee:hover .marquee-track {
+    animation-play-state: paused;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-float,
+  .ribbon-a,
+  .ribbon-b,
+  .ribbon-c,
+  .marquee-track {
+    animation: none !important;
+  }
+}
+
+/* a phone pays for every blurred pixel, so the light is cheaper there while
+   still reading as the same atmosphere */
+@media (max-width: 640px) {
+  .ribbon {
+    filter: blur(44px);
+  }
+  .ribbon-a {
+    width: 92vw;
+    height: 92vw;
+    left: -46vw;
+    top: -34vw;
+  }
+  .ribbon-b {
+    width: 76vw;
+    height: 76vw;
+    right: -34vw;
+    top: -6vw;
+  }
+  .ribbon-c {
+    width: 110vw;
+    height: 60vw;
+    left: 4vw;
+    bottom: -32vw;
+  }
 }

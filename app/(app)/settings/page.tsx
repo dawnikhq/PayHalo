@@ -42,8 +42,8 @@ export default async function SettingsPage({
 
   return (
     <Page>
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[var(--color-line)] bg-white px-4 py-3">
-        <div>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[18px] px-3.5 py-3 sm:mb-5 border border-[var(--color-line)] bg-white px-4 py-3">
+        <div className="min-w-0">
           <p className="text-[13px] font-semibold text-[var(--color-ink)]">New here, or want the tour again?</p>
           <p className="t-meta">A minute through the overview, assets, people, instructions and Halo.</p>
         </div>
@@ -76,7 +76,7 @@ export default async function SettingsPage({
         <div className="space-y-5">
           <ProfileForm user={s.user} />
 
-          <section className="card p-6 md:p-7">
+          <section className="card p-4 sm:p-6 md:p-7">
             <p className="eyebrow">Account</p>
             <h2 className="h2 mt-2">Signed in as</h2>
             <p className="mt-2 break-all text-[13px] font-medium text-[var(--color-ink)]">{owner.email}</p>
@@ -93,12 +93,31 @@ export default async function SettingsPage({
           />
 
 
-          <section className="card p-6 md:p-7">
+          <section className="card p-4 sm:p-6 md:p-7">
             <h2 className="h2">Who can see what</h2>
             <p className="t-small mt-1">
               Role visibility is enforced in the data each portal is given — not just hidden in the interface.
             </p>
-            <div className="scroll-slim mt-5 overflow-x-auto rounded-[14px] border border-[var(--color-line)]">
+            {/* a phone gets the same facts as stacked rows — no sideways scroll */}
+            <ul className="mt-4 space-y-2 sm:hidden">
+              {ROLES.map((r) => (
+                <li key={r.role} className="rounded-[14px] border border-[var(--color-line)] p-3.5">
+                  <p className="text-[13px] font-semibold text-[var(--color-ink)]">{r.role}</p>
+                  <dl className="mt-2 space-y-2">
+                    <div>
+                      <dt className="label text-[var(--color-sage)]">Can</dt>
+                      <dd className="mt-0.5 text-[12px] leading-relaxed text-[var(--color-muted)]">{r.can}</dd>
+                    </div>
+                    <div>
+                      <dt className="label text-[var(--color-ember)]">Cannot</dt>
+                      <dd className="mt-0.5 text-[12px] leading-relaxed text-[var(--color-muted)]">{r.cannot}</dd>
+                    </div>
+                  </dl>
+                </li>
+              ))}
+            </ul>
+
+            <div className="scroll-slim mt-5 hidden overflow-x-auto rounded-[14px] border border-[var(--color-line)] sm:block">
               <table className="w-full min-w-[520px] text-left">
                 <thead className="bg-[#f8faf7]">
                   <tr>
@@ -122,7 +141,7 @@ export default async function SettingsPage({
             </div>
           </section>
 
-          <section id="keyholder" className="card p-6 md:p-7">
+          <section id="keyholder" className="card p-4 sm:p-6 md:p-7">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="eyebrow">Trusted Key</p>
@@ -146,7 +165,7 @@ export default async function SettingsPage({
                   </div>
                 </div>
 
-                <div className="mt-4 flex items-center justify-between rounded-[12px] border border-[var(--color-line)] bg-[#fafcfa] px-4 py-3">
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-[var(--color-line)] bg-[#fafcfa] px-4 py-3">
                   <div>
                     <p className="label">Access code</p>
                     <p className="t-num mt-0.5 text-[14px] tracking-[0.12em] text-[var(--color-forest)]">
@@ -166,7 +185,7 @@ export default async function SettingsPage({
         </div>
 
         <aside className="space-y-5">
-          <section className="card-forest p-6">
+          <section className="card-forest p-4 sm:p-6">
             <h2 className="h2 text-white">Private by design.</h2>
             <p className="t-body mt-3 text-[#b7cfbd]">
               PayHalo stores instructions, not credentials. No portal can display a password, private key or
@@ -180,7 +199,7 @@ export default async function SettingsPage({
             </p>
           </section>
 
-          <section className="card-mint p-6">
+          <section className="card-mint p-4 sm:p-6">
             <h2 className="h3 text-[var(--color-forest)]">What PayHalo never asks for</h2>
             <ul className="mt-3 space-y-2">
               {["Passwords or PINs", "Private keys", "Wallet recovery phrases", "Bank logins"].map((item) => (
@@ -194,7 +213,7 @@ export default async function SettingsPage({
             </ul>
           </section>
 
-          <section className="card p-6">
+          <section className="card p-4 sm:p-6">
             <h2 className="h3">Storage in this build</h2>
             <p className="t-small mt-1.5">
               State is served by <span className="font-semibold text-[var(--color-ink)]">{s.storage}</span>. In

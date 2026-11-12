@@ -7,7 +7,7 @@ import { PrintButton } from "@/components/PrintButton";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Instruction sheet — PayHalo",
+  title: { absolute: "Instruction sheet — PayHalo" },
 };
 
 /**

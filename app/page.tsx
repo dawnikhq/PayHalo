@@ -1,11 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { MarketingFooter, MarketingHeader } from "@/components/marketing/Chrome";
+import { Hero } from "@/components/marketing/Hero";
 import { DeviceStage, ProductMock } from "@/components/marketing/ProductMock";
 import { SiteTour, SiteTourButton } from "@/components/marketing/SiteTour";
 
 export const metadata = {
-  title: "PayHalo — your wealth deserves more than a forgotten password.",
+  title: { absolute: "PayHalo — A life built. A legacy kept." },
   description:
     "PayHalo is a digital inheritance platform that helps you document what you own, decide who inherits it and leave instructions for how your wealth should be handled.",
 };
@@ -179,45 +180,7 @@ export default function LandingPage() {
       <MarketingHeader />
 
       <main id="main">
-        {/* ------------------------------------------------------------ hero */}
-        <section
-          data-tour="hero"
-          className="section flex min-h-[calc(100svh-64px)] flex-col justify-center py-10 text-center sm:min-h-0 sm:pb-0 sm:pt-16"
-        >
-          <h1 className="display-xl mx-auto max-w-[16ch] text-[var(--color-ink)]">
-            Your wealth deserves more than{" "}
-            <span className="text-[var(--color-forest)]">a forgotten password and a hopeful guess.</span>
-          </h1>
-
-          <p className="mx-auto mt-6 max-w-[58ch] text-[14.5px] leading-relaxed text-[var(--color-muted)] sm:text-[16px]">
-            PayHalo is a digital inheritance platform that helps you document what you own, decide who inherits it and
-            leave instructions for how your wealth should be handled.
-          </p>
-
-          <div className="mt-8 flex flex-col items-center justify-center gap-2.5 sm:flex-row sm:gap-3">
-            <Link href="/signup" className="btn btn-primary w-full sm:w-auto">
-              Create my inheritance plan <span aria-hidden>→</span>
-            </Link>
-            <Link href="#how" className="btn btn-secondary w-full sm:w-auto">
-              See how PayHalo works
-            </Link>
-          </div>
-
-          <div className="mt-4">
-            <SiteTourButton className="text-[12px] font-semibold text-[var(--color-brand)] underline decoration-[rgba(0,132,119,0.35)] underline-offset-4 transition hover:text-[var(--color-forest)]">
-              Take the one-minute tour
-            </SiteTourButton>
-          </div>
-
-          {/* the hero is the whole first screen on a phone: one idea, two doors,
-              and a quiet cue that the rest is a scroll away */}
-          <div className="mt-10 flex flex-col items-center gap-2 sm:hidden" aria-hidden>
-            <span className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-[#98a69d]">
-              Scroll to see the rest
-            </span>
-            <span className="h-8 w-px bg-gradient-to-b from-[rgba(21,63,53,0.28)] to-transparent" />
-          </div>
-        </section>
+        <Hero />
 
         {/* --------------------------------------------------- product stage */}
         <section className="section mt-10 sm:mt-16">
@@ -291,8 +254,8 @@ export default function LandingPage() {
 
           <div className="photo-frame relative mt-8 h-[240px] sm:mt-10 sm:h-[380px]">
             <Image
-              src="/hero-lands.jpg"
-              alt="A misty forested valley at dawn"
+              src="/story/generations.jpg"
+              alt="A grandmother, her daughter and her granddaughter sitting together on a veranda"
               fill
               priority
               sizes="(max-width: 1200px) 100vw, 1200px"
@@ -336,7 +299,7 @@ export default function LandingPage() {
                   {photo && (
                     <>
                       <Image
-                        src="/about-light.jpg"
+                        src="/story/brothers.jpg"
                         alt=""
                         fill
                         sizes="(max-width: 640px) 100vw, 400px"
@@ -545,8 +508,8 @@ export default function LandingPage() {
           <div className="grid items-center gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:gap-14">
             <div className="photo-frame relative h-[280px] sm:h-[400px]">
               <Image
-                src="/about-light.jpg"
-                alt="Light falling through leaves"
+                src="/story/father-son.jpg"
+                alt="A father and his adult son walking together at the end of the day"
                 fill
                 sizes="(max-width: 1024px) 100vw, 520px"
                 className="object-cover"

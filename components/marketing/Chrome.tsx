@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { Logo } from "@/components/brand/Logo";
 import { SiteTourButton } from "./SiteTour";
+import { CookieConsent, CookiePreferencesLink } from "@/components/legal/CookieConsent";
 
 /**
  * The public shell: one header and one footer for every page a visitor can reach
@@ -15,32 +17,10 @@ const NAV: [string, string][] = [
 ];
 
 export function Wordmark({ inverse = false }: { inverse?: boolean }) {
+  // the supplied lockup, at the size the header and footer both use
   return (
-    <span className="flex items-center gap-2">
-      <svg width="24" height="24" viewBox="0 0 32 32" aria-hidden>
-        <path
-          d="M5 9.5c0 8 4 12.5 9.5 12.5S25 17 26.5 5.5"
-          stroke={inverse ? "#d9f4a5" : "#008477"}
-          strokeWidth="4"
-          strokeLinecap="round"
-          fill="none"
-        />
-        <path
-          d="M5.5 9.5C9 9 12 7 13.5 4"
-          stroke={inverse ? "#ffffff" : "#153f35"}
-          strokeWidth="4"
-          strokeLinecap="round"
-          fill="none"
-          opacity={inverse ? 0.45 : 0.25}
-        />
-      </svg>
-      <span
-        className={`font-[var(--font-display)] text-[23px] font-extrabold tracking-[-0.06em] ${
-          inverse ? "text-white" : "text-[var(--color-brand)]"
-        }`}
-      >
-        payhalo
-      </span>
+    <span className={inverse ? "inline-flex brightness-0 invert" : "inline-flex"}>
+      <Logo height={27} priority />
     </span>
   );
 }
@@ -171,11 +151,18 @@ export function MarketingFooter() {
           </div>
         ))}
       </div>
-      <div className="mx-auto w-full max-w-[1200px] border-t border-[rgba(21,63,53,0.08)] px-4 py-5 sm:px-8">
+      <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-2 border-t border-[rgba(21,63,53,0.08)] px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
         <p className="font-[var(--font-display)] text-[14px] font-medium tracking-[-0.01em] text-[var(--color-forest)]">
-          Make your decisions while you can still make them.
+          A life built. A legacy kept.
         </p>
+        <div className="flex items-center gap-4">
+          <CookiePreferencesLink />
+          <Link href="/legal#privacy" className="text-[12.5px] text-[var(--color-ink)] hover:text-[var(--color-brand)]">
+            Privacy
+          </Link>
+        </div>
       </div>
+      <CookieConsent />
     </footer>
   );
 }

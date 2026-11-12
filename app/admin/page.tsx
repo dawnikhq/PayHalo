@@ -12,7 +12,7 @@ import { mailConfigured, mailHealth } from "@/lib/mailer";
 import { money, shortDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Operations — PayHalo" };
+export const metadata = { title: { absolute: "Operations — PayHalo" } };
 
 const TONE: Record<string, string> = {
   mint: "badge-mint",

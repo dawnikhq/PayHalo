@@ -3,7 +3,7 @@ import Link from "next/link";
 import { MarketingFooter, MarketingHeader } from "@/components/marketing/Chrome";
 
 export const metadata = {
-  title: "About PayHalo — a simpler way to prepare your inheritance.",
+  title: { absolute: "About PayHalo — a simpler way to prepare your inheritance." },
   description:
     "PayHalo is building a simpler way for people to prepare their inheritance, from identifying what they own to recording who should receive it.",
 };
@@ -28,8 +28,8 @@ export default function AboutPage() {
         <section className="mx-auto mt-10 w-full max-w-[1200px] px-4 sm:mt-14 sm:px-8">
           <div className="photo-frame relative h-[240px] sm:h-[360px]">
             <Image
-              src="/about-light.jpg"
-              alt="Light falling through green foliage"
+              src="/story/handover.jpg"
+              alt="A key and a handwritten note passing from one generation to the next"
               fill
               priority
               sizes="(max-width: 1200px) 100vw, 1200px"
