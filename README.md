@@ -1,8 +1,5 @@
-\# PayHalo
-
-
-
-\### Your Wealth, left in good hands.
+# PayHalo
+### Your Wealth, left in good hands.
 
 
 
