@@ -444,6 +444,16 @@ export async function requestReleaseAsBeneficiary(ownerId: string, key: string, 
   return result;
 }
 
+export interface ReleaseEvidence {
+  documentName: string;
+  kind: string;
+  confidence: number;
+  verifiedAt: string | null;
+  reviewEndsAt: string | null;
+  ownerNotified: boolean;
+  windowClosed: boolean;
+}
+
 export interface ReleaseQueueRow {
   ownerId: string;
   ownerName: string;
@@ -452,6 +462,8 @@ export interface ReleaseQueueRow {
   valueCents: number;
   request: ReleaseRequest;
   beneficiaries: { name: string; email: string; share: number }[];
+  /** What Halo reads before an operator decides: the death documentation on file. */
+  evidence: ReleaseEvidence | null;
 }
 
 /** The operator queue: every undecided release request, newest first. */
@@ -463,9 +475,24 @@ export async function releaseQueue(): Promise<ReleaseQueueRow[]> {
   const out: ReleaseQueueRow[] = [];
 
   for (const { key, doc } of rows) {
+    // the newest claim on the plan is the documentation this request rests on
+    const claim = [...(doc.claims ?? [])].sort((a, b) => (a.initiatedAt < b.initiatedAt ? 1 : -1))[0] ?? null;
+    const evidence: ReleaseEvidence | null = claim
+      ? {
+          documentName: claim.documentName,
+          kind: claim.documentKind,
+          confidence: claim.confidence,
+          verifiedAt: claim.verifiedAt,
+          reviewEndsAt: claim.reviewEndsAt,
+          ownerNotified: ["window", "distributed"].includes(claim.status),
+          windowClosed: Boolean(claim.windowEndsAt && Date.parse(claim.windowEndsAt) <= Date.now()),
+        }
+      : null;
+
     for (const request of doc.releaseRequests ?? []) {
       if (request.status === "approved") continue;
       out.push({
+        evidence,
         ownerId: key,
         ownerName: doc.user.name || "Unnamed member",
         ownerEmail: doc.user.email,

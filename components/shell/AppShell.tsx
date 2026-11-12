@@ -7,12 +7,12 @@ import {
   IconActivity,
   IconAssets,
   IconBeneficiaries,
-  IconChat,
   IconDashboard,
   IconHelp,
   IconPlan,
   IconShield,
 } from "./icons";
+import { HaloLauncher } from "@/components/halo/HaloLauncher";
 
 export type Role = "owner" | "keyholder" | "beneficiary";
 
@@ -219,6 +219,7 @@ export function AppShell({
       </div>
 
       <MobileTabs role={role} />
+      <HaloLauncher role={role} />
     </div>
   );
 }
@@ -251,19 +252,9 @@ function MobileTabs({ role }: { role: Role }) {
             { href: "/beneficiary/support", label: "Support", icon: <IconHelp /> },
           ];
 
-  const supportHref = role === "owner" ? "/help" : role === "keyholder" ? "/keyholder/support" : "/beneficiary/support";
 
   return (
     <>
-      <Link
-        href={supportHref}
-        aria-label="Message support"
-        className="fixed bottom-[calc(env(safe-area-inset-bottom)+76px)] right-4 z-40 flex items-center gap-2 rounded-full bg-[var(--color-forest)] px-4 py-3 text-[12.5px] font-semibold text-[#f4f8f0] shadow-[0_16px_36px_-16px_rgba(21,63,53,0.65)] transition active:scale-[0.98] lg:hidden"
-      >
-        <IconChat />
-        <span>Support</span>
-      </Link>
-
       <nav
         aria-label="Primary"
         className="fixed inset-x-0 bottom-0 z-40 border-t border-white/70 bg-white/85 backdrop-blur-2xl lg:hidden"

@@ -6,6 +6,7 @@ import { MailCheck } from "@/components/admin/MailCheck";
 import { OperatorSignOut } from "@/components/admin/OperatorSignOut";
 import { adminConfigured, isAdmin } from "@/lib/admin";
 import { operatorOverview } from "@/lib/operator";
+import { reviewRelease } from "@/lib/halo";
 import { releaseQueue } from "@/lib/store";
 import { mailConfigured, mailHealth } from "@/lib/mailer";
 import { money, shortDate } from "@/lib/format";
@@ -295,6 +296,18 @@ export default async function AdminPage() {
                   adminNote: row.request.adminNote,
                 },
                 beneficiaries: row.beneficiaries,
+                review: reviewRelease({
+                  requestRef: row.request.ref,
+                  status: row.request.status,
+                  createdAt: row.request.createdAt,
+                  requesterName: row.request.requesterName,
+                  requesterEmail: row.request.requesterEmail,
+                  note: row.request.note,
+                  valueCents: row.valueCents,
+                  beneficiaries: row.beneficiaries,
+                  vault: row.vault ? { ref: row.vault.ref, status: row.vault.status } : null,
+                  evidence: row.evidence,
+                }),
               }))}
             />
           </section>

@@ -41,11 +41,14 @@ const MODEL = {
   openai: () => (process.env.AI_MODEL ?? "gpt-4o-mini").trim(),
   anthropic: () => (process.env.AI_MODEL ?? "claude-3-5-haiku-latest").trim(),
   gemini: () => (process.env.AI_MODEL ?? "gemini-2.0-flash").trim(),
+  /** Groq serves open models on an OpenAI-shaped API. Fast, and free at demo scale. */
+  groq: () => (process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile").trim(),
 };
 
 export type AiProvider = keyof typeof MODEL;
 
 export function aiProvider(): AiProvider | null {
+  if ((process.env.GROQ_API_KEY ?? "").trim()) return "groq";
   if ((process.env.OPENAI_API_KEY ?? "").trim()) return "openai";
   if ((process.env.ANTHROPIC_API_KEY ?? "").trim()) return "anthropic";
   if ((process.env.GEMINI_API_KEY ?? "").trim()) return "gemini";
@@ -54,6 +57,21 @@ export function aiProvider(): AiProvider | null {
 
 export function aiConfigured(): boolean {
   return aiProvider() !== null;
+}
+
+/** The key for the provider that is configured, and the model string for it. */
+export function aiKey(provider: AiProvider): string {
+  return provider === "groq"
+    ? (process.env.GROQ_API_KEY ?? "").trim()
+    : provider === "openai"
+      ? (process.env.OPENAI_API_KEY ?? "").trim()
+      : provider === "anthropic"
+        ? (process.env.ANTHROPIC_API_KEY ?? "").trim()
+        : (process.env.GEMINI_API_KEY ?? "").trim();
+}
+
+export function aiModel(provider: AiProvider): string {
+  return MODEL[provider]();
 }
 
 const SCHEMA = `{
@@ -94,6 +112,28 @@ async function askOpenAI(key: string, text: string): Promise<string> {
     cache: "no-store",
   });
   if (!res.ok) throw new Error(`OpenAI ${res.status}`);
+  const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  return data.choices?.[0]?.message?.content ?? "";
+}
+
+async function askGroq(key: string, text: string): Promise<string> {
+  const base = (process.env.GROQ_BASE_URL ?? "https://api.groq.com/openai/v1").trim().replace(/\/+$/, "");
+  const res = await fetch(`${base}/chat/completions`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: MODEL.groq(),
+      messages: [
+        { role: "system", content: SYSTEM },
+        { role: "user", content: text },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.2,
+      max_tokens: 900,
+    }),
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`Groq ${res.status}`);
   const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
   return data.choices?.[0]?.message?.content ?? "";
 }
@@ -354,19 +394,16 @@ export async function draftPlan(text: string): Promise<Draft> {
   if (!provider) return draftByRules(text);
 
   try {
-    const key =
-      provider === "openai"
-        ? (process.env.OPENAI_API_KEY ?? "").trim()
-        : provider === "anthropic"
-          ? (process.env.ANTHROPIC_API_KEY ?? "").trim()
-          : (process.env.GEMINI_API_KEY ?? "").trim();
+    const key = aiKey(provider);
 
     const raw =
-      provider === "openai"
-        ? await askOpenAI(key, text)
-        : provider === "anthropic"
-          ? await askAnthropic(key, text)
-          : await askGemini(key, text);
+      provider === "groq"
+        ? await askGroq(key, text)
+        : provider === "openai"
+          ? await askOpenAI(key, text)
+          : provider === "anthropic"
+            ? await askAnthropic(key, text)
+            : await askGemini(key, text);
 
     const shaped = shape(extractJson(raw));
     if (!shaped || (!shaped.people.length && !shaped.assets.length)) return draftByRules(text);

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { money, shortDate } from "@/lib/format";
+import type { HaloReview } from "@/lib/halo";
 
 interface Row {
   ownerId: string;
@@ -21,6 +22,7 @@ interface Row {
     adminNote: string;
   };
   beneficiaries: { name: string; email: string; share: number }[];
+  review: HaloReview;
 }
 
 export function ReleaseQueue({ rows }: { rows: Row[] }) {
@@ -122,6 +124,43 @@ export function ReleaseQueue({ rows }: { rows: Row[] }) {
             <p className="t-small mt-2">
               Pays: {row.beneficiaries.map((b) => `${b.name} ${b.share}%`).join(" · ") || "nobody named yet"}
             </p>
+
+            {/* Halo's read: what she checked, and what she would not decide */}
+            <div
+              className={`mt-4 rounded-[14px] border p-4 ${
+                row.review.tone === "clear"
+                  ? "border-[#d5e7cd] bg-[#f3f8ee]"
+                  : row.review.tone === "hold"
+                    ? "border-[#e8dfc6] bg-[#f8f4e8]"
+                    : "border-[#f0cfc6] bg-[#fdf1ee]"
+              }`}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="flex items-center gap-2 text-[12px] font-semibold text-[var(--color-ink)]">
+                  <span aria-hidden className="grid h-5 w-5 place-items-center rounded-full bg-[var(--color-forest)] text-[10px] font-bold text-[var(--color-lime)]">
+                    H
+                  </span>
+                  Halo&apos;s read
+                </p>
+                <span className="pill badge-neutral h-[22px] px-2 text-[10px]">{row.review.verdict}</span>
+              </div>
+              <p className="mt-2 text-[12.5px] leading-relaxed text-[var(--color-ink)]">{row.review.line}</p>
+              <ul className="mt-3 grid gap-1.5 sm:grid-cols-2">
+                {row.review.checks.map((check) => (
+                  <li key={check.label} className="flex items-start gap-2 text-[11.5px] leading-snug">
+                    <span
+                      aria-hidden
+                      className={`mt-[2px] font-bold ${check.ok ? "text-[var(--color-brand)]" : "text-[#b4762a]"}`}
+                    >
+                      {check.ok ? "✓" : "!"}
+                    </span>
+                    <span className="text-[var(--color-muted)]">
+                      <span className="font-medium text-[var(--color-ink)]">{check.label}</span> — {check.detail}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
             <textarea
               value={note[key] ?? ""}
