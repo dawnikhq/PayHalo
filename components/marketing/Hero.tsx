@@ -52,7 +52,10 @@ export function Hero() {
   }, []);
 
   return (
-    <section data-tour="hero" className="relative isolate overflow-hidden bg-[#0a0f0d] text-white">
+    <section
+      data-tour="hero"
+      className="relative isolate flex min-h-[calc(100svh-4rem)] flex-col overflow-hidden bg-[#0a0f0d] text-white sm:min-h-[calc(100svh-4.5rem)]"
+    >
       {/* light behind the words — three soft ribbons, drifting at different speeds */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="ribbon ribbon-a" />
@@ -61,9 +64,9 @@ export function Hero() {
         <div className="absolute inset-0 bg-[radial-gradient(120%_90%_at_50%_-10%,transparent_35%,rgba(10,15,13,0.55)_100%)]" />
       </div>
 
-      <div className="section relative grid gap-9 pb-10 pt-11 sm:gap-12 sm:pb-14 sm:pt-20 lg:grid-cols-[1.04fr_0.96fr] lg:items-center lg:gap-14 lg:pb-24 lg:pt-24">
+      <div className="section relative grid flex-1 content-center gap-6 pb-6 pt-6 sm:gap-9 sm:pb-9 sm:pt-8 lg:grid-cols-[1.04fr_0.96fr] lg:items-center lg:gap-12 lg:pb-11 lg:pt-10">
         <div className="min-w-0">
-          <h1 className="display-xl max-w-[15ch] text-white">
+          <h1 className="display-hero max-w-[15ch] text-white">
             {HEADLINE.map((word, i) => (
               <span
                 key={`${word}-${i}`}
@@ -77,7 +80,7 @@ export function Hero() {
           </h1>
 
           <p
-            className="hero-fade mt-6 max-w-[52ch] text-[14px] leading-relaxed text-white/70 sm:text-[15.5px]"
+            className="hero-fade mt-4 max-w-[52ch] text-[13.5px] leading-relaxed text-white/70 sm:mt-5 sm:text-[15.5px]"
             style={{ ["--d" as string]: "620ms" }}
           >
             PayHalo is a digital inheritance platform that helps you document what you own, decide who inherits it and
@@ -85,7 +88,7 @@ export function Hero() {
           </p>
 
           <div
-            className="hero-fade mt-7 flex flex-col gap-2.5 sm:mt-8 sm:flex-row sm:items-center"
+            className="hero-fade mt-5 flex flex-col gap-2.5 sm:mt-7 sm:flex-row sm:items-center"
             style={{ ["--d" as string]: "760ms" }}
           >
             <Link href="/signup" className="btn btn-mint w-full sm:w-auto">
@@ -96,13 +99,13 @@ export function Hero() {
             </Link>
           </div>
 
-          <div className="hero-fade mt-4" style={{ ["--d" as string]: "880ms" }}>
+          <div className="hero-fade mt-3 sm:mt-4" style={{ ["--d" as string]: "880ms" }}>
             <SiteTourButton className="text-[12px] font-semibold text-[var(--color-lime)] underline decoration-[rgba(167,243,208,0.4)] underline-offset-4 transition hover:text-white">
               Take the one-minute tour
             </SiteTourButton>
           </div>
 
-          <div aria-hidden className="mt-9 hidden items-center gap-3 lg:flex">
+          <div aria-hidden className="mt-7 hidden items-center gap-3 lg:flex">
             <span className="grid h-9 w-9 place-items-center rounded-full border border-white/15 text-[11px] text-white/70">
               ↓
             </span>
@@ -111,8 +114,8 @@ export function Hero() {
         </div>
 
         {/* photographs, changing on their own */}
-        <div className="hero-float relative mx-auto w-full max-w-[440px] lg:mx-0 lg:max-w-[480px] lg:justify-self-end">
-          <div className="relative aspect-[5/4] w-full overflow-hidden rounded-[26px] border border-white/12 shadow-[0_50px_90px_-50px_rgba(0,0,0,0.9)] sm:aspect-[4/5] lg:aspect-[4/5]">
+        <div className="hero-float relative mx-auto w-full max-w-[440px] lg:mx-0 lg:max-w-[460px] lg:justify-self-end">
+          <div className="relative aspect-[16/9] max-h-[min(30svh,230px)] w-full overflow-hidden rounded-[20px] border border-white/12 shadow-[0_50px_90px_-50px_rgba(0,0,0,0.9)] sm:aspect-[4/5] sm:max-h-none sm:rounded-[26px] lg:aspect-auto lg:h-[min(58svh,540px)]">
             {FRAMES.map((f, i) => (
               <Image
                 key={f.src}

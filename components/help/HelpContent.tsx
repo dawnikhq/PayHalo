@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { SupportRequest } from "@/components/account/SupportRequest";
+import { SupportDesk } from "@/components/support/SupportDesk";
+import type { SupportTicket } from "@/lib/support";
 
 const FAQ = [
   {
@@ -28,25 +29,72 @@ const FAQ = [
   },
 ];
 
+function when(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
 export function HelpContent({
   firstName,
   role = "owner",
+  email = "",
+  name = "",
+  tickets = [],
 }: {
   firstName: string;
   role?: "owner" | "keyholder" | "beneficiary";
+  email?: string;
+  name?: string;
+  tickets?: SupportTicket[];
 }) {
   const backHref = role === "keyholder" ? "/keyholder" : role === "beneficiary" ? "/beneficiary" : "/dashboard";
   const backLabel = role === "keyholder" ? "Trusted Key home" : role === "beneficiary" ? "Beneficiary home" : "Overview";
 
   return (
     <>
-      <header className="mb-7">
+      <header className="mb-6">
         <p className="eyebrow">Here when you need us</p>
         <h1 className="h1 mt-2.5">A clearer way forward.</h1>
-        <p className="t-body mt-2">Straight answers for a thoughtful plan.</p>
+        <p className="t-body mt-2">Straight answers for a thoughtful plan — from Halo first, from a person when you ask.</p>
       </header>
 
-      <div className="grid gap-5 lg:grid-cols-[1.55fr_1fr]">
+      <SupportDesk role={role} defaultName={name || firstName} defaultEmail={email} />
+
+      {tickets.length ? (
+        <section className="card mt-5 p-5 sm:p-6">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="h2">Your requests</h2>
+            <p className="t-meta">{tickets.length} on record</p>
+          </div>
+          <ul className="mt-3 divide-y divide-[var(--color-line)]">
+            {tickets.slice(0, 6).map((ticket) => (
+              <li key={ticket.ref} className="py-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-[var(--font-display)] text-[12px] font-semibold tracking-[0.05em] text-[var(--color-forest)]">
+                    {ticket.ref}
+                  </span>
+                  <span className="rounded-full border border-[var(--color-line)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-muted)]">
+                    {ticket.status}
+                  </span>
+                  <span className="text-[11px] text-[var(--color-muted)]">
+                    {ticket.topic} · {when(ticket.createdAt)}
+                  </span>
+                </div>
+                <p className="mt-1 line-clamp-2 text-[12.5px] text-[var(--color-muted)]">{ticket.message}</p>
+                {ticket.reply ? (
+                  <p className="mt-2 rounded-[10px] bg-[#f4f8f2] px-3 py-2 text-[12px] leading-relaxed text-[var(--color-ink)]">
+                    <span className="font-semibold text-[var(--color-forest)]">PayHalo replied: </span>
+                    {ticket.reply.body}
+                  </p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      <div className="mt-5 grid gap-5 lg:grid-cols-[1.55fr_1fr]">
         <section className="card p-6 md:p-7">
           <h2 className="h2">Good questions, clear answers.</h2>
           <div className="mt-4 divide-y divide-[var(--color-line)]">
@@ -68,11 +116,18 @@ export function HelpContent({
           <section className="card-forest p-6">
             <h2 className="h2 text-white">A person, when it matters.</h2>
             <p className="t-body mt-3 text-[#b7cfbd]">
-              For questions about {firstName}&apos;s plan, account access or a safety notice.
+              Requests about {firstName}&apos;s plan, account access or a safety notice are read by the operator, in the
+              order they arrive.
             </p>
-            <div className="mt-5">
-              <SupportRequest />
-            </div>
+            <a
+              href="#support-form"
+              className="btn mt-5 w-full bg-white text-[var(--color-forest)] hover:bg-[#f2f7f2]"
+            >
+              Write to a person
+            </a>
+            <p className="mt-2 text-[11px] text-[#8fb098]">
+              You get a reference by email the moment it is logged.
+            </p>
           </section>
 
           <section className="card-mint p-6">

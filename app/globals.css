@@ -643,6 +643,18 @@ body {
 }
 
 /* The one line that has to fill a first screen. */
+/* The opening statement. Its own scale so the whole first screen — headline,
+   both buttons and the photograph beneath them — fits without a scroll, on a
+   small phone as well as a laptop. */
+.display-hero {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.04;
+  letter-spacing: -0.04em;
+  font-size: clamp(1.9rem, 8vw, 4.35rem);
+  text-wrap: balance;
+}
+
 .display-xl {
   font-family: var(--font-display);
   font-weight: 600;

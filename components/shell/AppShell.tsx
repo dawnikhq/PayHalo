@@ -11,6 +11,7 @@ import {
   IconHelp,
   IconPlan,
   IconShield,
+  IconWallet,
 } from "./icons";
 import { HaloLauncher } from "@/components/halo/HaloLauncher";
 import { AppTour, AppTourButton } from "@/components/tour/AppTour";
@@ -29,6 +30,7 @@ const NAV: Record<Role, { primary: NavItem[]; secondary: NavItem[] }> = {
       { href: "/assets", label: "My assets", icon: <IconAssets />, tour: "nav-assets" },
       { href: "/beneficiaries", label: "Beneficiaries", icon: <IconBeneficiaries />, tour: "nav-people" },
       { href: "/plan", label: "My instructions", icon: <IconPlan />, tour: "nav-plan" },
+      { href: "/money", label: "Money", icon: <IconWallet /> },
       { href: "/activity", label: "Activity", icon: <IconActivity /> },
     ],
     secondary: [
@@ -223,12 +225,6 @@ export function AppShell({
                   </button>
                 </form>
               ) : null}
-              <Link
-                href={role === "owner" ? "/help" : role === "keyholder" ? "/keyholder/support" : "/beneficiary/support"}
-                className="hidden items-center gap-1 text-[12.5px] font-semibold text-[var(--color-ink)] transition hover:text-[var(--color-brand)] sm:inline-flex"
-              >
-                Help <span aria-hidden>→</span>
-              </Link>
             </div>
           </div>
         </header>
@@ -270,7 +266,7 @@ function MobileTabs({ role }: { role: Role }) {
       ? [
           { href: "/dashboard", label: "Overview", icon: <IconDashboard />, tour: "nav-overview" },
           { href: "/assets", label: "Assets", icon: <IconAssets />, tour: "nav-assets" },
-          { href: "/beneficiaries", label: "People", icon: <IconBeneficiaries />, tour: "nav-people" },
+          { href: "/money", label: "Money", icon: <IconWallet /> },
           { href: "/plan", label: "Plan", icon: <IconPlan />, tour: "nav-plan" },
           { href: "/settings", label: "Account", icon: <IconShield /> },
         ]

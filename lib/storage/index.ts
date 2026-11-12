@@ -2,6 +2,7 @@ import { kvDriver } from "./kv";
 import { memoryDriver } from "./memory";
 import { sqliteDriver } from "./sqlite";
 import { supabaseDriver } from "./supabase";
+import type { StateDoc } from "@/lib/model";
 import type { Driver } from "./types";
 
 export type { Driver, StoreKind } from "./types";
@@ -58,6 +59,41 @@ function guarded(primary: Driver): Driver {
 }
 
 /**
+ * Records that live beside the plans but are not plans: a wallet, a support
+ * request. They share the table because that is what the drivers have, and the
+ * prefix is what keeps them out of every plan read. `scan` sees plans only;
+ * `scanAll` sees everything, for the modules that own these rows.
+ */
+const AUX = /^(wallet|support):/;
+
+function withoutAux(primary: Driver): Driver {
+  const raw = primary.scan?.bind(primary);
+  return {
+    get kind() {
+      return primary.kind;
+    },
+    get label() {
+      return primary.label;
+    },
+    get durable() {
+      return primary.durable;
+    },
+    load: (key) => primary.load(key),
+    save: (key, doc) => primary.save(key, doc),
+    scan: raw
+      ? async () => (await raw()).filter((row) => !AUX.test(row.key))
+      : undefined,
+    scanAll: raw ? async () => raw() : undefined,
+  };
+}
+
+/** Every row, plans and the records beside them. Used by wallets and support. */
+export async function scanAllDocs(): Promise<{ key: string; doc: StateDoc }[]> {
+  const driver = await getDriver();
+  return driver.scanAll ? driver.scanAll() : [];
+}
+
+/**
  * Driver resolution order:
  *
  *   1. HACK1_STORE env override  (supabase | kv | sqlite | memory)  — for testing
@@ -92,6 +128,7 @@ export async function getDriver(): Promise<Driver> {
   if (!forced && driver.kind !== "memory" && driver.kind !== "sqlite") {
     driver = guarded(driver);
   }
+  driver = withoutAux(driver);
   global.__hack1Driver = driver;
   return driver;
 }

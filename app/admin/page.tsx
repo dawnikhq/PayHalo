@@ -12,6 +12,7 @@ import { reviewRelease } from "@/lib/halo";
 import { releaseQueue } from "@/lib/store";
 import { mailConfigured, mailHealth } from "@/lib/mailer";
 import { money, shortDate } from "@/lib/format";
+import { listTickets, ticketSummary, type SupportTicket } from "@/lib/support";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: { absolute: "Operations — PayHalo" } };
@@ -44,7 +45,13 @@ export default async function AdminPage() {
     );
   }
 
-  const [overview, queue, claims] = await Promise.all([operatorOverview(), releaseQueue(), claimQueue()]);
+  const [overview, queue, claims, support] = await Promise.all([
+    operatorOverview(),
+    releaseQueue(),
+    claimQueue(),
+    listTickets().catch(() => [] as SupportTicket[]),
+  ]);
+  const supportSummary = ticketSummary(support);
   const mail = mailHealth();
   const { totals, signups, statuses, customers, events, funnel } = overview;
   const peak = Math.max(1, ...signups.map((s) => s.count));
@@ -402,6 +409,84 @@ export default async function AdminPage() {
                 ))}
               </ul>
             </div>
+          </section>
+
+          <section id="support" className="mt-8 scroll-mt-6">
+            <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 className="h2">Support inbox</h2>
+                <p className="t-meta">
+                  Requests raised from the help page. Each one carries what Halo said first, so an answer starts from the
+                  conversation the person already had.
+                </p>
+              </div>
+              <p className="text-[11.5px] font-semibold text-[var(--color-muted)]">
+                {supportSummary.open} open · {supportSummary.closed} answered · {supportSummary.today} today
+              </p>
+            </div>
+
+            {support.length === 0 ? (
+              <div className="rounded-[16px] border border-[rgba(21,63,53,0.08)] bg-white p-5">
+                <p className="text-[12.5px] text-[var(--color-muted)]">
+                  Nothing in the inbox. A request sent from the help page appears here with a reference.
+                </p>
+              </div>
+            ) : (
+              <ul className="space-y-3">
+                {support.slice(0, 20).map((ticket) => (
+                  <li key={ticket.ref} className="rounded-[16px] border border-[rgba(21,63,53,0.08)] bg-white p-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-[var(--font-display)] text-[12.5px] font-semibold tracking-[0.04em] text-[var(--color-forest)]">
+                        {ticket.ref}
+                      </span>
+                      <span className={ticket.status === "open" ? "badge badge-lime" : "badge badge-neutral"}>
+                        {ticket.status}
+                      </span>
+                      <span className="text-[11px] text-[var(--color-muted)]">
+                        {ticket.topic} · {ticket.role} · {stamp(ticket.createdAt)}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-[12.5px] font-medium text-[var(--color-ink)]">
+                      {ticket.name} · {ticket.email}
+                    </p>
+                    <p className="mt-1.5 whitespace-pre-line text-[12.5px] leading-relaxed text-[var(--color-muted)]">
+                      {ticket.message}
+                    </p>
+                    {ticket.halo ? (
+                      <details className="mt-2 rounded-[10px] bg-[#f7faf6] px-3 py-2">
+                        <summary className="cursor-pointer text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--color-muted)]">
+                          What Halo said{ticket.halo.model ? ` (${ticket.halo.model})` : ""}
+                        </summary>
+                        <p className="mt-1.5 text-[11.5px] text-[var(--color-muted)]">Asked: {ticket.halo.question}</p>
+                        <p className="mt-1 whitespace-pre-line text-[12px] leading-relaxed text-[var(--color-ink)]">
+                          {ticket.halo.answer}
+                        </p>
+                      </details>
+                    ) : null}
+                    {ticket.reply ? (
+                      <p className="mt-2 rounded-[10px] border border-[rgba(14,111,86,0.18)] bg-[#f2f9f5] px-3 py-2 text-[12px] leading-relaxed text-[var(--color-ink)]">
+                        <span className="font-semibold text-[var(--color-forest)]">Answered {stamp(ticket.reply.at)}: </span>
+                        {ticket.reply.body}
+                      </p>
+                    ) : (
+                      <form action="/api/admin/support" method="post" className="mt-2.5 flex flex-col gap-2 sm:flex-row">
+                        <input type="hidden" name="ref" value={ticket.ref} />
+                        <textarea
+                          name="body"
+                          rows={2}
+                          required
+                          placeholder="Answer this person. It is emailed to them and closes the request."
+                          className="input flex-1 text-[12px]"
+                        />
+                        <button type="submit" className="btn btn-primary btn-sm shrink-0 self-start">
+                          Send answer
+                        </button>
+                      </form>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
 
           <section id="mail" className="mt-8 scroll-mt-6">

@@ -18,4 +18,10 @@ export interface Driver {
    * Optional, because a driver that cannot enumerate simply has none.
    */
   scan?(): Promise<{ key: string; doc: StateDoc }[]>;
+  /**
+   * Every row, including the records that are not plans (wallets, support
+   * requests). The index in ./index.ts keeps those out of `scan`, so a plan
+   * counter can never count a ticket, and a ticket list can still be found.
+   */
+  scanAll?(): Promise<{ key: string; doc: StateDoc }[]>;
 }

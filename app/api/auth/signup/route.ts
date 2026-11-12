@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAccount, startLoginToken } from "@/lib/accounts";
+import { ensureWallet } from "@/lib/wallet";
 import { hashPassword, passwordProblem } from "@/lib/passwords";
 import { mailConfigured, sendConfirmAddress } from "@/lib/mailer";
 import { clientKey, tooMany } from "@/lib/throttle";
@@ -48,6 +49,13 @@ export async function POST(request: Request) {
     if (account === "exists") {
       return NextResponse.json({ error: "An account with that email already exists. Sign in instead." }, { status: 409 });
     }
+
+    /*
+     * The demo balance is granted with the account, not with the first visit to
+     * the money page, so a new person already has their $20,000 and their
+     * handle waiting for them. Failure here must not cost anyone an account.
+     */
+    await ensureWallet(account).catch(() => undefined);
 
     const token = await startLoginToken(account.id, "confirm-email", CONFIRM_HOURS * 60);
     const url = new URL(
