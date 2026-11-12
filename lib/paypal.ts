@@ -732,6 +732,58 @@ export function verifyState(state: string): string | null {
   return sid;
 }
 
+/* ------------------------------------------------------------ the hand-off */
+
+/**
+ * A ticket that carries its own contents.
+ *
+ * The callback sometimes has to hand the browser to a page that runs on a
+ * different machine, and "remember this for ten minutes" is exactly the kind of
+ * state a serverless deployment is bad at. So the note travels in the URL:
+ * signed with the same secret that signs the PayPal state, readable only by us,
+ * and useless once `iat` is a quarter of an hour old.
+ *
+ * It grants nothing on its own. The most a live ticket allows is typing an
+ * address, and the address still has to prove itself through the inbox.
+ */
+export interface PayPalTicketPayload {
+  /** The PayPal account id, when PayPal shared one. */
+  pid: string;
+  name: string | null;
+  from: "signin" | "signup";
+  next: string;
+  /** The host the person started on. */
+  origin: string;
+  /** Issued at, milliseconds. */
+  iat: number;
+}
+
+export const TICKET_MINUTES = 15;
+
+export function signTicket(payload: PayPalTicketPayload): string {
+  const body = Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
+  const mac = crypto.createHmac("sha256", clientSecret()).update(body).digest("base64url").slice(0, 32);
+  return `${body}.${mac}`;
+}
+
+export function openTicket(token: string): PayPalTicketPayload | null {
+  const [body, mac] = token.split(".");
+  if (!body || !mac) return null;
+  const expected = crypto.createHmac("sha256", clientSecret()).update(body).digest("base64url").slice(0, 32);
+  const a = Buffer.from(mac);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+
+  try {
+    const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as PayPalTicketPayload;
+    if (!payload || typeof payload.iat !== "number") return null;
+    if (Date.now() - payload.iat > TICKET_MINUTES * 60 * 1000) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
 /* ------------------------------------------------- signing in with PayPal */
 
 /**

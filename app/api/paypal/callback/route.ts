@@ -4,7 +4,7 @@ import {
   paypalMode,
   paypalConfigured,
   paypalRedirectUri,
-  signState,
+  signTicket,
   tryUserInfo,
   verifyAuthState,
   verifyState,
@@ -22,7 +22,7 @@ import {
   markLogin,
   startLoginToken,
 } from "@/lib/accounts";
-import { payerLink, saveTicket, TICKET_MINUTES } from "@/lib/paypal-identity";
+import { payerLink } from "@/lib/paypal-identity";
 import { mailConfigured, sendConfirmAddress } from "@/lib/mailer";
 import { ensureWallet } from "@/lib/wallet";
 
@@ -138,21 +138,18 @@ async function handleSignIn(request: Request, url: URL, auth: PayPalAuthState) {
         }
       }
 
-      const sid = mintSid();
-      await saveTicket({
-        sid,
-        payerId,
-        name,
-        from: auth.from,
-        next: auth.next,
-        origin: auth.origin,
-        issuedAt: new Date().toISOString(),
-        usedAt: null,
-      });
-
       const ask = new URL("/auth/paypal", auth.origin);
-      ask.searchParams.set("t", signState(sid));
-      ask.searchParams.set("from", auth.from);
+      ask.searchParams.set(
+        "t",
+        signTicket({
+          pid: payerId,
+          name,
+          from: auth.from,
+          next: auth.next,
+          origin: auth.origin,
+          iat: Date.now(),
+        }),
+      );
       return NextResponse.redirect(ask);
     } catch {
       /* The store said no: fall back to the sentence, not a stack trace. */

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { verifyState } from "@/lib/paypal";
-import { readTicket, savePayerLink, spendTicket } from "@/lib/paypal-identity";
+import { openTicket } from "@/lib/paypal";
+import { savePayerLink } from "@/lib/paypal-identity";
 import { accountByEmail, createAccount, startLoginToken } from "@/lib/accounts";
 import { mailConfigured, sendConfirmAddress, sendSignInLink } from "@/lib/mailer";
 import { ensureWallet } from "@/lib/wallet";
@@ -31,8 +31,7 @@ export async function POST(request: Request) {
 
   if (!EMAIL.test(email)) return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
 
-  const sid = verifyState(rawTicket);
-  const pending = sid ? await readTicket(sid).catch(() => null) : null;
+  const pending = rawTicket ? openTicket(rawTicket) : null;
   if (!pending) {
     return NextResponse.json(
       { error: "That PayPal sign-in has expired. Start again — it takes one click." },
@@ -49,6 +48,7 @@ export async function POST(request: Request) {
 
   const origin = pending.origin || new URL(request.url).origin;
   const next = pending.next || "/dashboard";
+  const payerId = pending.pid ?? "";
 
   try {
     const existing = await accountByEmail(email);
@@ -67,12 +67,11 @@ export async function POST(request: Request) {
         );
       }
       await savePayerLink({
-        payerId: pending.payerId,
+        payerId,
         accountId: existing.id,
         email: existing.email,
         linkedAt: new Date().toISOString(),
       }).catch(() => undefined);
-      await spendTicket(pending);
       return NextResponse.json({ ok: true, sentTo: existing.email, existing: true });
     }
 
@@ -103,12 +102,11 @@ export async function POST(request: Request) {
     }
 
     await savePayerLink({
-      payerId: pending.payerId,
+      payerId,
       accountId: account.id,
       email: account.email,
       linkedAt: new Date().toISOString(),
     }).catch(() => undefined);
-    await spendTicket(pending);
 
     return NextResponse.json({ ok: true, sentTo: email, existing: false });
   } catch {

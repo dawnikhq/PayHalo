@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
 import { MarketingFooter, MarketingHeader } from "@/components/marketing/Chrome";
 import { PayPalEmailForm } from "@/components/auth/PayPalEmailForm";
-import { verifyState } from "@/lib/paypal";
-import { readTicket } from "@/lib/paypal-identity";
+import { openTicket } from "@/lib/paypal";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: { absolute: "One more step — PayHalo" } };
@@ -18,9 +17,8 @@ export default async function PayPalEmailPage({
   searchParams: Promise<{ t?: string }>;
 }) {
   const { t } = await searchParams;
-  const ticket = typeof t === "string" && t ? t : "";
-  const sid = ticket ? verifyState(ticket) : null;
-  const pending = sid ? await readTicket(sid).catch(() => null) : null;
+  const ticket = typeof t === "string" ? t : "";
+  const pending = ticket ? openTicket(ticket) : null;
 
   if (!pending) redirect("/signin?paypal=expired");
 
