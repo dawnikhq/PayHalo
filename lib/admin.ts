@@ -12,10 +12,10 @@ import { OPERATOR_PASSCODE } from "./operator-passcode";
  */
 export const ADMIN_COOKIE = "payhalo_admin";
 
-/** The passcode in lib/operator-passcode.ts wins; otherwise the environment. */
+/** The environment wins; lib/operator-passcode.ts is the fallback when it is empty. */
 export function operatorPasscode(): string {
-  const fromCode = OPERATOR_PASSCODE.trim();
-  return fromCode || (process.env.ADMIN_PASSCODE ?? "").trim();
+  const fromEnv = (process.env.ADMIN_PASSCODE ?? "").trim();
+  return fromEnv || OPERATOR_PASSCODE.trim();
 }
 
 export function adminConfigured(): boolean {

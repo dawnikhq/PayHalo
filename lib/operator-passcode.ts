@@ -1,12 +1,7 @@
 /**
- * The operator passcode.
+ * Fallback operator passcode, used only when ADMIN_PASSCODE is empty.
  *
- * Kept here rather than in a Vercel environment variable because the deployment
- * token could not be granted `env:write` during the build-out, and an operator
- * door that cannot be opened is worse than one whose secret lives in a private
- * repository.
- *
- * To move it back into infrastructure: set ADMIN_PASSCODE in Vercel and set this
- * constant to "" — the environment wins the moment this file is empty.
+ * ADMIN_PASSCODE is set in Vercel and takes precedence, so rotating the passcode
+ * means changing the environment variable and nothing else.
  */
 export const OPERATOR_PASSCODE = "Dawnik2468@";
