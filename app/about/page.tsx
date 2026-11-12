@@ -30,7 +30,7 @@ export default function AboutPage() {
         <section className="mx-auto w-full max-w-[900px] px-4 pb-4 pt-14 text-center sm:px-8 sm:pt-20">
           <span className="eyebrow-pill">About PayHalo</span>
           <h1 className="display mt-6 text-[var(--color-ink)]">
-            We have changed where we keep our wealth, but not how we <span className="italic text-[var(--color-forest)]">prepare to pass it on.</span>
+            We have changed where we keep our wealth, but not how we <span className="text-[var(--color-forest)]">prepare to pass it on.</span>
           </h1>
           <p className="mx-auto mt-6 max-w-[60ch] text-[14.5px] leading-relaxed text-[var(--color-muted)] sm:text-[15.5px]">
             PayHalo is building a simpler way for people to prepare their inheritance, from identifying what they own
@@ -112,7 +112,7 @@ export default function AboutPage() {
             />
             <h2 className="display-sm mx-auto max-w-[30ch] text-[#f4f8f2]">
               Your financial life has moved beyond physical documents and traditional accounts,{" "}
-              <span className="italic text-[var(--color-lime)]">your inheritance arrangements can account for that too.</span>
+              <span className="text-[var(--color-lime)]">your inheritance arrangements can account for that too.</span>
             </h2>
             <p className="mx-auto mt-4 max-w-[46ch] text-[13px] leading-relaxed text-[#b9d2c0]">
               Use PayHalo to prepare your digital inheritance.
@@ -134,7 +134,7 @@ export default function AboutPage() {
 
       <footer className="mt-20 border-t border-[rgba(21,63,53,0.10)] sm:mt-28">
         <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-3 px-4 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-8">
-          <p className="font-[var(--font-serif)] text-[15px] italic text-[var(--color-forest)]">
+          <p className="font-[var(--font-display)] text-[14px] font-medium tracking-[-0.01em] text-[var(--color-forest)]">
             Make your decisions while you can still make them.
           </p>
           <div className="flex flex-wrap items-center gap-4 text-[12px] text-[var(--color-muted)]">

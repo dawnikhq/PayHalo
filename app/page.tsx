@@ -253,10 +253,9 @@ export default function LandingPage() {
       <main id="main">
         {/* ---------------------------------------------------------- hero */}
         <section className="mx-auto w-full max-w-[1000px] px-4 pt-12 text-center sm:px-8 sm:pt-20">
-          <span className="eyebrow-pill">Digital inheritance, in writing</span>
-          <h1 className="display mx-auto mt-6 text-[var(--color-ink)]">
+          <h1 className="display mx-auto text-[var(--color-ink)]">
             Your wealth deserves more than
-            <br className="hidden sm:block" /> <span className="italic text-[var(--color-forest)]">a forgotten password and a hopeful guess.</span>
+            <br className="hidden sm:block" /> <span className="text-[var(--color-forest)]">a forgotten password and a hopeful guess.</span>
           </h1>
           <p className="mx-auto mt-6 max-w-[62ch] text-[14.5px] leading-relaxed text-[var(--color-muted)] sm:text-[15.5px]">
             PayHalo is a digital inheritance platform that helps you document what you own, decide who inherits it and
@@ -399,7 +398,7 @@ export default function LandingPage() {
             <div className="max-w-[760px]">
               <span className="eyebrow-pill">How PayHalo works</span>
               <h2 className="display mt-5 text-[var(--color-ink)]">
-                From knowing what you own to <span className="italic text-[var(--color-forest)]">deciding where it goes.</span>
+                From knowing what you own to <span className="text-[var(--color-forest)]">deciding where it goes.</span>
               </h2>
               <p className="mt-5 max-w-[62ch] text-[14px] leading-relaxed text-[var(--color-muted)] sm:text-[15px]">
                 PayHalo gives you a straightforward way to record your digital assets, establish your inheritance
@@ -410,7 +409,7 @@ export default function LandingPage() {
             <ol className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {HOW.map((step) => (
                 <li key={step.n} className="rounded-[18px] border border-[rgba(21,63,53,0.10)] bg-white/80 p-5">
-                  <span className="font-[var(--font-serif)] text-[26px] leading-none text-[var(--color-brand)]">
+                  <span className="font-[var(--font-display)] text-[22px] font-semibold leading-none tracking-[-0.02em] text-[var(--color-brand)]">
                     {step.n}
                   </span>
                   <h3 className="mt-3 text-[14px] font-semibold text-[var(--color-ink)]">{step.title}</h3>
@@ -446,7 +445,7 @@ export default function LandingPage() {
             <div>
               <span className="eyebrow-pill">About PayHalo</span>
               <h2 className="display-sm mt-5 text-[var(--color-ink)]">
-                We have changed where we keep our wealth, but not how we <span className="italic">prepare to pass it on.</span>
+                We have changed where we keep our wealth, but not how we <span className="text-[var(--color-forest)]">prepare to pass it on.</span>
               </h2>
               <p className="mt-5 text-[14px] leading-relaxed text-[var(--color-muted)]">
                 PayHalo is building a simpler way for people to prepare their inheritance, from identifying what they
@@ -494,7 +493,7 @@ export default function LandingPage() {
               className="pointer-events-none absolute -right-24 -top-24 h-[320px] w-[320px] rounded-full bg-[radial-gradient(circle,rgba(217,244,165,0.30),transparent_65%)]"
             />
             <h2 className="display mx-auto max-w-[22ch] text-[#f4f8f2]">
-              You&rsquo;ve made the effort to build something, <span className="italic text-[var(--color-lime)]">give those efforts a considered future.</span>
+              You&rsquo;ve made the effort to build something, <span className="text-[var(--color-lime)]">give those efforts a considered future.</span>
             </h2>
             <p className="mx-auto mt-5 max-w-[52ch] text-[13.5px] leading-relaxed text-[#b9d2c0]">
               Record what you own, decide who benefits and put the arrangements in place with PayHalo.
@@ -564,7 +563,7 @@ export default function LandingPage() {
           ))}
         </div>
         <div className="mx-auto w-full max-w-[1200px] border-t border-[rgba(21,63,53,0.08)] px-4 py-5 sm:px-8">
-          <p className="font-[var(--font-serif)] text-[15px] italic text-[var(--color-forest)]">
+          <p className="font-[var(--font-display)] text-[14px] font-medium tracking-[-0.01em] text-[var(--color-forest)]">
             Make your decisions while you can still make them.
           </p>
         </div>

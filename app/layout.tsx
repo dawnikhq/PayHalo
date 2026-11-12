@@ -1,20 +1,7 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
 import "@fontsource-variable/inter";
 import "@fontsource-variable/manrope";
 import "./globals.css";
-
-/* Instrument Serif, vendored (SIL Open Font License, see app/fonts/OFL-InstrumentSerif.txt).
-   Headlines only: it is the difference between a product page and a brochure. */
-const serif = localFont({
-  src: [
-    { path: "./fonts/InstrumentSerif-Regular.ttf", weight: "400", style: "normal" },
-    { path: "./fonts/InstrumentSerif-Italic.ttf", weight: "400", style: "italic" },
-  ],
-  variable: "--font-serif",
-  display: "swap",
-  fallback: ["Georgia", "Times New Roman", "serif"],
-});
 
 export const metadata: Metadata = {
   title: "PayHalo — Your legacy, considered.",
@@ -25,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={serif.variable}>
+    <html lang="en">
       <body className="antialiased">
         <a
           href="#main"
