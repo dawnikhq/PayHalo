@@ -76,7 +76,7 @@ export function emptyDoc(user: { id: string; name: string; email: string }): Sta
   const stamp = now();
   return {
     user: { id: 1, name: user.name || "New account", email: user.email || "" },
-    plan: { id: 2, userId: 1, status: "draft", sealedAt: null, updatedAt: stamp },
+    plan: { id: 2, userId: 1, status: "draft", sealedAt: null, updatedAt: stamp, name: "My plan", createdAt: stamp },
     assets: [],
     beneficiaries: [],
     keyholder: null,

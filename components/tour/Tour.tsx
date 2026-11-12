@@ -20,9 +20,18 @@ type Rect = { top: number; left: number; width: number; height: number };
 
 const PAD = 10;
 
-function measure(target?: string): Rect | null {
+/**
+ * The same anchor is often drawn twice — once in the desktop rail, once in the
+ * phone tab bar — so pick whichever copy is actually on screen at this width.
+ */
+function findTarget(target?: string): HTMLElement | null {
   if (!target || typeof document === "undefined") return null;
-  const el = document.querySelector<HTMLElement>(`[data-tour="${target}"]`);
+  const all = Array.from(document.querySelectorAll<HTMLElement>(`[data-tour="${target}"]`));
+  return all.find((el) => el.getClientRects().length > 0 && el.getBoundingClientRect().width > 0) ?? null;
+}
+
+function measure(target?: string): Rect | null {
+  const el = findTarget(target);
   if (!el) return null;
   const r = el.getBoundingClientRect();
   return { top: r.top - PAD, left: r.left - PAD, width: r.width + PAD * 2, height: r.height + PAD * 2 };
@@ -93,7 +102,7 @@ export function Tour({
     if (!open) return;
     setReady(false);
     const target = steps[index]?.target;
-    const el = target ? document.querySelector<HTMLElement>(`[data-tour="${target}"]`) : null;
+    const el = findTarget(target);
 
     if (el) {
       const r = el.getBoundingClientRect();
@@ -162,22 +171,34 @@ export function Tour({
 
   return (
     <div className="fixed inset-0 z-[90]" role="dialog" aria-modal="true" aria-label={label}>
-      {/* the dimming layer, cut open over the element being explained */}
-      <div className="absolute inset-0 bg-[rgba(9,32,27,0.62)]" onClick={(e) => e.stopPropagation()} />
-
-      {rect && (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute rounded-[22px] ring-2 ring-[var(--color-lime)] transition-all duration-300"
-          style={{
-            top: rect.top,
-            left: rect.left,
-            width: rect.width,
-            height: rect.height,
-            boxShadow: "0 0 0 9999px rgba(9,32,27,0.62)",
-            background: "transparent",
-          }}
-        />
+      {/*
+        The dimming is drawn as four panels around the element being explained
+        rather than a full sheet with a shadow: the cut-out stays at full
+        brightness, and the panels still swallow taps meant for the page.
+      */}
+      {rect ? (
+        <>
+          <div className="absolute inset-x-0 top-0 bg-[rgba(9,32,27,0.62)]" style={{ height: Math.max(0, rect.top) }} />
+          <div
+            className="absolute inset-x-0 bottom-0 bg-[rgba(9,32,27,0.62)]"
+            style={{ top: rect.top + rect.height }}
+          />
+          <div
+            className="absolute left-0 bg-[rgba(9,32,27,0.62)]"
+            style={{ top: rect.top, height: rect.height, width: Math.max(0, rect.left) }}
+          />
+          <div
+            className="absolute right-0 bg-[rgba(9,32,27,0.62)]"
+            style={{ top: rect.top, height: rect.height, left: rect.left + rect.width }}
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute rounded-[22px] ring-2 ring-[var(--color-lime)] transition-all duration-300"
+            style={{ top: rect.top, left: rect.left, width: rect.width, height: rect.height }}
+          />
+        </>
+      ) : (
+        <div className="absolute inset-0 bg-[rgba(9,32,27,0.62)]" />
       )}
 
       <div

@@ -13,21 +13,24 @@ import {
   IconShield,
 } from "./icons";
 import { HaloLauncher } from "@/components/halo/HaloLauncher";
+import { AppTour, AppTourButton } from "@/components/tour/AppTour";
+import type { PlanSummary } from "@/lib/store";
 
 export type Role = "owner" | "keyholder" | "beneficiary";
 
-type NavItem = { href: string; label: string; icon: ReactNode; exact?: boolean };
+type NavItem = { href: string; label: string; icon: ReactNode; exact?: boolean; tour?: string };
 
 const NAV: Record<Role, { primary: NavItem[]; secondary: NavItem[] }> = {
   owner: {
     primary: [
-      { href: "/dashboard", label: "Overview", icon: <IconDashboard /> },
-      { href: "/assets", label: "My assets", icon: <IconAssets /> },
-      { href: "/beneficiaries", label: "Beneficiaries", icon: <IconBeneficiaries /> },
-      { href: "/plan", label: "My instructions", icon: <IconPlan /> },
+      { href: "/dashboard", label: "Overview", icon: <IconDashboard />, tour: "nav-overview" },
+      { href: "/assets", label: "My assets", icon: <IconAssets />, tour: "nav-assets" },
+      { href: "/beneficiaries", label: "Beneficiaries", icon: <IconBeneficiaries />, tour: "nav-people" },
+      { href: "/plan", label: "My instructions", icon: <IconPlan />, tour: "nav-plan" },
       { href: "/activity", label: "Activity", icon: <IconActivity /> },
     ],
     secondary: [
+      { href: "/plans", label: "My arrangements", icon: <IconPlan />, tour: "nav-plans" },
       { href: "/settings", label: "Account settings", icon: <IconShield /> },
       { href: "/help", label: "Help & support", icon: <IconHelp /> },
     ],
@@ -83,6 +86,7 @@ function NavList({
             <Link
               href={item.href}
               onClick={onNavigate}
+              data-tour={item.tour}
               aria-current={active ? "page" : undefined}
               className={`flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-[13px] transition ${
                 bare ? "" : "gap-3"
@@ -118,15 +122,20 @@ export function AppShell({
   children,
   role,
   name,
+  plans = [],
+  fresh = false,
 }: {
   children: ReactNode;
   role: Role;
   name: string;
+  /** Every arrangement on this account, so the rail can offer a switch. */
+  plans?: PlanSummary[];
+  /** A brand-new account gets the product tour without being asked. */
+  fresh?: boolean;
 }) {
   const pathname = usePathname() ?? "/";
   const nav = NAV[role];
-
-
+  const activePlan = plans.find((p) => p.active) ?? plans[0];
 
   const person = { name, role: ROLE_LABEL[role] };
 
@@ -136,15 +145,28 @@ export function AppShell({
         <Wordmark />
       </Link>
 
-      <div className="-mt-2 px-2">
-        <p className="text-[9.5px] font-semibold uppercase tracking-[0.13em] text-[#94a29a]">
-          {role === "owner"
-            ? "Your inheritance arrangements"
-            : role === "keyholder"
-              ? "Your Trusted Key role"
-              : "Your beneficiary role"}
-        </p>
-      </div>
+      {role === "owner" && activePlan ? (
+        <Link
+          href="/plans"
+          className="group flex items-center justify-between gap-2 rounded-[14px] border border-[var(--color-line)] bg-white px-3 py-2.5 transition hover:border-[var(--color-line-strong)]"
+        >
+          <span className="min-w-0">
+            <span className="block text-[9px] font-bold uppercase tracking-[0.13em] text-[#94a29a]">Plan</span>
+            <span className="block truncate text-[13px] font-semibold text-[var(--color-ink)]">
+              {activePlan.name}
+            </span>
+          </span>
+          <span className="shrink-0 rounded-full bg-[var(--color-mint)] px-2 py-0.5 text-[10px] font-bold text-[var(--color-forest)]">
+            {plans.length > 1 ? `1 of ${plans.length}` : "Switch"}
+          </span>
+        </Link>
+      ) : (
+        <div className="-mt-2 px-2">
+          <p className="text-[9.5px] font-semibold uppercase tracking-[0.13em] text-[#94a29a]">
+            {role === "keyholder" ? "Your Trusted Key role" : "Your beneficiary role"}
+          </p>
+        </div>
+      )}
 
       <nav aria-label="Primary" className="space-y-1">
         <NavList items={nav.primary} pathname={pathname} />
@@ -185,7 +207,10 @@ export function AppShell({
               <Wordmark small />
             </div>
 
-            <div className="ml-auto flex items-center gap-3 sm:gap-5">
+            <div className="ml-auto flex items-center gap-2 sm:gap-4">
+              {role === "owner" ? (
+                <AppTourButton className="hidden rounded-full border border-[var(--color-line)] px-3 py-1.5 text-[11.5px] font-semibold text-[var(--color-ink)] transition hover:border-[var(--color-line-strong)] hover:bg-white sm:inline-flex" />
+              ) : null}
               {role === "owner" ? (
                 <form action="/auth/signout" method="post">
                   <button
@@ -220,6 +245,7 @@ export function AppShell({
 
       <MobileTabs role={role} />
       <HaloLauncher role={role} />
+      {role === "owner" ? <AppTour auto={fresh} /> : null}
     </div>
   );
 }
@@ -236,10 +262,10 @@ function MobileTabs({ role }: { role: Role }) {
   const tabs: NavItem[] =
     role === "owner"
       ? [
-          { href: "/dashboard", label: "Overview", icon: <IconDashboard /> },
-          { href: "/assets", label: "Assets", icon: <IconAssets /> },
-          { href: "/beneficiaries", label: "People", icon: <IconBeneficiaries /> },
-          { href: "/plan", label: "Plan", icon: <IconPlan /> },
+          { href: "/dashboard", label: "Overview", icon: <IconDashboard />, tour: "nav-overview" },
+          { href: "/assets", label: "Assets", icon: <IconAssets />, tour: "nav-assets" },
+          { href: "/beneficiaries", label: "People", icon: <IconBeneficiaries />, tour: "nav-people" },
+          { href: "/plan", label: "Plan", icon: <IconPlan />, tour: "nav-plan" },
           { href: "/settings", label: "Account", icon: <IconShield /> },
         ]
       : role === "keyholder"
@@ -267,6 +293,7 @@ function MobileTabs({ role }: { role: Role }) {
               <li key={tab.href} className="flex-1">
                 <Link
                   href={tab.href}
+                  data-tour={tab.tour}
                   aria-current={active ? "page" : undefined}
                   className={`flex flex-col items-center gap-1 rounded-[14px] px-1 py-2.5 text-[10.5px] font-semibold transition ${
                     active ? "text-[var(--color-brand)]" : "text-[var(--color-muted)]"

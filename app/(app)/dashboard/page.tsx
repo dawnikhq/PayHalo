@@ -46,6 +46,14 @@ export default async function DashboardPage({
             {greeting(new Date().getUTCHours() + 1)}, {firstName}.
           </h1>
           <p className="t-body mt-2">A little more clarity. A lot more peace of mind.</p>
+          <Link
+            href="/plans"
+            className="mt-3 inline-flex items-center gap-2 rounded-full border border-[var(--color-line)] bg-white px-3 py-1.5 text-[11.5px] font-semibold text-[var(--color-ink)] transition hover:border-[var(--color-line-strong)]"
+          >
+            <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-[var(--color-brand)]" />
+            {s.plan.name?.trim() || "My plan"}
+            <span className="text-[var(--color-brand)]">Switch arrangement →</span>
+          </Link>
         </div>
         <Link href="/assets" className="btn btn-primary self-start">
           Manage my assets <span aria-hidden>→</span>

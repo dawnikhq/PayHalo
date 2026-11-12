@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { getDriver } from "./storage";
 import {
   addAsset,
@@ -58,6 +59,36 @@ export type { BeneficiaryView, KeyholderView } from "./model";
 
 type MutationResult = { ok: boolean; error?: string; extra?: Record<string, unknown> };
 
+/**
+ * One account, several arrangements.
+ *
+ * A plan is a whole document of its own — its own assets, people, Trusted Key,
+ * vault and history. The first one keeps the bare account key that older
+ * documents were written under; every later one is suffixed, so switching plans
+ * switches documents rather than filtering one enormous one.
+ */
+const PLAN_SEP = "#p";
+export const PLAN_COOKIE = "vivo_plan";
+
+export function planKey(userId: string, no: number) {
+  return no <= 1 ? userId : `${userId}${PLAN_SEP}${no}`;
+}
+
+export function planNoOf(key: string, userId: string): number | null {
+  if (key === userId) return 1;
+  const prefix = `${userId}${PLAN_SEP}`;
+  if (!key.startsWith(prefix)) return null;
+  const n = Number(key.slice(prefix.length));
+  return Number.isInteger(n) && n > 1 ? n : null;
+}
+
+/** Which arrangement the owner is looking at. A stale cookie falls back to the first. */
+async function activePlanNo(): Promise<number> {
+  const jar = await cookies();
+  const n = Number(jar.get(PLAN_COOKIE)?.value);
+  return Number.isInteger(n) && n > 1 ? n : 1;
+}
+
 async function loadDoc(ownerId: string, identity?: { name: string; email: string }): Promise<StateDoc> {
   const driver = await getDriver();
   const existing = await driver.load(ownerId);
@@ -68,7 +99,21 @@ async function loadDoc(ownerId: string, identity?: { name: string; email: string
 /** Owner-scoped load: the signed-in account, or a fresh empty plan. */
 async function ownerDoc(): Promise<{ ownerId: string; doc: StateDoc }> {
   const user = await requireOwner();
-  return { ownerId: user.id, doc: await loadDoc(user.id, { name: user.name, email: user.email }) };
+  const driver = await getDriver();
+  const identity = { name: user.name, email: user.email };
+
+  let no = await activePlanNo();
+  let key = planKey(user.id, no);
+  let doc = await driver.load(key);
+
+  // a cookie naming a plan that was never written must not invent one
+  if (!doc && no > 1) {
+    no = 1;
+    key = planKey(user.id, 1);
+    doc = await driver.load(key);
+  }
+
+  return { ownerId: key, doc: doc ?? emptyDoc({ id: key, name: identity.name, email: identity.email }) };
 }
 
 /**
@@ -77,7 +122,11 @@ async function ownerDoc(): Promise<{ ownerId: string; doc: StateDoc }> {
  */
 async function actorDoc(): Promise<{ ownerId: string; doc: StateDoc }> {
   const user = await currentUser();
-  if (user) return { ownerId: user.id, doc: await loadDoc(user.id) };
+  if (user) {
+    const key = planKey(user.id, await activePlanNo());
+    const doc = (await getDriver()).load(key);
+    return { ownerId: key, doc: await doc ?? (await loadDoc(user.id)) };
+  }
   const shared = await sharedOwner("keyholder");
   if (shared) return { ownerId: shared, doc: await loadDoc(shared) };
   throw new Error("This link is not valid.");
@@ -120,8 +169,96 @@ export async function savePlan(input: PlanInput): Promise<Snapshot> {
   const driver = await getDriver();
   const user = await requireOwner();
   const doc = applyPlan(input);
-  await driver.save(user.id, doc);
+  await driver.save(planKey(user.id, await activePlanNo()), doc);
   return { ...snapshotOf(doc), storage: driver.kind };
+}
+
+export interface PlanSummary {
+  no: number;
+  key: string;
+  name: string;
+  status: string;
+  updatedAt: string;
+  sealedAt: string | null;
+  done: number;
+  total: number;
+  valueCents: number;
+  assets: number;
+  people: number;
+  active: boolean;
+}
+
+/** Every arrangement this account holds, in the order they were made. */
+export async function listPlans(): Promise<PlanSummary[]> {
+  const driver = await getDriver();
+  const user = await requireOwner();
+  const active = await activePlanNo();
+  const found: { no: number; key: string; doc: StateDoc }[] = [];
+
+  if (driver.scan) {
+    for (const row of await driver.scan()) {
+      const no = planNoOf(row.key, user.id);
+      if (no) found.push({ no, key: row.key, doc: row.doc });
+    }
+  }
+
+  if (!found.length) {
+    const key = planKey(user.id, active);
+    const doc = await driver.load(key);
+    if (doc) found.push({ no: active, key, doc });
+  }
+
+  return found
+    .sort((a, b) => a.no - b.no)
+    .map(({ no, key, doc }) => {
+      const snap = snapshotOf(doc, "owner");
+      const steps = snap.steps;
+      return {
+        no,
+        key,
+        name: doc.plan.name?.trim() || (no === 1 ? "My plan" : `Plan ${no}`),
+        status: doc.plan.status,
+        updatedAt: snap.plan.updatedAt,
+        sealedAt: doc.plan.sealedAt,
+        done: steps.filter((s) => s.done).length,
+        total: steps.length,
+        valueCents: vaultBalanceCents(doc),
+        assets: doc.assets.length,
+        people: doc.beneficiaries.length,
+        active: no === active,
+      };
+    });
+}
+
+/**
+ * A second (or third) arrangement. It starts empty on purpose: copying someone's
+ * beneficiaries into a plan they did not describe would be inventing intent.
+ */
+export async function createPlanAction(name: string): Promise<{ ok: boolean; no?: number; error?: string }> {
+  const user = await requireOwner();
+  const driver = await getDriver();
+  const existing = await listPlans();
+  const no = existing.reduce((max, p) => Math.max(max, p.no), 0) + 1;
+
+  if (no > 9) return { ok: false, error: "Nine arrangements is the limit for one account." };
+
+  const doc = emptyDoc({ id: planKey(user.id, no), name: user.name, email: user.email });
+  doc.plan = { ...doc.plan, id: no + 1, name: name.trim().slice(0, 60) || `Plan ${no}` };
+  await driver.save(planKey(user.id, no), doc);
+  return { ok: true, no };
+}
+
+export async function renamePlanAction(no: number, name: string): Promise<{ ok: boolean; error?: string }> {
+  const user = await requireOwner();
+  const driver = await getDriver();
+  const key = planKey(user.id, no);
+  const doc = await driver.load(key);
+  if (!doc) return { ok: false, error: "That arrangement no longer exists." };
+  const clean = name.trim().slice(0, 60);
+  if (!clean) return { ok: false, error: "Give the arrangement a name first." };
+  doc.plan = { ...doc.plan, name: clean, updatedAt: new Date().toISOString() };
+  await driver.save(key, doc);
+  return { ok: true };
 }
 
 /** Every document hash already filed on this plan — used to catch duplicates. */

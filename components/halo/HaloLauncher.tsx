@@ -85,6 +85,7 @@ export function HaloLauncher({ role }: { role: "owner" | "keyholder" | "benefici
         }}
         aria-expanded={open}
         aria-label={open ? "Close Halo" : "Ask Halo for help"}
+        data-tour="app-halo"
         className="fixed bottom-[calc(env(safe-area-inset-bottom)+76px)] right-4 z-40 flex items-center gap-2 rounded-full bg-[var(--color-forest)] px-4 py-3 text-[12.5px] font-semibold text-[#f4f8f0] shadow-[0_16px_36px_-16px_rgba(21,63,53,0.65)] transition active:scale-[0.98] lg:bottom-6 lg:right-6"
       >
         <span aria-hidden className="grid h-5 w-5 place-items-center rounded-full bg-[var(--color-lime)] text-[11px] font-bold text-[var(--color-forest)]">

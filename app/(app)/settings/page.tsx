@@ -7,6 +7,7 @@ import { requireOwner } from "@/lib/scope";
 import { shareToken } from "@/lib/share";
 import { CopyButton } from "@/components/CopyButton";
 import { Avatar } from "@/components/Avatar";
+import { AppTourButton } from "@/components/tour/AppTour";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,14 @@ export default async function SettingsPage({
 
   return (
     <Page>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[var(--color-line)] bg-white px-4 py-3">
+        <div>
+          <p className="text-[13px] font-semibold text-[var(--color-ink)]">New here, or want the tour again?</p>
+          <p className="t-meta">A minute through the overview, assets, people, instructions and Halo.</p>
+        </div>
+        <AppTourButton />
+      </div>
+
       <header className="mb-7">
         <p className="eyebrow">Your account</p>
         <h1 className="h1 mt-2.5">Profile &amp; security</h1>

@@ -108,6 +108,9 @@ export interface Plan {
   status: PlanStatus;
   sealedAt: string | null;
   updatedAt: string;
+  /** What the owner calls this arrangement — "Family", "The studio", … */
+  name?: string;
+  createdAt?: string;
 }
 
 /** The five things the My Plan checklist counts. */

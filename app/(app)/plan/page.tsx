@@ -24,13 +24,18 @@ export default async function PlanPage() {
           <h1 className="h1 mt-2.5">My Plan</h1>
           <p className="t-body mt-2">For the people, projects and causes that matter to you.</p>
         </div>
-        {s.vault ? (
-          <span className="pill badge-lime self-start">Vault {s.vault.ref}</span>
-        ) : (
-          <Link href="/plan/start" className="btn btn-primary self-start">
-            {s.steps.every((step) => step.done) ? "Review my plan" : "Continue my plan"} <span aria-hidden>→</span>
+        <div className="flex flex-wrap items-center gap-2 self-start">
+          {s.vault ? (
+            <span className="pill badge-lime">Vault {s.vault.ref}</span>
+          ) : (
+            <Link href="/plan/start" className="btn btn-primary">
+              {s.steps.every((step) => step.done) ? "Review my plan" : "Continue my plan"} <span aria-hidden>→</span>
+            </Link>
+          )}
+          <Link href="/plans" className="btn btn-secondary">
+            My arrangements
           </Link>
-        )}
+        </div>
       </header>
 
       <section className="card-lime mb-5 flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between md:p-7">
