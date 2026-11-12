@@ -38,11 +38,17 @@
   --color-brass: #008477;
   --color-brass-deep: #153f35;
 
-  --font-display: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  /* Two faces, blended: the display grid is a tight grotesque in the spirit of
+     the reference wallet's brand type, and every paragraph stays in Manrope. */
+  --font-display: "Schibsted Grotesk Variable", "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
 
-  --radius-card: 20px;
-  --radius-panel: 24px;
+  --color-paper: #fbfcf9;
+  --color-night: #0e2a24;
+
+  --radius-card: 24px;
+  --radius-panel: 30px;
+  --radius-tile: 26px;
 }
 
 :root {
@@ -154,16 +160,12 @@ body {
 /* --------------------------------------------------------------- surfaces */
 
 .card {
-  background: linear-gradient(158deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.72) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.85);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
   border-radius: var(--radius-card);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    inset 0 -1px 0 rgba(21, 63, 53, 0.04),
-    0 1px 2px rgba(23, 45, 41, 0.04),
-    0 22px 44px -32px rgba(21, 63, 53, 0.5);
-  backdrop-filter: blur(18px) saturate(1.15);
-  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+    0 1px 2px rgba(23, 45, 41, 0.03),
+    0 18px 40px -34px rgba(21, 63, 53, 0.45);
 }
 
 /* the explicit glass surface, for panels that sit over the ambient wash */
@@ -291,11 +293,11 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  height: 44px;
-  padding: 0 20px;
-  border-radius: 12px;
+  height: 46px;
+  padding: 0 22px;
+  border-radius: 999px;
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
@@ -589,26 +591,37 @@ body {
 /* Marketing pages sit on warm paper, not on the app's mint wash. */
 .paper {
   background:
-    radial-gradient(120% 60% at 50% -10%, rgba(217, 244, 165, 0.28), transparent 60%),
-    linear-gradient(#fcfbf7, #f8f7f1);
+    radial-gradient(90% 46% at 50% -6%, rgba(217, 244, 165, 0.34), transparent 62%),
+    radial-gradient(70% 40% at 92% 2%, rgba(0, 132, 119, 0.1), transparent 60%),
+    linear-gradient(#fdfdfa, #f6faf5);
 }
 
 /* Headlines use the product face (Manrope), not a second typeface: scale,
    tight tracking and weight carry the emphasis instead. */
 .display {
   font-family: var(--font-display);
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.02;
-  letter-spacing: -0.035em;
-  font-size: clamp(2.3rem, 5.8vw, 4.1rem);
+  letter-spacing: -0.038em;
+  font-size: clamp(2.45rem, 6.2vw, 4.5rem);
+}
+
+/* The one line that has to fill a first screen. */
+.display-xl {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 0.99;
+  letter-spacing: -0.045em;
+  font-size: clamp(2.6rem, 7.4vw, 5.1rem);
+  text-wrap: balance;
 }
 
 .display-sm {
   font-family: var(--font-display);
-  font-weight: 500;
-  line-height: 1.08;
-  letter-spacing: -0.03em;
-  font-size: clamp(1.75rem, 3.8vw, 2.7rem);
+  font-weight: 600;
+  line-height: 1.06;
+  letter-spacing: -0.032em;
+  font-size: clamp(1.85rem, 4vw, 2.95rem);
 }
 
 .display-xs {
@@ -659,6 +672,63 @@ body {
   border-radius: var(--radius-panel);
   border: 1px solid rgba(255, 255, 255, 0.5);
   box-shadow: 0 40px 80px -60px rgba(9, 32, 27, 0.9);
+}
+
+/* ------------------------------------------------------------ new language */
+
+/* A single tile in the marketing bento grid. */
+.tile {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-tile);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  padding: 1.5rem;
+}
+@media (min-width: 640px) {
+  .tile {
+    padding: 1.75rem;
+  }
+}
+
+.label-caps {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* The section wrapper every marketing block shares, so the page keeps one
+   rhythm from the hero to the closing card. */
+.section {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 1200px;
+  padding-inline: 1rem;
+}
+@media (min-width: 640px) {
+  .section {
+    padding-inline: 2rem;
+  }
+}
+
+/* Scroll rails on a phone: one card at a time, snapping, no page overflow. */
+.rail {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding-inline: 1rem;
+  padding-bottom: 0.25rem;
+}
+.rail::-webkit-scrollbar {
+  display: none;
+}
+.rail > * {
+  scroll-snap-align: start;
+  flex: 0 0 auto;
 }
 
 @media (prefers-reduced-motion: no-preference) {

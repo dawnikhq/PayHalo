@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { MarketingFooter, MarketingHeader } from "@/components/marketing/Chrome";
+import { DeviceStage, ProductMock } from "@/components/marketing/ProductMock";
+import { SiteTour } from "@/components/marketing/SiteTour";
 
 export const metadata = {
   title: "PayHalo — your wealth deserves more than a forgotten password.",
@@ -148,43 +150,28 @@ const FAQ = [
   },
 ];
 
-
-function PlanCard() {
-  /* Inside the frame, never overhanging it: a still, readable summary of a plan,
-     the way a reference site floats its product screens inside the photograph. */
-  return (
-    <div className="glass absolute bottom-6 right-6 hidden w-[300px] p-5 lg:block xl:bottom-8 xl:right-8">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="label">An example plan</p>
-          <p className="mt-1 text-[15px] font-semibold text-[var(--color-ink)]">PH-2-KBVLVK</p>
-        </div>
-        <span className="pill badge-lime h-[22px] px-2 text-[10px]">recorded</span>
-      </div>
-
-      <div className="mt-4 space-y-1.5 border-t border-[var(--color-line)] pt-3">
-        {[
-          ["Chidi", "first beneficiary", "60%"],
-          ["Tunde", "backup", "30%"],
-          ["The Foundation", "final beneficiary", "10%"],
-        ].map(([who, role, share]) => (
-          <div key={who} className="flex items-center justify-between gap-2">
-            <span className="min-w-0">
-              <span className="block truncate text-[12px] font-medium text-[var(--color-ink)]">{who}</span>
-              <span className="block text-[10px] text-[var(--color-muted)]">{role}</span>
-            </span>
-            <span className="t-num text-[12px] text-[var(--color-brand)]">{share}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-3 flex items-center justify-between gap-2 border-t border-[var(--color-line)] pt-3">
-        <span className="text-[10.5px] text-[var(--color-muted)]">Trusted Key</span>
-        <span className="text-[11px] font-semibold text-[var(--color-ink)]">Amara O.</span>
-      </div>
-    </div>
-  );
-}
+const SHOWCASE = [
+  {
+    variant: "overview" as const,
+    title: "Overview",
+    body: "Four decisions, one record, and the next thing worth doing — without a dashboard that has to be decoded first.",
+  },
+  {
+    variant: "assets" as const,
+    title: "My assets",
+    body: "Payment accounts, wallets and online businesses, each with the notes your beneficiaries would need to find them.",
+  },
+  {
+    variant: "people" as const,
+    title: "Beneficiaries",
+    body: "Primary beneficiaries, backup beneficiaries and a final beneficiary, with shares that always add up.",
+  },
+  {
+    variant: "handover" as const,
+    title: "Handover",
+    body: "A handover request moves through verification and the 14-day safety window before anything is released.",
+  },
+];
 
 export default function LandingPage() {
   return (
@@ -192,18 +179,23 @@ export default function LandingPage() {
       <MarketingHeader />
 
       <main id="main">
-        {/* ---------------------------------------------------------- hero */}
-        <section className="mx-auto flex min-h-[calc(100svh-68px)] w-full max-w-[1000px] flex-col justify-center px-4 py-10 text-center sm:min-h-0 sm:px-8 sm:pb-0 sm:pt-20">
-          <h1 className="display mx-auto text-[var(--color-ink)]">
-            Your wealth deserves more than
-            <br className="hidden sm:block" /> <span className="text-[var(--color-forest)]">a forgotten password and a hopeful guess.</span>
+        {/* ------------------------------------------------------------ hero */}
+        <section
+          data-tour="hero"
+          className="section flex min-h-[calc(100svh-64px)] flex-col justify-center py-10 text-center sm:min-h-0 sm:pb-0 sm:pt-16"
+        >
+          <h1 className="display-xl mx-auto max-w-[16ch] text-[var(--color-ink)]">
+            Your wealth deserves more than{" "}
+            <span className="text-[var(--color-forest)]">a forgotten password and a hopeful guess.</span>
           </h1>
-          <p className="mx-auto mt-6 max-w-[62ch] text-[14.5px] leading-relaxed text-[var(--color-muted)] sm:text-[15.5px]">
+
+          <p className="mx-auto mt-6 max-w-[58ch] text-[14.5px] leading-relaxed text-[var(--color-muted)] sm:text-[16px]">
             PayHalo is a digital inheritance platform that helps you document what you own, decide who inherits it and
             leave instructions for how your wealth should be handled.
           </p>
+
           <div className="mt-8 flex flex-col items-center justify-center gap-2.5 sm:flex-row sm:gap-3">
-            <Link href="/signup" className="btn btn-ink w-full sm:w-auto">
+            <Link href="/signup" className="btn btn-primary w-full sm:w-auto">
               Create my inheritance plan <span aria-hidden>→</span>
             </Link>
             <Link href="#how" className="btn btn-secondary w-full sm:w-auto">
@@ -221,134 +213,190 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* -------------------------------------------------- hero photo band */}
-        <section className="mx-auto mt-10 w-full max-w-[1200px] px-4 sm:mt-14 sm:px-8">
-          <div className="relative">
-            <div className="photo-frame relative h-[280px] sm:h-[420px] lg:h-[520px]">
-              <Image
-                src="/hero-lands.jpg"
-                alt="A misty forested valley at dawn"
-                fill
-                priority
-                sizes="(max-width: 1200px) 100vw, 1200px"
-                className="object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0d2a24]/70 via-[#0d2a24]/10 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8">
-                <p className="max-w-[44ch] text-[13px] leading-relaxed text-white/90 sm:text-[14px]">
+        {/* --------------------------------------------------- product stage */}
+        <section className="section mt-10 sm:mt-16">
+          <DeviceStage>
+            <div className="grid items-center gap-8 lg:grid-cols-[1fr_340px]">
+              <div className="order-2 lg:order-1">
+                <p className="max-w-[46ch] text-[13px] leading-relaxed text-[var(--color-muted)] sm:text-[14.5px]">
                   Money can sit in payment accounts, cryptocurrency wallets and online businesses for years, yet remain
                   unknown or difficult to claim because the person who owned them never recorded where they were or
                   what should happen to them.
                 </p>
+
+                <dl className="mt-6 grid max-w-[420px] grid-cols-2 gap-2.5">
+                  {[
+                    ["Plan reference", "PH-2-KBVLVK"],
+                    ["Trusted Key", "Amara O."],
+                    ["Beneficiaries", "3 named"],
+                    ["Vault", "not started"],
+                  ].map(([k, v]) => (
+                    <div key={k} className="rounded-[14px] border border-[rgba(21,63,53,0.10)] bg-white/80 px-3 py-2.5">
+                      <dt className="text-[9.5px] font-bold uppercase tracking-[0.13em] text-[#8b9a92]">{k}</dt>
+                      <dd className="mt-0.5 truncate text-[12.5px] font-semibold text-[var(--color-ink)]">{v}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+
+              <div className="order-1 lg:order-2">
+                <ProductMock variant="overview" />
               </div>
             </div>
-            <PlanCard />
-          </div>
+          </DeviceStage>
         </section>
 
         {/* ------------------------------------------------------- stat band */}
-        <section className="mx-auto mt-16 w-full max-w-[1200px] px-4 sm:mt-24 sm:px-8">
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-8 border-y border-[rgba(21,63,53,0.10)] py-8 sm:grid-cols-4 sm:py-10">
+        <section data-tour="stats" className="section mt-14 sm:mt-24">
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-9 border-y border-[rgba(21,63,53,0.10)] py-9 sm:grid-cols-4 sm:py-11">
             {STATS.map(([value, label]) => (
               <div key={label}>
-                <dt className="display-sm text-[var(--color-forest)]">{value}</dt>
-                <dd className="mt-2 max-w-[22ch] text-[12px] leading-snug text-[var(--color-muted)]">{label}</dd>
+                <dt className="font-[var(--font-display)] text-[clamp(2.6rem,7vw,4.1rem)] font-semibold leading-none tracking-[-0.05em] text-[var(--color-forest)]">
+                  {value}
+                </dt>
+                <dd className="mt-2.5 max-w-[22ch] text-[12px] leading-snug text-[var(--color-muted)] sm:text-[12.5px]">
+                  {label}
+                </dd>
               </div>
             ))}
           </dl>
         </section>
 
-        {/* --------------------------------------------------- investigators */}
-        <section className="mx-auto mt-20 w-full max-w-[1200px] px-4 sm:mt-28 sm:px-8">
-          <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16">
-            <h2 className="display-sm text-[var(--color-ink)]">
+        {/* ---------------------------------------------------- investigators */}
+        <section className="section mt-16 sm:mt-28">
+          <div className="grid gap-8 lg:grid-cols-[1.12fr_0.88fr] lg:gap-16">
+            <h2 className="display-sm max-w-[20ch] text-[var(--color-ink)]">
               Your family shouldn&rsquo;t have to become investigators to find what you&rsquo;ve left behind.
             </h2>
-            <div className="flex flex-col justify-center gap-4">
+            <div className="flex flex-col justify-center gap-5">
               <p className="text-[14px] leading-relaxed text-[var(--color-muted)] sm:text-[15px]">
                 Make your financial life easier to account for. PayHalo brings your asset records, inheritance
                 decisions and handover arrangements into one place, giving your chosen beneficiaries a starting point
                 instead of a trail of unanswered questions.
               </p>
-              <Link href="/assets" className="text-[13px] font-semibold text-[var(--color-brand)]">
+              <Link
+                href="/assets"
+                className="inline-flex w-fit items-center gap-2 text-[13px] font-semibold text-[var(--color-brand)]"
+              >
                 Start with my assets <span aria-hidden>→</span>
               </Link>
             </div>
           </div>
+
+          <div className="photo-frame relative mt-8 h-[240px] sm:mt-10 sm:h-[380px]">
+            <Image
+              src="/hero-lands.jpg"
+              alt="A misty forested valley at dawn"
+              fill
+              priority
+              sizes="(max-width: 1200px) 100vw, 1200px"
+              className="object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0d2a24]/55 via-transparent to-transparent" />
+          </div>
         </section>
 
-        {/* -------------------------------------------------------- features */}
-        <section id="arrangements" className="mx-auto mt-16 w-full max-w-[1200px] scroll-mt-24 px-4 sm:mt-20 sm:px-8">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {/* --------------------------------------------------------- features */}
+        <section id="arrangements" data-tour="arrangements" className="section mt-16 scroll-mt-24 sm:mt-28">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <span className="eyebrow-pill">Your arrangements</span>
+              <h2 className="display-sm mt-5 max-w-[22ch] text-[var(--color-ink)]">
+                Six decisions, and none of them made by guesswork.
+              </h2>
+            </div>
+            <p className="max-w-[36ch] text-[12.5px] leading-relaxed text-[var(--color-muted)]">
+              Everything on this page is yours to change, at any point, without starting over.
+            </p>
+          </div>
+
+          <div className="mt-8 grid gap-3 sm:mt-10 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map((f, i) => {
               const dark = f.tone === "dark";
               const lime = f.tone === "lime";
               const photo = f.tone === "photo";
               return (
-                <section
+                <article
                   key={f.title}
                   className={[
-                    "relative flex flex-col overflow-hidden rounded-[20px] p-6 sm:p-7",
-                    dark
-                      ? "bg-[linear-gradient(160deg,#17453a,#12362d)] text-[#eaf3ea]"
-                      : lime
-                        ? "bg-[var(--color-lime)] text-[var(--color-forest)]"
-                        : "border border-[rgba(21,63,53,0.10)] bg-white/75 backdrop-blur",
-                    photo && (i === 0 ? "md:col-span-2 lg:col-span-1" : ""),
+                    "tile flex flex-col transition duration-200 hover:-translate-y-0.5",
+                    i === 0 || i === 5 ? "sm:col-span-2 lg:col-span-1" : "",
+                    photo ? "min-h-[290px] justify-end border-transparent text-white" : "",
+                    dark ? "border-transparent bg-[linear-gradient(155deg,#17453a,#0f2f28)] text-[#eaf3ea]" : "",
+                    lime ? "border-[#cbea92] bg-[var(--color-lime)] text-[var(--color-forest)]" : "",
+                    !photo && !dark && !lime ? "bg-white" : "",
                   ].join(" ")}
                 >
-                  <p
-                    className={[
-                      "text-[10px] font-semibold uppercase tracking-[0.16em]",
-                      dark ? "text-[var(--color-lime)]" : lime ? "text-[#4d6b2a]" : "text-[var(--color-brand)]",
-                    ].join(" ")}
-                  >
-                    {f.eyebrow}
-                  </p>
-                  <h3
-                    className={[
-                      "display-xs mt-3",
-                      dark ? "text-white" : lime ? "text-[var(--color-forest)]" : "text-[var(--color-ink)]",
-                    ].join(" ")}
-                  >
-                    {f.title}
-                  </h3>
-                  <p
-                    className={[
-                      "mt-3 flex-1 text-[12.5px] leading-relaxed",
-                      dark ? "text-[#b9d2c0]" : lime ? "text-[#3f5b3a]" : "text-[var(--color-muted)]",
-                    ].join(" ")}
-                  >
-                    {f.body}
-                  </p>
-                  {f.cta && f.href && (
-                    <Link
-                      href={f.href}
+                  {photo && (
+                    <>
+                      <Image
+                        src={i === 0 ? "/hero-lands.jpg" : "/about-light.jpg"}
+                        alt=""
+                        fill
+                        sizes="(max-width: 640px) 100vw, 400px"
+                        className="object-cover"
+                      />
+                      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(9,32,27,0.15),rgba(9,32,27,0.85))]" />
+                    </>
+                  )}
+
+                  <div className="relative">
+                    <p
                       className={[
-                        "mt-5 inline-flex w-fit items-center gap-1.5 rounded-full px-3.5 py-2 text-[11.5px] font-semibold transition",
-                        dark
-                          ? "bg-white/12 text-white hover:bg-white/20"
-                          : lime
-                            ? "bg-[var(--color-forest)] text-[#f2f7e8] hover:bg-[#0f2f28]"
-                            : "border border-[rgba(21,63,53,0.14)] text-[var(--color-ink)] hover:border-[var(--color-brand)] hover:text-[var(--color-brand)]",
+                        "label-caps",
+                        dark ? "text-[var(--color-lime)]" : lime ? "text-[#4d6b2a]" : photo ? "text-white/75" : "text-[var(--color-brand)]",
                       ].join(" ")}
                     >
-                      {f.cta} <span aria-hidden>→</span>
-                    </Link>
-                  )}
-                </section>
+                      {f.eyebrow}
+                    </p>
+                    <h3
+                      className={[
+                        "mt-3 font-[var(--font-display)] text-[19px] font-semibold leading-[1.22] tracking-[-0.025em] sm:text-[21px]",
+                        dark ? "text-white" : lime ? "text-[var(--color-forest)]" : photo ? "text-white" : "text-[var(--color-ink)]",
+                      ].join(" ")}
+                    >
+                      {f.title}
+                    </h3>
+                    <p
+                      className={[
+                        "mt-2.5 flex-1 text-[12.5px] leading-relaxed",
+                        dark ? "text-[#b9d2c0]" : lime ? "text-[#3f5b3a]" : photo ? "text-white/80" : "text-[var(--color-muted)]",
+                      ].join(" ")}
+                    >
+                      {f.body}
+                    </p>
+                    {f.cta && f.href && (
+                      <Link
+                        href={f.href}
+                        className={[
+                          "mt-5 inline-flex w-fit items-center gap-1.5 rounded-full px-3.5 py-2 text-[11.5px] font-semibold transition",
+                          dark
+                            ? "bg-white/12 text-white hover:bg-white/20"
+                            : lime
+                              ? "bg-[var(--color-forest)] text-[#f2f7e8] hover:bg-[#0f2f28]"
+                              : photo
+                                ? "bg-white text-[var(--color-forest)] hover:bg-[var(--color-lime)]"
+                                : "border border-[rgba(21,63,53,0.14)] text-[var(--color-ink)] hover:border-[var(--color-brand)] hover:text-[var(--color-brand)]",
+                        ].join(" ")}
+                      >
+                        {f.cta} <span aria-hidden>→</span>
+                      </Link>
+                    )}
+                  </div>
+                </article>
               );
             })}
           </div>
         </section>
 
         {/* ------------------------------------------------------------- how */}
-        <section id="how" className="mt-20 scroll-mt-24 bg-[#f4f6ef] py-16 sm:mt-28 sm:py-24">
-          <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-8">
+        <section id="how" data-tour="how" className="mt-16 scroll-mt-24 bg-[#f2f6ee] py-16 sm:mt-28 sm:py-24">
+          <div className="section">
             <div className="max-w-[760px]">
               <span className="eyebrow-pill">How PayHalo works</span>
               <h2 className="display mt-5 text-[var(--color-ink)]">
-                From knowing what you own to <span className="text-[var(--color-forest)]">deciding where it goes.</span>
+                From knowing what you own to{" "}
+                <span className="text-[var(--color-forest)]">deciding where it goes.</span>
               </h2>
               <p className="mt-5 max-w-[62ch] text-[14px] leading-relaxed text-[var(--color-muted)] sm:text-[15px]">
                 PayHalo gives you a straightforward way to record your digital assets, establish your inheritance
@@ -356,21 +404,43 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <ol className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {HOW.map((step) => (
-                <li key={step.n} className="rounded-[18px] border border-[rgba(21,63,53,0.10)] bg-white/80 p-5">
-                  <span className="font-[var(--font-display)] text-[22px] font-semibold leading-none tracking-[-0.02em] text-[var(--color-brand)]">
+            <ol className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {HOW.map((step, i) => (
+                <li
+                  key={step.n}
+                  className={[
+                    "rounded-[22px] border border-[rgba(21,63,53,0.10)] p-5 sm:p-6",
+                    i === 3 ? "bg-[var(--color-forest)] text-[#eaf3ea]" : "bg-white",
+                  ].join(" ")}
+                >
+                  <span
+                    className={[
+                      "font-[var(--font-display)] text-[26px] font-semibold leading-none tracking-[-0.04em]",
+                      i === 3 ? "text-[var(--color-lime)]" : "text-[var(--color-brand)]",
+                    ].join(" ")}
+                  >
                     {step.n}
                   </span>
-                  <h3 className="mt-3 text-[14px] font-semibold text-[var(--color-ink)]">{step.title}</h3>
-                  <p className="mt-1 text-[12.5px] font-medium text-[var(--color-forest)]">{step.lead}</p>
-                  <p className="mt-2 text-[12px] leading-relaxed text-[var(--color-muted)]">{step.body}</p>
+                  <h3
+                    className={[
+                      "mt-4 font-[var(--font-display)] text-[16px] font-semibold leading-snug tracking-[-0.02em]",
+                      i === 3 ? "text-white" : "text-[var(--color-ink)]",
+                    ].join(" ")}
+                  >
+                    {step.title}
+                  </h3>
+                  <p className={["mt-1.5 text-[12.5px] font-semibold", i === 3 ? "text-[var(--color-lime)]" : "text-[var(--color-forest)]"].join(" ")}>
+                    {step.lead}
+                  </p>
+                  <p className={["mt-2 text-[12px] leading-relaxed", i === 3 ? "text-[#b9d2c0]" : "text-[var(--color-muted)]"].join(" ")}>
+                    {step.body}
+                  </p>
                 </li>
               ))}
             </ol>
 
-            <div className="mt-10 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-              <Link href="/signup" className="btn btn-ink">
+            <div className="mt-9 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+              <Link href="/signup" className="btn btn-primary">
                 Create my plan <span aria-hidden>→</span>
               </Link>
               <p className="text-[12.5px] text-[var(--color-muted)]">
@@ -380,22 +450,107 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* -------------------------------------------------------- showcase */}
+        <section className="section mt-16 sm:mt-28">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <h2 className="display-sm max-w-[18ch] text-[var(--color-ink)]">
+              Four screens, and nothing to decode.
+            </h2>
+            <p className="max-w-[38ch] text-[12.5px] leading-relaxed text-[var(--color-muted)]">
+              Swipe through the parts of PayHalo a person actually meets.
+            </p>
+          </div>
+
+          <div className="rail mt-7 sm:mt-10 sm:grid sm:grid-cols-2 sm:gap-3 sm:overflow-visible lg:grid-cols-4">
+            {SHOWCASE.map((s) => (
+              <div
+                key={s.title}
+                className="w-[262px] rounded-[24px] border border-[rgba(21,63,53,0.10)] bg-white p-4 sm:w-auto"
+              >
+                <div className="rounded-[18px] bg-[#f2f6ee] px-3 py-3">
+                  <ProductMock variant={s.variant} label={s.variant} />
+                </div>
+                <h3 className="mt-4 font-[var(--font-display)] text-[15px] font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
+                  {s.title}
+                </h3>
+                <p className="mt-1 text-[11.5px] leading-relaxed text-[var(--color-muted)]">{s.body}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* --------------------------------------------------------- security */}
+        <section data-tour="safety" className="section mt-16 sm:mt-28">
+          <div className="overflow-hidden rounded-[30px] bg-[linear-gradient(160deg,#17453a,#0b241f)] px-6 py-12 text-[#eaf3ea] sm:px-10 sm:py-16">
+            <div className="max-w-[720px]">
+              <span className="eyebrow-pill border-white/15 bg-white/10 text-[#c9dbcd]">The safety window</span>
+              <h2 className="display-sm mt-5 text-white">
+                Where security isn&rsquo;t a feature, <span className="text-[var(--color-lime)]">it&rsquo;s the foundation.</span>
+              </h2>
+            </div>
+
+            <div className="mt-10 grid gap-8 sm:grid-cols-3 sm:gap-6">
+              {[
+                {
+                  title: "Your Trusted Key",
+                  lead: "Appoint a Trusted Key to submit the required proof of death and initiate the handover process, while keeping your assets and inheritance instructions inaccessible to them during your lifetime.",
+                  points: [
+                    "They cannot access your assets or change your inheritance instructions while you're alive",
+                    "One Trusted Key starts the process, and only the process",
+                  ],
+                },
+                {
+                  title: "Verification first",
+                  lead: "Every handover request includes a 14-day response window for the account holder to receive notification and cancel a request made in error before the process proceeds.",
+                  points: [
+                    "Death documentation is checked before anyone is notified",
+                    "The account holder has 14 days to cancel a request made in error",
+                  ],
+                },
+                {
+                  title: "Nothing secret is stored",
+                  lead: "You should never provide your account passwords, cryptocurrency private keys or recovery phrases. PayHalo is designed to record asset information and inheritance preferences, not collect credentials that grant direct access to your accounts.",
+                  points: ["No passwords", "No private keys", "No recovery phrases"],
+                },
+              ].map((col) => (
+                <div key={col.title} className="border-t border-white/15 pt-5">
+                  <h3 className="font-[var(--font-display)] text-[17px] font-semibold tracking-[-0.02em] text-white">
+                    {col.title}
+                  </h3>
+                  <p className="mt-2 text-[12.5px] leading-relaxed text-[#b9d2c0]">{col.lead}</p>
+                  <ul className="mt-4 space-y-2">
+                    {col.points.map((p) => (
+                      <li key={p} className="flex items-start gap-2 text-[11.5px] leading-relaxed text-[#d7e6da]">
+                        <span aria-hidden className="mt-[3px] text-[var(--color-lime)]">
+                          ✓
+                        </span>
+                        {p}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* ----------------------------------------------------------- about */}
-        <section className="mx-auto mt-20 w-full max-w-[1200px] px-4 sm:mt-28 sm:px-8">
+        <section className="section mt-16 sm:mt-28">
           <div className="grid items-center gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:gap-14">
-            <div className="photo-frame relative h-[300px] sm:h-[400px]">
+            <div className="photo-frame relative h-[280px] sm:h-[400px]">
               <Image
                 src="/about-light.jpg"
-                alt="Light falling through green foliage"
+                alt="Light falling through leaves"
                 fill
-                sizes="(max-width: 1024px) 100vw, 560px"
+                sizes="(max-width: 1024px) 100vw, 520px"
                 className="object-cover"
               />
             </div>
             <div>
               <span className="eyebrow-pill">About PayHalo</span>
               <h2 className="display-sm mt-5 text-[var(--color-ink)]">
-                We have changed where we keep our wealth, but not how we <span className="text-[var(--color-forest)]">prepare to pass it on.</span>
+                We have changed where we keep our wealth, but not how we{" "}
+                <span className="text-[var(--color-forest)]">prepare to pass it on.</span>
               </h2>
               <p className="mt-5 text-[14px] leading-relaxed text-[var(--color-muted)]">
                 PayHalo is building a simpler way for people to prepare their inheritance, from identifying what they
@@ -409,7 +564,7 @@ export default function LandingPage() {
         </section>
 
         {/* ------------------------------------------------------------- faq */}
-        <section id="faq" className="mx-auto mt-20 w-full max-w-[1200px] scroll-mt-24 px-4 sm:mt-28 sm:px-8">
+        <section id="faq" data-tour="faq" className="section mt-16 scroll-mt-24 sm:mt-28">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <h2 className="display-sm max-w-[20ch] text-[var(--color-ink)]">Questions, answered plainly.</h2>
             <p className="max-w-[38ch] text-[12.5px] leading-relaxed text-[var(--color-muted)]">
@@ -421,7 +576,7 @@ export default function LandingPage() {
             {FAQ.map((item) => (
               <details
                 key={item.q}
-                className="group rounded-[16px] border border-[rgba(21,63,53,0.10)] bg-white/75 p-4 backdrop-blur sm:p-5"
+                className="group rounded-[18px] border border-[rgba(21,63,53,0.10)] bg-white p-4 sm:p-5"
               >
                 <summary className="flex cursor-pointer list-none items-start justify-between gap-3 text-[13px] font-semibold text-[var(--color-ink)]">
                   {item.q}
@@ -436,14 +591,15 @@ export default function LandingPage() {
         </section>
 
         {/* --------------------------------------------------------- closing */}
-        <section className="mx-auto mt-20 w-full max-w-[1200px] px-4 sm:mt-28 sm:px-8">
-          <div className="relative overflow-hidden rounded-[26px] bg-[linear-gradient(160deg,#17453a,#0f2f28)] px-6 py-14 text-center sm:px-12 sm:py-20">
+        <section data-tour="cta" className="section mt-16 sm:mt-28">
+          <div className="relative overflow-hidden rounded-[30px] bg-[linear-gradient(160deg,#17453a,#0f2f28)] px-6 py-14 text-center sm:px-12 sm:py-20">
             <div
               aria-hidden
               className="pointer-events-none absolute -right-24 -top-24 h-[320px] w-[320px] rounded-full bg-[radial-gradient(circle,rgba(217,244,165,0.30),transparent_65%)]"
             />
             <h2 className="display mx-auto max-w-[22ch] text-[#f4f8f2]">
-              You&rsquo;ve made the effort to build something, <span className="text-[var(--color-lime)]">give those efforts a considered future.</span>
+              You&rsquo;ve made the effort to build something,{" "}
+              <span className="text-[var(--color-lime)]">give those efforts a considered future.</span>
             </h2>
             <p className="mx-auto mt-5 max-w-[52ch] text-[13.5px] leading-relaxed text-[#b9d2c0]">
               Record what you own, decide who benefits and put the arrangements in place with PayHalo.
@@ -464,6 +620,7 @@ export default function LandingPage() {
       </main>
 
       <MarketingFooter />
+      <SiteTour />
     </div>
   );
 }
