@@ -52,6 +52,55 @@ export async function GET(request: Request) {
 
     const reachable = Object.fromEntries([...pool, ...fallbacks].map((id) => [id, ids.includes(id)]));
 
+    /*
+     * ?ping=1 asks each model in the pool for one short sentence, so the whole
+     * path — key, model, chat shape, our parser — is proved in one request
+     * rather than by asking Halo a question and hoping.
+     */
+    const ping = new URL(request.url).searchParams.get("ping");
+    let live: { model: string; ok: boolean; ms: number; text?: string; error?: string }[] | undefined;
+    if (ping) {
+      live = [];
+      for (const model of pool) {
+        const started = Date.now();
+        try {
+          const r = await fetch(`${base}/chat/completions`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${aiKey("groq")}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model,
+              messages: [
+                { role: "system", content: "Answer in one short sentence." },
+                { role: "user", content: "In one sentence, what is PayHalo for?" },
+              ],
+              temperature: 0.2,
+              max_tokens: 80,
+            }),
+            cache: "no-store",
+          });
+          const body = (await r.json().catch(() => ({}))) as {
+            choices?: { message?: { content?: string } }[];
+            error?: { message?: string };
+          };
+          const text = (body.choices?.[0]?.message?.content ?? "").trim();
+          live.push({
+            model,
+            ok: r.ok && Boolean(text),
+            ms: Date.now() - started,
+            text: text.slice(0, 160),
+            error: text ? undefined : body.error?.message ?? `status ${r.status}`,
+          });
+        } catch (error) {
+          live.push({
+            model,
+            ok: false,
+            ms: Date.now() - started,
+            error: error instanceof Error ? error.message : "unreachable",
+          });
+        }
+      }
+    }
+
     return NextResponse.json({
       configured: true,
       provider: "groq",
@@ -60,6 +109,7 @@ export async function GET(request: Request) {
       listed: res.ok,
       status: res.status,
       reachable,
+      live,
       qwen: ids.filter((id) => id.toLowerCase().includes("qwen")),
       gptOss: ids.filter((id) => id.toLowerCase().includes("gpt-oss")),
     });

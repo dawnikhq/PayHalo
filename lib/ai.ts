@@ -90,7 +90,7 @@ export function groqFallbackModels(): string[] {
       .map((m) => m.trim())
       .filter(Boolean);
   }
-  return ["qwen/qwen3.6-27b", "openai/gpt-oss-20b"];
+  return ["openai/gpt-oss-20b"];
 }
 
 /** Every model to try, in order, starting from the rotation's current turn. */
