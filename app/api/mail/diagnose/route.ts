@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { brevoAccount, mailConfigured, mailHealth } from "@/lib/mailer";
+import { brevoAccount, mailConfigured, mailHealth, authorisedSender, sendTestMessage } from "@/lib/mailer";
 import { isAdmin } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
@@ -57,17 +57,29 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const email = (url.searchParams.get("email") ?? "").trim().toLowerCase();
+  const testTo = (url.searchParams.get("send") ?? "").trim().toLowerCase();
   const health = mailHealth();
   const account = await brevoAccount();
+  const effectiveSender = await authorisedSender();
+
+  const test = testTo ? await sendTestMessage(testTo) : null;
+  // give the provider a moment to record the attempt before reading its log
+  if (test) await new Promise((r) => setTimeout(r, 2500));
 
   const [senders, events] = await Promise.all([
     brevo("/senders?ip=0"),
-    email ? brevo(`/smtp/statistics/events?email=${encodeURIComponent(email)}&limit=25&sort=desc`) : Promise.resolve(null),
+    email
+      ? brevo(`/smtp/statistics/events?email=${encodeURIComponent(email)}&limit=25&sort=desc`)
+      : testTo
+        ? brevo(`/smtp/statistics/events?email=${encodeURIComponent(testTo)}&limit=10&sort=desc`)
+        : Promise.resolve(null),
   ]);
 
   return NextResponse.json({
     configured: mailConfigured(),
     ...health,
+    effectiveSender,
+    test,
     brevo: account,
     senders,
     events,

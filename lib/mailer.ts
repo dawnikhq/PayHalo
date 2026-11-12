@@ -24,7 +24,7 @@ const apiKey = () => (process.env.BREVO_API_KEY ?? "").trim();
  * was unavailable and refused to send anything. A sender we can always name is
  * better than a sender that disappears with a deployment target.
  */
-const VERIFIED_SENDER = "admin.payhalo@gmail.com";
+const VERIFIED_SENDER = "hello@dawnik.com";
 
 const fromEmail = () =>
   (process.env.MAIL_FROM ?? process.env.MAIL_FROM_EMAIL ?? process.env.BREVO_SENDER_EMAIL ?? "").trim() ||
@@ -44,6 +44,11 @@ export interface MailHealth {
   senderSource: "environment" | "default";
   senderName: string;
   provider: string;
+}
+
+export async function mailHealthAsync(): Promise<MailHealth & { effectiveSender: string }> {
+  const effectiveSender = await authorisedSender();
+  return { ...mailHealth(), effectiveSender };
 }
 
 export function mailHealth(): MailHealth {
@@ -80,6 +85,45 @@ interface Message {
   text: string;
 }
 
+/**
+ * Brevo only accepts a sender it has validated, and it rejects the rest *after*
+ * answering the API call — which is how a sign-in code can be "sent" and never
+ * arrive. So before sending, ask Brevo which senders are real and use one of
+ * those if the configured address is not among them.
+ */
+let senderCache: { at: number; address: string | null } | null = null;
+
+export async function authorisedSender(): Promise<string> {
+  const configured = fromEmail();
+  if (!apiKey()) {
+    senderCache = { at: Date.now(), address: null };
+    return configured;
+  }
+  if (senderCache && Date.now() - senderCache.at < 60_000) {
+    return senderCache.address ?? configured;
+  }
+
+  try {
+    const res = await fetch("https://api.brevo.com/v3/senders?ip=0", {
+      headers: { "api-key": apiKey(), Accept: "application/json" },
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      senderCache = { at: Date.now(), address: null };
+      return configured;
+    }
+    const body = (await res.json()) as { senders?: { email?: string; active?: boolean }[] };
+    const list = (body.senders ?? []).filter((s) => s.email && s.active !== false);
+    const lower = configured.toLowerCase();
+    const chosen = list.find((s) => (s.email ?? "").toLowerCase() === lower)?.email ?? list[0]?.email ?? null;
+    senderCache = { at: Date.now(), address: chosen };
+    return chosen ?? configured;
+  } catch {
+    senderCache = { at: Date.now(), address: null };
+    return configured;
+  }
+}
+
 async function send(message: Message): Promise<MailResult> {
   if (!mailConfigured()) {
     return { sent: false, reason: "Email delivery is not set up on this account yet." };
@@ -93,7 +137,7 @@ async function send(message: Message): Promise<MailResult> {
       Accept: "application/json",
     },
     body: JSON.stringify({
-      sender: { name: fromName(), email: fromEmail() },
+      sender: { name: fromName(), email: await authorisedSender() },
       to: [{ email: message.to, ...(message.toName ? { name: message.toName } : {}) }],
       subject: message.subject,
       textContent: message.text,
@@ -224,4 +268,26 @@ export async function sendLoginNotice(
       "PayHalo",
     ].join("\n"),
   });
+}
+
+/**
+ * A single test message, used only by the delivery report. It goes through the
+ * same path as every real message — same sender resolution, same provider — so a
+ * "delivered" event on it means the product's mail works, not that a probe does.
+ */
+export async function sendTestMessage(to: string): Promise<MailResult & { sender?: string }> {
+  const sender = await authorisedSender();
+  const result = await send({
+    to,
+    subject: "PayHalo delivery test",
+    text: [
+      "This is a delivery test from PayHalo.",
+      "",
+      `It was sent at ${new Date().toISOString()} from ${sender}.`,
+      "If you are reading it, sign-in codes and confirmation links will reach this inbox too.",
+      "",
+      "PayHalo",
+    ].join("\n"),
+  });
+  return { ...result, sender };
 }
