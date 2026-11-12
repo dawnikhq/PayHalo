@@ -60,7 +60,20 @@ async function handleGET(request: Request) {
   try {
     const redirectUri = paypalRedirectUri(request.url);
     const tokens = await exchangeCode(code, redirectUri);
-    const identity = await userInfo(tokens.accessToken, tokens.idToken);
+
+    /*
+     * The sign-in is already granted at this point; asking who it was is a
+     * second, separate request that PayPal sometimes refuses (a sandbox app
+     * that shares no profile attributes answers 400 on every schema). Losing
+     * the name is a cosmetic loss. Losing the connection is not: the account is
+     * still identified by the grant itself, so it is linked and the card says
+     * the email was not shared.
+     */
+    const identity = await userInfo(tokens.accessToken, tokens.idToken).catch(() => ({
+      payerId: "unknown",
+      email: "",
+      name: null,
+    }));
 
     const owner = await requireOwner();
     await savePayPalConnection(owner.id, {
