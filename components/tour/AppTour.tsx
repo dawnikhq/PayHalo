@@ -35,7 +35,7 @@ const OWNER_STEPS: TourStep[] = [
     target: "nav-plans",
     kicker: "Step 4 of 4",
     title: "One account, several arrangements.",
-    body: "Keep a family plan and a business plan apart, or switch between plans you have made. Each has its own assets, people and Trusted Key.",
+    body: "Keep a family plan and a business plan apart, or switch between plans you have made. Each has its own assets, people and Trusted Key. Add plan sits at the top of My plan.",
   },
   {
     target: "app-halo",

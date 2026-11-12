@@ -1,5 +1,5 @@
 import { accountByEmail } from "./accounts";
-import { mailConfigured, sendKeyholderNamed, type MailResult } from "./mailer";
+import { mailConfigured, sendKeyholderNamed, sendKeyholderUnsealed, type MailResult } from "./mailer";
 
 /**
  * Telling a Trusted Key they have been named — one place, so the first send and
@@ -41,6 +41,33 @@ export async function notifyKeyholder(
     ownerName: details.ownerName || "The account holder",
     portalUrl,
     signupUrl,
+  });
+
+  return { ...mail, to: keyholder.email, existingAccount: Boolean(existing), configured: mailConfigured() };
+}
+
+/** The seal was taken off: the same person who was told about the seal is told about this. */
+export async function notifyKeyholderUnsealed(
+  origin: string,
+  details: { ownerName: string; keyholder: { name: string; email: string } | null },
+): Promise<KeyholderNotice> {
+  const keyholder = details.keyholder;
+  if (!keyholder?.email) {
+    return {
+      sent: false,
+      reason: "No email address on the Trusted Key.",
+      existingAccount: false,
+      configured: mailConfigured(),
+    };
+  }
+
+  const existing = await accountByEmail(keyholder.email).catch(() => null);
+  const portalUrl = existing ? `${origin}/signin?next=/keyholder` : `${origin}/keyholder`;
+
+  const mail = await sendKeyholderUnsealed(keyholder.email, {
+    keyholderName: keyholder.name,
+    ownerName: details.ownerName || "The account holder",
+    portalUrl,
   });
 
   return { ...mail, to: keyholder.email, existingAccount: Boolean(existing), configured: mailConfigured() };

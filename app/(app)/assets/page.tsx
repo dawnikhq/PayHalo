@@ -3,6 +3,7 @@ import { getSnapshot } from "@/lib/store";
 import { money, pad2 } from "@/lib/format";
 import { AssetsExplorer } from "@/components/assets/AssetsExplorer";
 import { Page } from "@/components/ui";
+import { SealedNotice } from "@/components/plan/SealedNotice";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,8 @@ export default async function AssetsPage() {
           <span aria-hidden>+</span> Add an asset
         </Link>
       </header>
+
+      <SealedNotice sealedAt={s.plan.sealedAt} what="this list of assets" />
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="card-forest p-6">

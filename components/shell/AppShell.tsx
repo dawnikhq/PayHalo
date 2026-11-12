@@ -29,7 +29,7 @@ const NAV: Record<Role, { primary: NavItem[]; secondary: NavItem[] }> = {
       { href: "/dashboard", label: "Overview", icon: <IconDashboard />, tour: "nav-overview" },
       { href: "/assets", label: "My assets", icon: <IconAssets />, tour: "nav-assets" },
       { href: "/beneficiaries", label: "Beneficiaries", icon: <IconBeneficiaries />, tour: "nav-people" },
-      { href: "/plan", label: "My instructions", icon: <IconPlan />, tour: "nav-plan" },
+      { href: "/plan", label: "My plan", icon: <IconPlan />, tour: "nav-plan" },
       { href: "/money", label: "Money", icon: <IconWallet /> },
       { href: "/activity", label: "Activity", icon: <IconActivity /> },
     ],

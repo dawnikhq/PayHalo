@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Page } from "@/components/ui";
 import { StartPlan } from "@/components/plan/StartPlan";
+import { SealedNotice } from "@/components/plan/SealedNotice";
 import { getSnapshot } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +25,8 @@ export default async function StartPlanPage() {
           </Link>
         </p>
       </header>
+
+      <SealedNotice sealedAt={s.plan.sealedAt} what="the steps below" />
 
       <StartPlan
         steps={s.steps}

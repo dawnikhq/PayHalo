@@ -55,8 +55,8 @@ export function SealPlan({
       <div className={`rounded-[16px] bg-[linear-gradient(155deg,#0e6f56,#0b3d2e)] p-5 ${className}`}>
         <SealedSeal sealedAt={sealedAt ?? null} vaultRef={vaultRef ?? null} compact />
         <p className="mt-3 text-[12px] leading-relaxed text-[#c9e4d2]">
-          Your instructions are recorded and your Trusted Key has been told. You can still edit anything — a change is
-          dated on the trail and never unseals the plan.
+          Your instructions are recorded and your Trusted Key has been told. From here the plan is read-only: unseal it to
+          change anything, and seal it again when you are done.
         </p>
       </div>
     );

@@ -502,6 +502,39 @@ export async function sendTestMessage(to: string): Promise<MailResult & { sender
  * gets a sign-up link that pre-fills their address, so the code is waiting for
  * them the moment the account exists.
  */
+/**
+ * The seal came off. A Trusted Key was told the instructions were fixed; they
+ * are not fixed any more, and a person who might one day act on them deserves to
+ * know that in the same channel as the first message. Nothing is asked of them.
+ */
+export async function sendKeyholderUnsealed(
+  to: string,
+  details: { keyholderName: string; ownerName: string; portalUrl: string },
+): Promise<MailResult> {
+  if (!to.trim()) return { sent: false, reason: "There is no email address for the Trusted Key yet." };
+
+  const greeting = details.keyholderName?.trim() ? `Hello ${details.keyholderName.trim()},` : "Hello,";
+  return sendEmail(to, details.keyholderName, `${details.ownerName} has reopened the plan you are named on`, {
+    preheader: `${details.ownerName} took the seal off to make changes. Nothing is needed from you.`,
+    eyebrow: "A plan update",
+    heading: "The plan is open for changes",
+    lines: [
+      greeting,
+      `${details.ownerName} has taken the seal off the PayHalo plan you are their Trusted Key for, so they can change it.`,
+      "There is nothing for you to do, and your role does not change. A sealed plan is a fixed set of instructions; theirs is being edited, and they will be told to seal it again when they are finished.",
+      "Your access code stays where it was: inside your PayHalo portal, and never in email.",
+    ],
+    facts: [
+      { label: "Account holder", value: details.ownerName },
+      { label: "Your role", value: "Trusted Key" },
+      { label: "Status", value: "Being edited" },
+    ],
+    action: { label: "Open my PayHalo portal", url: details.portalUrl },
+    note: "You can ignore this message. Nothing can be started until the plan is sealed again.",
+    finePrint: `${details.ownerName} reopened their plan on PayHalo. You are receiving this because you are named as their Trusted Key.`,
+  });
+}
+
 export async function sendKeyholderNamed(
   to: string,
   details: {

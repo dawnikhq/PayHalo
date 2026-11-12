@@ -170,9 +170,11 @@ export function PlansManager({ plans }: { plans: PlanSummary[] }) {
                   </button>
                 </div>
                 <p className="t-meta mt-2">
-                  {plan.active
-                    ? "Assets can be moved into another plan from the asset's own page."
-                    : "Open this plan, then open an asset to move it here."}
+                  {plan.sealedAt
+                    ? "Sealed, so read-only. Open it and unseal to make changes."
+                    : plan.active
+                      ? "Assets can be moved into another plan from the asset's own page."
+                      : "Open this plan, then open an asset to move it here."}
                 </p>
               </div>
             </li>

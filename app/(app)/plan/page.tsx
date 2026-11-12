@@ -4,6 +4,8 @@ import { money, pct, stampLabel } from "@/lib/format";
 import { Page, ProgressTicks } from "@/components/ui";
 import { SealPlan } from "@/components/plan/SealPlan";
 import { SealedSeal } from "@/components/plan/SealedSeal";
+import { AddPlanButton } from "@/components/plan/AddPlanButton";
+import { UnsealPlan } from "@/components/plan/UnsealPlan";
 
 const VAULT_LABEL: Record<string, string> = { open: "Open", frozen: "Paused", released: "Released" };
 
@@ -21,8 +23,8 @@ export default async function PlanPage() {
     <Page>
       <header className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="eyebrow">Your instructions</p>
-          <h1 className="h1 mt-2.5">My Plan</h1>
+          <p className="eyebrow">Your plan{s.plan.name && s.plan.name !== "My plan" ? ` · ${s.plan.name}` : ""}</p>
+          <h1 className="h1 mt-2.5">My plan</h1>
           <p className="t-body mt-2">For the people, projects and causes that matter to you.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 self-start">
@@ -30,11 +32,17 @@ export default async function PlanPage() {
             <span className="pill badge-lime">Vault {s.vault.ref}</span>
           ) : (
             <Link href="/plan/start" className="btn btn-primary">
-              {s.steps.every((step) => step.done) ? "Review my plan" : "Continue my plan"} <span aria-hidden>→</span>
+              {s.plan.sealedAt
+                ? "Open the vault"
+                : s.steps.every((step) => step.done)
+                  ? "Review my plan"
+                  : "Continue my plan"}{" "}
+              <span aria-hidden>→</span>
             </Link>
           )}
-          <Link href="/plans" className="btn btn-secondary">
-            My arrangements
+          <AddPlanButton />
+          <Link href="/plans" className="btn btn-quiet">
+            All plans
           </Link>
         </div>
       </header>
@@ -50,8 +58,10 @@ export default async function PlanPage() {
                 a handover — nothing more.
               </p>
               <p className="mt-2 text-[11.5px] text-[#9dc2ab]">
-                Editing never unseals the plan: add, change or remove a person and the change is dated on the trail.
+                A sealed plan is read-only. Unseal it to change anything — the seal comes off, the plan becomes a draft
+                and your Trusted Key is told. The vault and its money are untouched.
               </p>
+              <UnsealPlan tone="dark" className="mt-3" />
             </div>
           </div>
         </section>

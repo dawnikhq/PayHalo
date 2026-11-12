@@ -23,6 +23,7 @@ import {
   createPot,
   recordMove,
   openVault,
+  unsealPlan,
   markKeySent,
   setKeyholder,
   requestRelease,
@@ -33,6 +34,7 @@ import {
   verifyClaim,
   decideClaim,
   recordEvent,
+  SEALED_LOCK,
   type AssetInput,
   type Audience,
   type BeneficiaryInput,
@@ -160,16 +162,31 @@ export async function getSnapshot(audience: Audience = "owner"): Promise<Snapsho
   return { ...snapshotOf(doc, audience), storage: driver.kind };
 }
 
+/**
+ * Every write to a plan passes through here, which is why the seal lives here
+ * too. A sealed plan answers every edit with one sentence and saves nothing;
+ * only the handful of actions that are not edits to the instructions — sealing,
+ * unsealing, money moving in the vault, a handover, and the account's own
+ * contact details — pass `whenSealed: "allow"`.
+ */
 async function mutate(
   fn: (doc: StateDoc) => MutationResult,
   audience: Audience = "owner",
+  options: { whenSealed?: "block" | "allow" } = {},
 ): Promise<MutationResult & { snapshot: Snapshot }> {
   const driver = await getDriver();
   const { ownerId, doc } = audience === "keyholder" ? await actorDoc() : await ownerDoc();
   if (settle(doc)) await driver.save(ownerId, doc);
+
+  const snapshot = () => ({ ...snapshotOf(doc, audience), storage: driver.kind });
+
+  if (doc.plan.sealedAt && options.whenSealed !== "allow") {
+    return { ok: false, error: SEALED_LOCK, snapshot: snapshot() };
+  }
+
   const result = fn(doc);
   if (result.ok) await driver.save(ownerId, doc);
-  return { ...result, snapshot: { ...snapshotOf(doc, audience), storage: driver.kind } };
+  return { ...result, snapshot: snapshot() };
 }
 
 export async function savePlan(input: PlanInput): Promise<Snapshot> {
@@ -361,12 +378,12 @@ export async function submitClaimAction(
   report: StoredReport,
   extra?: { assetIds?: number[]; note?: string },
 ): Promise<MutationResult & { snapshot: Snapshot }> {
-  return mutate((doc) => submitClaim(doc, { accessCode, report, ...extra }), "keyholder");
+  return mutate((doc) => submitClaim(doc, { accessCode, report, ...extra }), "keyholder", { whenSealed: "allow" });
 }
 
 /** The operator's decision on a filed claim: accept the documents, or refuse them. */
 export async function decideClaimAction(decision: "accept" | "reject", note?: string) {
-  return mutate((doc) => decideClaim(doc, decision, note), "keyholder");
+  return mutate((doc) => decideClaim(doc, decision, note), "keyholder", { whenSealed: "allow" });
 }
 
 /**
@@ -405,15 +422,15 @@ export async function decideClaimByReview(
 }
 
 export async function verifyClaimAction() {
-  return mutate((doc) => verifyClaim(doc), "keyholder");
+  return mutate((doc) => verifyClaim(doc), "keyholder", { whenSealed: "allow" });
 }
 
 export async function cancelClaimAction() {
-  return mutate((doc) => cancelClaim(doc));
+  return mutate((doc) => cancelClaim(doc), "owner", { whenSealed: "allow" });
 }
 
 export async function setAvailabilityAction(id: number, available: boolean) {
-  return mutate((doc) => setAvailability(doc, id, available));
+  return mutate((doc) => setAvailability(doc, id, available), "owner", { whenSealed: "allow" });
 }
 
 /**
@@ -483,11 +500,17 @@ export async function updateProfileAction(input: {
   phone?: string;
   timezone?: string;
 }) {
-  return mutate((doc) => updateProfile(doc, input));
+  /* Account contact details, not the arrangement: still editable while sealed. */
+  return mutate((doc) => updateProfile(doc, input), "owner", { whenSealed: "allow" });
 }
 
 export async function sealPlanAction() {
-  return mutate((doc) => sealPlan(doc));
+  return mutate((doc) => sealPlan(doc), "owner", { whenSealed: "allow" });
+}
+
+/** Take the seal off so the plan can be edited again. */
+export async function unsealPlanAction() {
+  return mutate((doc) => unsealPlan(doc), "owner", { whenSealed: "allow" });
 }
 
 /* ------------------------------------------------------------ shared views -- */
@@ -582,15 +605,15 @@ export async function getReleaseLedger(): Promise<ReleaseLedger | null> {
 /* ------------------------------------------------------------- stash & saves */
 
 export async function createPotAction(input: PotInput) {
-  return mutate((doc) => createPot(doc, input));
+  return mutate((doc) => createPot(doc, input), "owner", { whenSealed: "allow" });
 }
 
 export async function allocateAction(potId: number, amountCents: number, direction: "to" | "from") {
-  return mutate((doc) => allocateToPot(doc, potId, amountCents, direction));
+  return mutate((doc) => allocateToPot(doc, potId, amountCents, direction), "owner", { whenSealed: "allow" });
 }
 
 export async function recordMoveAction(input: MoveInput) {
-  return mutate((doc) => recordMove(doc, input));
+  return mutate((doc) => recordMove(doc, input), "owner", { whenSealed: "allow" });
 }
 
 /* ------------------------------------------------------------ vault + keys -- */
@@ -612,17 +635,22 @@ export interface OpenVaultResult {
 export async function openVaultAction(): Promise<OpenVaultResult & { snapshot: Snapshot }> {
   let issueKey: string | null = null;
 
-  const result = await mutate((doc) => {
-    const opened = openVault(doc);
-    if (!opened.ok || !opened.vault) return { ok: false, error: opened.error };
+  /* The vault is opened after sealing by design, so it is not an edit. */
+  const result = await mutate(
+    (doc) => {
+      const opened = openVault(doc);
+      if (!opened.ok || !opened.vault) return { ok: false, error: opened.error };
 
-    const primary = doc.beneficiaries.find((b) => b.role === "primary");
-    if (primary) {
-      issueKey = mintVaultKey(opened.vault.ref);
-      markKeySent(doc, primary.email, hashVaultKey(issueKey));
-    }
-    return { ok: true };
-  });
+      const primary = doc.beneficiaries.find((b) => b.role === "primary");
+      if (primary) {
+        issueKey = mintVaultKey(opened.vault.ref);
+        markKeySent(doc, primary.email, hashVaultKey(issueKey));
+      }
+      return { ok: true };
+    },
+    "owner",
+    { whenSealed: "allow" },
+  );
 
   const primary = result.snapshot.beneficiaries.find((b) => b.role === "primary") ?? null;
   return {
@@ -639,11 +667,15 @@ export async function setKeyholderAction(input: { name: string; email: string; r
 }
 
 export async function markKeySentAction(email: string) {
-  return mutate((doc) => {
-    if (!doc.vault) return { ok: false, error: "This plan has no vault yet." };
-    markKeySent(doc, email);
-    return { ok: true };
-  });
+  return mutate(
+    (doc) => {
+      if (!doc.vault) return { ok: false, error: "This plan has no vault yet." };
+      markKeySent(doc, email);
+      return { ok: true };
+    },
+    "owner",
+    { whenSealed: "allow" },
+  );
 }
 
 export interface BeneficiaryPlan {

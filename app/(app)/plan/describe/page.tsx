@@ -1,11 +1,15 @@
 import Link from "next/link";
 import { Page } from "@/components/ui";
 import { DescribePlan } from "@/components/plan/DescribePlan";
+import { SealedNotice } from "@/components/plan/SealedNotice";
 import { aiConfigured } from "@/lib/ai";
+import { getSnapshot } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
 export default async function DescribePage() {
+  const s = await getSnapshot();
+
   return (
     <Page>
       <header className="mb-6">
@@ -17,6 +21,8 @@ export default async function DescribePage() {
         </p>
 
       </header>
+
+      <SealedNotice sealedAt={s.plan.sealedAt} what="a drafted plan" />
 
       <DescribePlan modelReady={aiConfigured()} />
 

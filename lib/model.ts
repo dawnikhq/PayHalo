@@ -1048,6 +1048,13 @@ export function updateProfile(
 
 /* -------------------------------------------------------------------- plan -- */
 
+/**
+ * The one sentence a sealed plan answers with, wherever an edit is refused.
+ * Sealing is a promise about a fixed set of instructions; letting them change
+ * underneath that promise is what makes a sealed plan meaningless.
+ */
+export const SEALED_LOCK = "This plan is sealed, so it is read-only. Unseal it to make changes.";
+
 export function sealPlan(doc: StateDoc): { ok: boolean; error?: string } {
   if (doc.plan.sealedAt) return { ok: false, error: "This plan is already sealed." };
   const steps = planSteps(doc);
@@ -1060,6 +1067,40 @@ export function sealPlan(doc: StateDoc): { ok: boolean; error?: string } {
   doc.plan.updatedAt = stamp;
   doc.plan.status = "active";
   addEvent(doc, "plan.sealed", "Plan sealed", `${doc.user.name} sealed a plan covering ${doc.assets.length} accounts and ${doc.beneficiaries.length} recipients.`, stamp);
+  return { ok: true };
+}
+
+/**
+ * Take the seal off, so the plan can be changed again.
+ *
+ * This is the mirror of sealing and it is deliberately not free: a plan in the
+ * middle of a handover, or one whose money has already been released, cannot be
+ * quietly reopened. What it does not do is touch the vault — money already
+ * inside stays where it is; only the instructions become a draft again.
+ */
+export function unsealPlan(doc: StateDoc): { ok: boolean; error?: string } {
+  if (!doc.plan.sealedAt) return { ok: false, error: "This plan is not sealed." };
+
+  const claim = latestClaim(doc);
+  const closing = ["cancelled", "rejected", "distributed"];
+  if (claim && !closing.includes(claim.status)) {
+    return { ok: false, error: "A handover is running on this plan. It can be unsealed once the handover closes." };
+  }
+  if (doc.vault?.status === "released") {
+    return { ok: false, error: "This plan has been released, so it can no longer be unsealed." };
+  }
+
+  const stamp = now();
+  doc.plan.sealedAt = null;
+  doc.plan.status = "draft";
+  doc.plan.updatedAt = stamp;
+  addEvent(
+    doc,
+    "plan.unsealed",
+    "Plan unsealed",
+    `${doc.user.name} took the seal off to make changes. The plan is a draft until it is sealed again${doc.vault ? `; vault ${doc.vault.ref} is untouched` : ""}.`,
+    stamp,
+  );
   return { ok: true };
 }
 

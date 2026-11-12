@@ -5,6 +5,7 @@ import { Page, EmptyState } from "@/components/ui";
 import { AllocationEditor } from "@/components/beneficiaries/AllocationEditor";
 import { PersonDialog } from "@/components/beneficiaries/PersonDialog";
 import { RemovePerson } from "@/components/beneficiaries/RemovePerson";
+import { SealedNotice } from "@/components/plan/SealedNotice";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,8 @@ export default async function BeneficiariesPage() {
         </div>
         <PersonDialog label="+ Add beneficiary" className="self-start" />
       </header>
+
+      <SealedNotice sealedAt={s.plan.sealedAt} what="who inherits" />
 
       <div className="grid gap-5 lg:grid-cols-[1.55fr_1fr]">
         <div className="space-y-5">
