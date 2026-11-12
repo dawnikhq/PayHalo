@@ -24,6 +24,8 @@ interface StatusPayload {
 export function PayPalCard() {
   const router = useRouter();
   const [status, setStatus] = useState<StatusPayload | null>(null);
+  /** Only used to show the exact return URL to register; empty until mounted. */
+  const [origin, setOrigin] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [passcode, setPasscode] = useState("");
   const [note, setNote] = useState<{ tone: "ok" | "bad"; body: string } | null>(null);
@@ -37,6 +39,7 @@ export function PayPalCard() {
         balances: { ok: boolean; status: number; message: string };
         payoutCapability: { ok: boolean; status: number; message: string };
         invoicing: { ok: boolean; status: number; message: string };
+        oauth: { host: string; status: number; finalHost: string; title: string | null; hint: string };
         otherEnvironment: { mode: string; ok: boolean; message: string } | null;
         verdict: string;
       }
@@ -56,6 +59,10 @@ export function PayPalCard() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
 
   useEffect(() => {
     const funded = new URLSearchParams(window.location.search).get("funded");
@@ -194,39 +201,27 @@ export function PayPalCard() {
       {diagnosis && (
         <div className="mt-4 rounded-[14px] border border-[var(--color-line-strong)] bg-[#fbfdfb] p-4">
           {"error" in diagnosis ? (
-            <p className="text-[12.5px] font-semibold text-[var(--color-ember)]">{diagnosis.error}</p>
+            <p className="text-[12.5px] font-semibold text-[var(--color-ember)]">
+              We could not reach PayPal just now. Nothing has changed.
+            </p>
           ) : (
             <>
-              <p className="text-[12.5px] font-semibold text-[var(--color-ink)]">{diagnosis.verdict}</p>
-              <ul className="mt-2 space-y-1 text-[11.5px] text-[var(--color-muted)]">
-                <li>
-                  <strong className="text-[var(--color-ink)]">Sign-in with PayPal:</strong>{" "}
-                  {diagnosis.token.ok ? "credentials accepted" : `rejected — ${diagnosis.token.message}`}
-                </li>
-                <li>
-                  <strong className="text-[var(--color-ink)]">Balances:</strong>{" "}
-                  {diagnosis.balances.ok ? "readable" : `not readable — ${diagnosis.balances.message}`}
-                </li>
-                <li>
-                  <strong className="text-[var(--color-ink)]">Payouts:</strong>{" "}
-                  {diagnosis.payoutCapability.ok ? "reachable" : `not reachable — ${diagnosis.payoutCapability.message}`}
-                </li>
-                <li>
-                  <strong className="text-[var(--color-ink)]">Invoicing:</strong>{" "}
-                  {diagnosis.invoicing.ok ? "reachable" : `not reachable — ${diagnosis.invoicing.message}`}
-                </li>
-                {diagnosis.otherEnvironment && !diagnosis.token.ok && (
-                  <li>
-                    <strong className="text-[var(--color-ink)]">Other environment ({diagnosis.otherEnvironment.mode}):</strong>{" "}
-                    {diagnosis.otherEnvironment.ok
-                      ? "these credentials work there, not here"
-                      : `also rejected — ${diagnosis.otherEnvironment.message}`}
-                  </li>
-                )}
-                <li className="break-all">
-                  <strong className="text-[var(--color-ink)]">Return URL to register:</strong> {diagnosis.redirectUri}
-                </li>
-              </ul>
+              <p className="text-[12.5px] font-semibold text-[var(--color-ink)]">
+                {diagnosis.token.ok && diagnosis.payoutCapability.ok
+                  ? "PayPal is answering this deployment normally."
+                  : diagnosis.token.ok
+                    ? "PayPal recognises this deployment, but sending is not available on this account yet."
+                    : "PayPal did not recognise this deployment's credentials."}
+              </p>
+              {!diagnosis.oauth.hint.includes("log-in form") && !diagnosis.oauth.hint.includes("sign-in form") && (
+                <p className="mt-1.5 text-[11.5px] leading-relaxed text-[var(--color-muted)]">
+                  Connecting a personal account is a separate step from sending money: PayPal&apos;s own sign-in page has to
+                  accept this app. {diagnosis.oauth.hint}
+                </p>
+              )}
+              <p className="mt-1.5 text-[11px] text-[var(--color-muted)]">
+                The full report is on the operator console, under PayPal.
+              </p>
             </>
           )}
         </div>
@@ -276,13 +271,48 @@ export function PayPalCard() {
               </div>
             </div>
           ) : (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-dashed border-[var(--color-line-strong)] p-4">
-              <p className="t-small max-w-[46ch]">
-                Connect the PayPal account this plan should pay from. PayHalo asks for no password and no permissions over your money.
-              </p>
-              <a href="/api/paypal/oauth/start" className="btn btn-primary btn-sm">
-                Connect PayPal <span aria-hidden>→</span>
-              </a>
+            <div className="rounded-[14px] border border-dashed border-[var(--color-line-strong)] p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="t-small max-w-[46ch]">
+                  Connect the PayPal account this plan should pay from. PayHalo asks for no password and no permissions over your money.
+                </p>
+                <a href="/api/paypal/oauth/start" className="btn btn-primary btn-sm">
+                  Connect PayPal <span aria-hidden>→</span>
+                </a>
+              </div>
+
+              {/*
+                The three things PayPal checks before it shows its login form.
+                Almost every failed connect is one of them, and none of them is
+                visible from the button itself.
+              */}
+              <details className="mt-3 border-t border-[var(--color-line)] pt-3">
+                <summary className="cursor-pointer text-[11.5px] font-semibold text-[var(--color-ink)]">
+                  Using a sandbox account? Three things PayPal checks
+                </summary>
+                <ol className="mt-2 space-y-2 text-[11.5px] leading-relaxed text-[var(--color-muted)]">
+                  <li>
+                    <span className="font-semibold text-[var(--color-ink)]">1 · Sign in with a sandbox test account.</span>{" "}
+                    Your normal PayPal login is refused on the sandbox. Use a Personal account from Developer Dashboard →
+                    Sandbox → Accounts.
+                  </li>
+                  <li>
+                    <span className="font-semibold text-[var(--color-ink)]">2 · Turn on Log in with PayPal.</span> Apps &
+                    Credentials → your app → Features → Log in with PayPal, with the Email scope.
+                  </li>
+                  <li>
+                    <span className="font-semibold text-[var(--color-ink)]">3 · Register this exact return URL.</span> The
+                    same screen takes it, and it must match to the character:{" "}
+                    <code className="rounded bg-[#f2f7f2] px-1 text-[11px] text-[var(--color-forest)]">
+                      {origin}/api/paypal/callback
+                    </code>
+                  </li>
+                </ol>
+                <p className="mt-2 text-[11px] text-[var(--color-muted)]">
+                  If it still refuses, the operator&apos;s connection test says exactly which of the three PayPal is
+                  unhappy about.
+                </p>
+              </details>
             </div>
           )}
 

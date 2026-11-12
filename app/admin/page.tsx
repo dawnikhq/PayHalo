@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { Page } from "@/components/ui";
 import { AdminGate } from "@/components/admin/AdminGate";
 import { ReleaseQueue } from "@/components/admin/ReleaseQueue";
@@ -13,6 +14,7 @@ import { releaseQueue } from "@/lib/store";
 import { mailConfigured, mailHealth } from "@/lib/mailer";
 import { money, shortDate } from "@/lib/format";
 import { listTickets, ticketSummary, type SupportTicket } from "@/lib/support";
+import { diagnosePayPal, paypalConfigured, paypalMode } from "@/lib/paypal";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: { absolute: "Operations — PayHalo" } };
@@ -52,6 +54,13 @@ export default async function AdminPage() {
     listTickets().catch(() => [] as SupportTicket[]),
   ]);
   const supportSummary = ticketSummary(support);
+
+  /* PayPal is checked from the server, the way the app uses it. The connect
+     button touches a second system (PayPal's login page), so that gets probed
+     too — a working API and a refusing login page are different failures. */
+  const head = await headers();
+  const origin = `${head.get("x-forwarded-proto") ?? "https"}://${head.get("x-forwarded-host") ?? head.get("host") ?? "localhost"}`;
+  const paypal = paypalConfigured() ? await diagnosePayPal(`${origin}/admin`).catch(() => null) : null;
   const mail = mailHealth();
   const { totals, signups, statuses, customers, events, funnel } = overview;
   const peak = Math.max(1, ...signups.map((s) => s.count));
@@ -486,6 +495,70 @@ export default async function AdminPage() {
                   </li>
                 ))}
               </ul>
+            )}
+          </section>
+
+          <section id="paypal" className="mt-8 scroll-mt-6">
+            <div className="mb-3">
+              <h2 className="h2">PayPal</h2>
+              <p className="t-meta">
+                Two separate connections: the deployment&apos;s own API credentials (sending, balances) and a person linking
+                their PayPal account (Log in with PayPal). Either can fail alone, so both are checked here.
+              </p>
+            </div>
+
+            {!paypal ? (
+              <div className="rounded-[16px] border border-[rgba(21,63,53,0.08)] bg-white p-5">
+                <p className="text-[12.5px] text-[var(--color-muted)]">
+                  No PayPal client id or secret on this deployment, so nothing can call PayPal.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="mb-3 grid gap-3 sm:grid-cols-4">
+                  {[
+                    ["Mode", paypalMode(), "Sandbox is free and needs no review."],
+                    ["Credentials", paypal.token.ok ? "Accepted" : "Rejected", paypal.credentialSource.id],
+                    ["API", `HTTP ${paypal.token.status || "—"}`, paypal.token.message],
+                    [
+                      "Payouts",
+                      paypal.payoutCapability.ok ? "Reachable" : "Refused",
+                      `HTTP ${paypal.payoutCapability.status || "—"}`,
+                    ],
+                  ].map(([label, value, note]) => (
+                    <div key={label} className="rounded-[16px] border border-[rgba(21,63,53,0.08)] bg-white p-4">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
+                        {label}
+                      </p>
+                      <p className="mt-2 break-words text-[14px] font-semibold text-[var(--color-ink)]">{value}</p>
+                      <p className="mt-1 break-words text-[11.5px] text-[var(--color-muted)]">{note}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded-[16px] border border-[rgba(21,63,53,0.08)] bg-white p-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
+                    Log in with PayPal — the page the Connect button opens
+                  </p>
+                  <p className="mt-2 text-[12.5px] leading-relaxed text-[var(--color-ink)]">{paypal.oauth.hint}</p>
+                  <ul className="mt-2 space-y-1 text-[11.5px] text-[var(--color-muted)]">
+                    <li>
+                      <strong className="text-[var(--color-ink)]">Page:</strong> {paypal.oauth.host} → HTTP{" "}
+                      {paypal.oauth.status || "—"}
+                      {paypal.oauth.title ? ` · “${paypal.oauth.title}”` : ""}
+                    </li>
+                    <li className="break-all">
+                      <strong className="text-[var(--color-ink)]">Return URL sent:</strong> {paypal.redirectUri}
+                    </li>
+                    <li>
+                      <strong className="text-[var(--color-ink)]">Scope asked for:</strong> {paypal.oauth.scope}
+                    </li>
+                    <li className="break-all">
+                      <strong className="text-[var(--color-ink)]">Verdict:</strong> {paypal.verdict}
+                    </li>
+                  </ul>
+                </div>
+              </>
             )}
           </section>
 

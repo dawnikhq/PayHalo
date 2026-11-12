@@ -652,6 +652,12 @@ export interface PayPalDiagnosis {
   balances: { ok: boolean; status: number; message: string };
   payoutCapability: { ok: boolean; status: number; message: string };
   invoicing: { ok: boolean; status: number; message: string };
+  /**
+   * The other half of "connect": the API can be perfect and the login page can
+   * still refuse, because "Log in with PayPal" is a feature on the app and a
+   * return URL has to be registered for it. This asks that page directly.
+   */
+  oauth: OAuthProbe;
   /** Did the same credentials work against the other PayPal environment? */
   otherEnvironment: { mode: PayPalMode; ok: boolean; message: string } | null;
   verdict: string;
@@ -659,6 +665,76 @@ export interface PayPalDiagnosis {
 
 const shape = (value: string) =>
   value ? `${value.length} chars, starts ${value.slice(0, 6)}…, ends …${value.slice(-4)}` : "missing";
+
+export interface OAuthProbe {
+  scope: string;
+  host: string;
+  status: number;
+  finalHost: string;
+  title: string | null;
+  hint: string;
+}
+
+const PHRASES: [RegExp, string][] = [
+  [/invalid[_ ]client/i, "PayPal says this client id is unknown in this environment. Copy the Sandbox client id from the app you actually made."],
+  [/redirect[_ ]uri/i, "The return URL is not registered on the app. Register this exact address under Log in with PayPal → Return URL."],
+  [/invalid[_ ]scope/i, "The app is not allowed to ask for openid/profile/email. Enable Log in with PayPal on the app, with the Email scope."],
+  [/log ?in with paypal/i, "The page is the Log in with PayPal sign-in form, which means the app and the return URL were accepted."],
+  [/sorry|couldn.?t complete|unable to (process|complete)/i, "PayPal showed its generic failure page. That is usually Log in with PayPal not being enabled on the app, or a return URL that does not match."],
+];
+
+/**
+ * Fetch the page the Connect button would land on, and read its title.
+ *
+ * Nothing is submitted: this is a GET of PayPal's sign-in page, the same one a
+ * browser would open. It answers the only question the API probe cannot — does
+ * this app have "Log in with PayPal" switched on for this environment?
+ */
+async function probeConnect(redirectUri: string): Promise<OAuthProbe> {
+  const probe: OAuthProbe = {
+    scope: OAUTH_SCOPE,
+    host: new URL(WEB[paypalMode()]).host,
+    status: 0,
+    finalHost: "",
+    title: null,
+    hint: "not attempted",
+  };
+
+  try {
+    const res = await fetch(authorizeUrl(redirectUri, "diagnostic"), {
+      headers: { Accept: "text/html", "User-Agent": "PayHalo/1.0 (+diagnostics)" },
+      redirect: "follow",
+      cache: "no-store",
+      signal: AbortSignal.timeout(9000),
+    });
+
+    const html = (await res.text().catch(() => "")).slice(0, 200_000);
+    probe.status = res.status;
+    try {
+      probe.finalHost = new URL(res.url).host;
+    } catch {
+      probe.finalHost = probe.host;
+    }
+
+    const title = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(html)?.[1]?.replace(/\s+/g, " ").trim();
+    probe.title = title ? title.slice(0, 120) : null;
+
+    const text = `${title ?? ""} ${html.replace(/<[^>]+>/g, " ")}`.replace(/\s+/g, " ");
+    const match = PHRASES.find(([pattern]) => pattern.test(text));
+    probe.hint = match
+      ? match[1]
+      : res.ok
+        ? "PayPal answered normally. If the button still fails, the login page refused the account: use a sandbox Personal test account, not a real PayPal login."
+        : `PayPal answered ${res.status} for this app, so the connect page itself is unhappy.`;
+  } catch (error) {
+    probe.hint =
+      error instanceof Error && error.name === "TimeoutError"
+        ? "The connect page did not answer in time."
+        : "The connect page could not be reached from this deployment.";
+  }
+
+  return probe;
+}
 
 /**
  * Ask PayPal, rather than guessing. This is what the "Test connection" button
@@ -682,6 +758,7 @@ export async function diagnosePayPal(requestUrl: string): Promise<PayPalDiagnosi
     balances: { ok: false, status: 0, message: "not attempted" },
     payoutCapability: { ok: false, status: 0, message: "not attempted" },
     invoicing: { ok: false, status: 0, message: "not attempted" },
+    oauth: { scope: OAUTH_SCOPE, host: "", status: 0, finalHost: "", title: null, hint: "not attempted" },
     otherEnvironment: null,
     verdict: "",
   };
@@ -782,6 +859,10 @@ export async function diagnosePayPal(requestUrl: string): Promise<PayPalDiagnosi
         message: invoiceRes.ok ? "invoices reachable" : (await invoiceRes.text().catch(() => "")).slice(0, 200) || `HTTP ${invoiceRes.status}`,
       }
     : { ok: false, status: 0, message: "request failed" };
+
+  /* The same return URL a real Connect would send, so PayPal judges it the
+     same way it would judge the button. */
+  result.oauth = await probeConnect(result.redirectUri);
 
   result.verdict = result.payoutCapability.ok
     ? "Credentials work and payouts are reachable — sending is live."

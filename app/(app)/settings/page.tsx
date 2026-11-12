@@ -68,7 +68,9 @@ export default async function SettingsPage({
             ? "You are connected. Nothing about your balances or permissions was read."
             : paypal === "unconfigured"
               ? "Connecting is not available just yet. Everything else works as normal."
-              : "That did not complete. Nothing changed — try again when you are ready."}
+              : reason
+                ? `That did not complete. PayPal said: ${reason} — nothing changed.`
+                : "That did not complete. Nothing changed — try again when you are ready."}
         </div>
       )}
 
