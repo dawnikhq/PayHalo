@@ -132,14 +132,14 @@ export function AppShell({
   children: ReactNode;
   role: Role;
   name: string;
-  /** Every arrangement on this account, so the rail can offer a switch. */
+  /** Accepted from the layout for compatibility; the rail no longer offers a
+   *  plan switcher — plans are managed on their own page. */
   plans?: PlanSummary[];
   /** A brand-new account gets the product tour without being asked. */
   fresh?: boolean;
 }) {
   const pathname = usePathname() ?? "/";
   const nav = NAV[role];
-  const activePlan = plans.find((p) => p.active) ?? plans[0];
 
   const person = { name, role: ROLE_LABEL[role] };
 
@@ -149,22 +149,7 @@ export function AppShell({
         <Wordmark />
       </Link>
 
-      {role === "owner" && activePlan ? (
-        <Link
-          href="/plans"
-          className="group flex items-center justify-between gap-2 rounded-[14px] border border-[var(--color-line)] bg-white px-3 py-2.5 transition hover:border-[var(--color-line-strong)]"
-        >
-          <span className="min-w-0">
-            <span className="block text-[9px] font-bold uppercase tracking-[0.13em] text-[#94a29a]">Plan</span>
-            <span className="block truncate text-[13px] font-semibold text-[var(--color-ink)]">
-              {activePlan.name}
-            </span>
-          </span>
-          <span className="shrink-0 rounded-full bg-[var(--color-mint)] px-2 py-0.5 text-[10px] font-bold text-[var(--color-forest)]">
-            {plans.length > 1 ? `${activePlan.no} / ${plans.length}` : "Switch"}
-          </span>
-        </Link>
-      ) : (
+      {role !== "owner" && (
         <div className="-mt-2 px-2">
           <p className="text-[9.5px] font-semibold uppercase tracking-[0.13em] text-[#94a29a]">
             {role === "keyholder" ? "Your Trusted Key role" : "Your beneficiary role"}

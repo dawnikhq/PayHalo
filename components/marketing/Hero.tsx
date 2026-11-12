@@ -75,7 +75,10 @@ export function Hero() {
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(10,15,13,0.86)_0%,rgba(10,15,13,0.54)_46%,rgba(10,15,13,0.2)_100%)]" />
       </div>
 
-      <div className="section relative flex flex-1 flex-col justify-end gap-8 pb-8 pt-10 sm:justify-between sm:gap-6 sm:pb-6 sm:pt-10">
+      {/* The statement and the two buttons sit together at the foot of the
+          screen — on a laptop as well as a phone — so the photograph is what
+          fills the space above them. */}
+      <div className="section relative flex flex-1 flex-col justify-end gap-8 pb-8 pt-10 sm:gap-7 sm:pb-8 sm:pt-10">
         {/* The space sits between the words, not inside them: a line may then
             break at any gap on a narrow screen, which is what keeps this from
             setting as a solid block on a phone. */}

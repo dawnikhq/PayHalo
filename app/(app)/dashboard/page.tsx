@@ -1,6 +1,4 @@
 import Link from "next/link";
-import { SealedSeal } from "@/components/plan/SealedSeal";
-import { UnsealPlan } from "@/components/plan/UnsealPlan";
 import { getSnapshot } from "@/lib/store";
 import { money, pct, shortDate, stampLabel } from "@/lib/format";
 import { SafetyWindowBanner } from "@/components/SafetyWindowBanner";
@@ -21,9 +19,9 @@ function greeting(hourUtc: number) {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sealed?: string; nocode?: string }>;
+  searchParams: Promise<{ nocode?: string }>;
 }) {
-  const { sealed, nocode } = await searchParams;
+  const { nocode } = await searchParams;
   const s = await getSnapshot();
   const firstName = s.user.name.split(" ")[0];
 
@@ -43,19 +41,11 @@ export default async function DashboardPage({
     <Page>
       <header className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="eyebrow">Your arrangements, at a glance</p>
+          <p className="eyebrow">Overview</p>
           <h1 className="h1 mt-2.5">
             {greeting(new Date().getUTCHours() + 1)}, {firstName}.
           </h1>
           <p className="t-body mt-2">A little more clarity. A lot more peace of mind.</p>
-          <Link
-            href="/plans"
-            className="mt-3 inline-flex items-center gap-2 rounded-full border border-[var(--color-line)] bg-white px-3 py-1.5 text-[11.5px] font-semibold text-[var(--color-ink)] transition hover:border-[var(--color-line-strong)]"
-          >
-            <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-[var(--color-brand)]" />
-            {s.plan.name?.trim() || "My plan"}
-            <span className="text-[var(--color-brand)]">Switch arrangement →</span>
-          </Link>
         </div>
         <Link href="/assets" className="btn btn-primary self-start">
           Manage my assets <span aria-hidden>→</span>
@@ -71,23 +61,6 @@ export default async function DashboardPage({
             Email is unavailable on this deployment right now, so this sign-in skipped the six-digit code. Your
             password was still checked. Once email is restored, sign out and in again for the full check.
           </p>
-        </div>
-      )}
-
-      {(sealed || s.plan.sealedAt) && (
-        <div className="mb-5 overflow-hidden rounded-[var(--radius-card)] bg-[linear-gradient(140deg,#0e6f56_0%,#0b3d2e_65%,#082c21_100%)] p-5 md:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <SealedSeal sealedAt={s.plan.sealedAt} vaultRef={s.vault?.ref ?? null} />
-            <div className="max-w-[46ch]">
-              <p className="text-[12.5px] leading-relaxed text-[#c9e4d2]">
-                {s.plan.name ? `${s.plan.name} is sealed. ` : "Your arrangement is sealed. "}
-                {s.beneficiaries.length} recipient{s.beneficiaries.length === 1 ? "" : "s"} on file and{" "}
-                {s.keyholder?.name ?? "your Trusted Key"} has been told. The plan is read-only until you take the seal
-                off.
-              </p>
-              <UnsealPlan tone="dark" className="mt-3" />
-            </div>
-          </div>
         </div>
       )}
 
@@ -216,7 +189,7 @@ export default async function DashboardPage({
 
         {/* plan progress */}
         <section className="card-lime flex flex-col p-6 md:p-7">
-          <p className="label text-[#4d6b2a]">Your plan / {s.plan.sealedAt ? "sealed" : "in progress"}</p>
+          <p className="label text-[#4d6b2a]">Your plan</p>
           <p className="h2 mt-2 text-[1.35rem] text-[var(--color-forest)]">
             {remaining === 0
               ? "Every step is in place."

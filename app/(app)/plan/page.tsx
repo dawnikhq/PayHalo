@@ -41,9 +41,6 @@ export default async function PlanPage() {
             </Link>
           )}
           <AddPlanButton />
-          <Link href="/plans" className="btn btn-quiet">
-            All plans
-          </Link>
         </div>
       </header>
 
