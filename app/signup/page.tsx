@@ -2,6 +2,7 @@ import Link from "next/link";
 import { MarketingFooter, MarketingHeader } from "@/components/marketing/Chrome";
 import { redirect } from "next/navigation";
 import { SignUpForm } from "@/components/auth/SignUpForm";
+import { OrDivider, PayPalAuthButton, PayPalNotice } from "@/components/auth/PayPalAuth";
 import { currentUser } from "@/lib/auth";
 import { accountsAvailable } from "@/lib/accounts";
 
@@ -10,9 +11,9 @@ export const dynamic = "force-dynamic";
 export default async function SignUpPage({
   searchParams,
 }: {
-  searchParams: Promise<{ email?: string; next?: string }>;
+  searchParams: Promise<{ email?: string; next?: string; paypal?: string }>;
 }) {
-  const { email, next } = await searchParams;
+  const { email, next, paypal } = await searchParams;
   const user = await currentUser();
   if (user) redirect("/dashboard");
 
@@ -51,7 +52,14 @@ export default async function SignUpPage({
 
         <div>
           {configured ? (
-            <SignUpForm initialEmail={prefill} next={destination} />
+            <>
+              <PayPalNotice code={paypal} />
+              <div className="rounded-[18px] border border-[var(--color-line)] bg-white p-6 md:p-7">
+                <PayPalAuthButton from="signup" next={destination || "/dashboard"} />
+              </div>
+              <OrDivider>or with an email and password</OrDivider>
+              <SignUpForm initialEmail={prefill} next={destination} />
+            </>
           ) : (
             <div className="rounded-[18px] border border-[#f0cfc6] bg-[#fdf1ee] p-6">
               <p className="label text-[var(--color-ember)]">One moment</p>

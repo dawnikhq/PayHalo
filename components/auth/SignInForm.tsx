@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { PasswordField } from "./PasswordField";
 
 type Mode = "password" | "link" | "reset";
 
@@ -298,18 +299,12 @@ export function SignInForm({ next }: { next: string }) {
 
         {mode === "password" && (
           <div>
-            <label htmlFor="password" className={label}>
-              Password
-            </label>
-            <input
+            <PasswordField
               id="password"
-              type="password"
-              required
-              autoComplete="current-password"
+              label="Password"
               value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="Your password"
-              className={input}
+              onChange={setPassword}
+              autoComplete="current-password"
             />
             <div className="mt-1.5 flex items-start justify-between gap-3">
               <p className="t-meta">We then email a six-digit code — the password alone does not open the plan.</p>

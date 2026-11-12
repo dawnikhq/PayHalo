@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { PasswordField } from "./PasswordField";
 
 const input =
   "mt-1.5 h-11 w-full rounded-[12px] border border-[var(--color-line-strong)] bg-white px-3 text-[13.5px] text-[var(--color-ink)] placeholder:text-[#94a29a] focus:border-[var(--color-brand)] focus:outline-none";
@@ -131,37 +132,23 @@ export function ResetForm({ token, email: initialEmail = "" }: { token: string; 
       </p>
 
       <div className="mt-5 space-y-4">
-        <div>
-          <label htmlFor="new-password" className={label}>
-            New password
-          </label>
-          <input
-            id="new-password"
-            type="password"
-            required
-            autoComplete="new-password"
-            autoFocus
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            placeholder="At least 10 characters"
-            className={input}
-          />
-        </div>
-        <div>
-          <label htmlFor="confirm-password" className={label}>
-            Repeat it
-          </label>
-          <input
-            id="confirm-password"
-            type="password"
-            required
-            autoComplete="new-password"
-            value={confirm}
-            onChange={(event) => setConfirm(event.target.value)}
-            placeholder="The same password"
-            className={input}
-          />
-        </div>
+        <PasswordField
+          id="new-password"
+          label="New password"
+          value={password}
+          onChange={setPassword}
+          autoComplete="new-password"
+          autoFocus
+          placeholder="At least 10 characters"
+        />
+        <PasswordField
+          id="confirm-password"
+          label="Repeat it"
+          value={confirm}
+          onChange={setConfirm}
+          autoComplete="new-password"
+          placeholder="The same password"
+        />
       </div>
 
       <ul className="mt-4 space-y-1.5">

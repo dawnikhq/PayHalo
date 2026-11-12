@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
-import { SiteTourButton } from "./SiteTour";
 import { CookieConsent, CookiePreferencesLink } from "@/components/legal/CookieConsent";
 
 /**
@@ -49,7 +48,6 @@ export function MarketingHeader() {
         </nav>
 
         <div className="flex shrink-0 items-center gap-2">
-          <SiteTourButton className="hidden rounded-full px-3 py-1.5 text-[12.5px] font-semibold text-[var(--color-ink)] transition hover:bg-white/70 md:inline-flex" />
           <Link href="/signin" className="hidden text-[12.5px] font-semibold text-[var(--color-ink)] sm:block">
             Sign in
           </Link>
@@ -75,9 +73,6 @@ export function MarketingHeader() {
                   {label}
                 </Link>
               ))}
-              <SiteTourButton className="block w-full rounded-[11px] px-3 py-2.5 text-left text-[13px] font-semibold text-[var(--color-brand)] hover:bg-[#f4f8f2]">
-                Take the tour
-              </SiteTourButton>
               <Link
                 href="/signin"
                 className="block rounded-[11px] px-3 py-2.5 text-[13px] font-semibold text-[var(--color-brand)]"
@@ -132,7 +127,6 @@ export function MarketingFooter() {
             <Link href="/signup" className="btn btn-primary btn-sm">
               Create my plan
             </Link>
-            <SiteTourButton className="btn btn-secondary btn-sm" />
           </div>
         </div>
 

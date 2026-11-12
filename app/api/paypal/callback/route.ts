@@ -5,12 +5,16 @@ import {
   paypalConfigured,
   paypalRedirectUri,
   userInfo,
+  verifyAuthState,
   verifyState,
   PayPalError,
+  type PayPalAuthState,
 } from "@/lib/paypal";
 import { PAYPAL_COOKIE, cookieOptions, mintSid, readSid } from "@/lib/paypal-session";
 import { savePayPalConnection } from "@/lib/paypal-store";
 import { UnauthorizedError, requireOwner } from "@/lib/scope";
+import { accountByEmail, createAccount, markEmailVerified, markLogin, startLoginToken } from "@/lib/accounts";
+import { ensureWallet } from "@/lib/wallet";
 
 export const dynamic = "force-dynamic";
 
@@ -36,8 +40,85 @@ function plainReason(raw: string): string {
   return text || "PayPal reported an error without saying what it was.";
 }
 
-async function handleGET(request: Request) {
-  const url = new URL(request.url);
+/* --------------------------------------------------------- signing in -- */
+
+function nameFromEmail(email: string) {
+  const local = email.split("@")[0]?.replace(/[._-]+/g, " ").trim() ?? "";
+  if (!local) return null;
+  return local
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ")
+    .slice(0, 80);
+}
+
+/**
+ * PayPal as the login itself.
+ *
+ * The address is the account: PayPal has already proved the person owns it, so
+ * there is no confirmation email and no password to invent. A first sign-in
+ * makes the account, a later one finds it. The session is opened through a
+ * one-time token on whichever host the person started from, because PayPal
+ * always returns to the single registered address.
+ */
+async function handleSignIn(request: Request, url: URL, auth: PayPalAuthState) {
+  const back = (code: string) => {
+    const target = new URL(`/${auth.from}`, request.url);
+    target.searchParams.set("paypal", code);
+    if (auth.next !== "/dashboard") target.searchParams.set("next", auth.next);
+    return NextResponse.redirect(target);
+  };
+
+  const denied = url.searchParams.get("error");
+  if (denied) return back(denied === "access_denied" ? "cancelled" : "failed");
+
+  const code = url.searchParams.get("code");
+  if (!code) return back("failed");
+
+  let email = "";
+  let name: string | null = null;
+
+  try {
+    const tokens = await exchangeCode(code, paypalRedirectUri(request.url));
+    const identity = await userInfo(tokens.accessToken, tokens.idToken);
+    email = identity.email.trim().toLowerCase();
+    name = identity.name;
+  } catch (error) {
+    const said = error instanceof PayPalError ? error.message : "";
+    return back(/email|profile|scope/i.test(said) ? "noemail" : "failed");
+  }
+
+  if (!email) return back("noemail");
+
+  try {
+    let account = await accountByEmail(email);
+    if (!account) {
+      const created = await createAccount(email, name?.trim() || nameFromEmail(email), null);
+      account = created === "exists" ? await accountByEmail(email) : created;
+      /* The demo balance comes with the account, not with the first visit. */
+      if (account) await ensureWallet(account).catch(() => undefined);
+    }
+    if (!account) return back("failed");
+
+    /* PayPal has already proved this address, which is exactly what the
+       emailed confirmation link exists to prove. */
+    await markEmailVerified(account.id);
+    await markLogin(account.id);
+
+    const token = await startLoginToken(account.id, "signin");
+    const landing = new URL("/auth/link", auth.origin);
+    landing.searchParams.set("token", token);
+    landing.searchParams.set("next", auth.next);
+    return NextResponse.redirect(landing);
+  } catch {
+    return back("failed");
+  }
+}
+
+/* ------------------------------------------------------------ linking -- */
+
+async function handleConnect(request: Request, url: URL, sid: string) {
   const fail = (reason: string) => {
     const next = new URL("/settings", request.url);
     next.searchParams.set("paypal", "error");
@@ -45,17 +126,11 @@ async function handleGET(request: Request) {
     return NextResponse.redirect(next);
   };
 
-  if (!paypalConfigured()) return fail("PayPal is not configured on this deployment.");
-
   const denied = url.searchParams.get("error_description") ?? url.searchParams.get("error");
   if (denied) return fail(denied);
 
   const code = url.searchParams.get("code");
-  const state = url.searchParams.get("state");
-  if (!code || !state) return fail("PayPal did not return an authorization code.");
-
-  const sid = verifyState(state);
-  if (!sid) return fail("The authorization response could not be verified.");
+  if (!code) return fail("PayPal did not return an authorization code.");
 
   try {
     const redirectUri = paypalRedirectUri(request.url);
@@ -100,6 +175,32 @@ async function handleGET(request: Request) {
           : "The PayPal exchange failed.";
     return fail(reason);
   }
+}
+
+async function handleGET(request: Request) {
+  const url = new URL(request.url);
+
+  if (!paypalConfigured()) {
+    const target = new URL(url.searchParams.get("state")?.startsWith("a1.") ? "/signin" : "/settings", request.url);
+    target.searchParams.set("paypal", "unavailable");
+    return NextResponse.redirect(target);
+  }
+
+  const state = url.searchParams.get("state") ?? "";
+
+  /* Which of the two handshakes this is. The tag on the state decides. */
+  const auth = verifyAuthState(state);
+  if (auth) return handleSignIn(request, url, auth);
+
+  const sid = verifyState(state);
+  if (!sid) {
+    const next = new URL("/settings", request.url);
+    next.searchParams.set("paypal", "error");
+    next.searchParams.set("reason", plainReason("The authorization response could not be verified."));
+    return NextResponse.redirect(next);
+  }
+
+  return handleConnect(request, url, sid);
 }
 
 /**

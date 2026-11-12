@@ -3,7 +3,6 @@ import Link from "next/link";
 import { MarketingFooter, MarketingHeader } from "@/components/marketing/Chrome";
 import { Hero } from "@/components/marketing/Hero";
 import { DeviceStage, ProductMock } from "@/components/marketing/ProductMock";
-import { SiteTour, SiteTourButton } from "@/components/marketing/SiteTour";
 
 export const metadata = {
   title: { absolute: "PayHalo — Your Wealth, left in good hands." },
@@ -589,7 +588,6 @@ export default function LandingPage() {
       </main>
 
       <MarketingFooter />
-      <SiteTour />
     </div>
   );
 }

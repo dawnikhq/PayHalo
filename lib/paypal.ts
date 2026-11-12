@@ -702,6 +702,78 @@ export function verifyState(state: string): string | null {
   return sid;
 }
 
+/* ------------------------------------------------- signing in with PayPal */
+
+/**
+ * The same handshake is used for two different things: linking a PayPal account
+ * to a plan, and using a PayPal account *as* the login. The state string is what
+ * tells them apart on the way back, and it carries the only two facts the
+ * callback needs — where the person started, and where they were going.
+ *
+ * It is tagged `a1` so a link-flow state (a 32-hex sid) can never be mistaken
+ * for one of these, and it is signed with the app secret, so neither the
+ * destination nor the starting host can be edited by whoever holds the URL.
+ */
+export interface PayPalAuthState {
+  /** Where to land, always a path on this site. */
+  next: string;
+  /** The site the person started from, which is where the session must be set. */
+  origin: string;
+  /** Which screen they pressed the button on, so a failure returns to it. */
+  from: "signin" | "signup";
+}
+
+const AUTH_STATE_TTL_MS = 30 * 60 * 1000;
+
+function authMac(payload: string): string {
+  return crypto.createHmac("sha256", clientSecret()).update(`paypal-auth.${payload}`).digest("base64url").slice(0, 43);
+}
+
+function localPath(value: string | null | undefined, fallback: string): string {
+  return value && value.startsWith("/") && !value.startsWith("//") ? value.slice(0, 200) : fallback;
+}
+
+export function signAuthState(input: { next?: string | null; origin: string; from?: "signin" | "signup" }): string {
+  const payload = Buffer.from(
+    JSON.stringify({
+      n: localPath(input.next, "/dashboard"),
+      o: input.origin,
+      f: input.from === "signup" ? "signup" : "signin",
+      t: Date.now(),
+    }),
+  ).toString("base64url");
+  return `a1.${payload}.${authMac(payload)}`;
+}
+
+export function verifyAuthState(state: string): PayPalAuthState | null {
+  const [tag, payload, mac] = state.split(".");
+  if (tag !== "a1" || !payload || !mac) return null;
+
+  const expected = authMac(payload);
+  const given = Buffer.from(mac);
+  const want = Buffer.from(expected);
+  if (given.length !== want.length || !crypto.timingSafeEqual(given, want)) return null;
+
+  try {
+    const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as {
+      n?: string;
+      o?: string;
+      f?: string;
+      t?: number;
+    };
+    if (!parsed.o || !parsed.t || Date.now() - parsed.t > AUTH_STATE_TTL_MS) return null;
+    const origin = new URL(parsed.o);
+    if (!/^https?:$/.test(origin.protocol)) return null;
+    return {
+      next: localPath(parsed.n, "/dashboard"),
+      origin: origin.origin,
+      from: parsed.f === "signup" ? "signup" : "signin",
+    };
+  } catch {
+    return null;
+  }
+}
+
 /* ------------------------------------------------------------ disclosure */
 
 /**

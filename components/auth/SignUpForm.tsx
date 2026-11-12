@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PasswordField } from "./PasswordField";
 
 const input =
   "mt-1.5 h-11 w-full rounded-[12px] border border-[var(--color-line-strong)] bg-white px-3 text-[13.5px] text-[var(--color-ink)] placeholder:text-[#94a29a] focus:border-[var(--color-brand)] focus:outline-none";
@@ -110,23 +111,16 @@ export function SignUpForm({ initialEmail = "", next = "" }: { initialEmail?: st
             className={input}
           />
         </div>
-        <div>
-          <label htmlFor="password" className={label}>
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            required
-            minLength={10}
-            autoComplete="new-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            placeholder="At least 10 characters"
-            className={input}
-          />
-          <p className="t-meta mt-1.5">Ten characters or more, with letters and numbers.</p>
-        </div>
+        <PasswordField
+          id="password"
+          label="Password"
+          value={password}
+          onChange={setPassword}
+          autoComplete="new-password"
+          minLength={10}
+          placeholder="At least 10 characters"
+          hint="Ten characters or more, with letters and numbers."
+        />
       </div>
 
       {error && <p className="field-error mt-4">{error}</p>}
