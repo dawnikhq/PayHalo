@@ -1,0 +1,1155 @@
+@import "tailwindcss";
+
+/* ============================================================================
+   PayHalo — design tokens
+   Forest carries weight, teal carries interaction, lime is reserved for the one
+   card that matters on a page, mint and canvas keep the product calm.
+   The legacy token names (ink/ivory/panel/brass/sage/ember) are kept as aliases
+   so older components inherit the same palette instead of drifting.
+   ========================================================================= */
+
+@theme {
+  /* The brand guide's palette, carried verbatim: Halo Green, Primary, Mint,
+     Light, Neutral, Dark. Everything else on the site is one of these six or a
+     tint of them. */
+  --color-forest: #0b3d2e;      /* Halo Green */
+  --color-forest-700: #0e5240;
+  --color-brand: #0e6f56;       /* Primary */
+  --color-brand-600: #0b5b46;
+  --color-lime: #a7f3d0;        /* Mint */
+  --color-mint: #e8f8f2;        /* Light */
+  --color-canvas: #f3faf7;
+  --color-surface: #ffffff;
+
+  /* text + lines */
+  --color-ink: #0a0f0d;         /* Dark */
+  --color-muted: #6b7280;       /* Neutral */
+  --color-line: #dcece5;
+  --color-line-strong: #c2ded3;
+
+  /* status */
+  --color-sage: #2f7d5b;
+  --color-ember: #b4432c;
+  --color-warn: #fdf3d8;
+  --color-warnink: #7d5510;
+
+  /* legacy aliases */
+  --color-ink-2: #e8f8f2;
+  --color-panel: #ffffff;
+  --color-ivory: #0a0f0d;
+  --color-brass: #0e6f56;
+  --color-brass-deep: #0b3d2e;
+
+  /* One family, as the guide specifies. Plus Jakarta Sans Variable carries
+     headlines and paragraphs alike; weight and tracking do the differentiating. */
+  --font-display: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
+
+  --color-paper: #f7fdfa;
+  --color-night: #0a0f0d;
+
+  --radius-card: 24px;
+  --radius-panel: 30px;
+  --radius-tile: 26px;
+}
+
+:root {
+  color-scheme: light;
+  --shadow-card: 0 1px 2px rgba(23, 45, 41, 0.05), 0 8px 24px -18px rgba(23, 45, 41, 0.28);
+  --shadow-lift: 0 18px 40px -26px rgba(23, 45, 41, 0.45);
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* A tap should paint on touch-down, not after the browser has waited to see
+   whether a double-tap zoom is coming. */
+a,
+button,
+summary,
+label[for],
+[role="button"],
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* the page still scrolls — wheel, trackpad, keys and touch all work — but the
+     browser no longer paints a bar down the right-hand edge over the design */
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar {
+  display: none;
+}
+
+body {
+  background:
+    radial-gradient(1100px 620px at 12% -8%, rgba(14, 111, 86, 0.12), transparent 60%),
+    radial-gradient(900px 520px at 92% 4%, rgba(167, 243, 208, 0.55), transparent 62%),
+    radial-gradient(1200px 800px at 50% 120%, rgba(14, 111, 86, 0.08), transparent 60%),
+    var(--color-canvas);
+  background-attachment: fixed;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  min-height: 100vh;
+  overflow-x: clip;
+}
+
+::selection {
+  background: var(--color-lime);
+  color: var(--color-forest);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@layer components {
+/* ------------------------------------------------------------- typography */
+
+.display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: var(--color-ink);
+  line-height: 1.1;
+}
+
+.h1 {
+  font-family: var(--font-display);
+  font-size: clamp(1.85rem, 3.4vw, 2.5rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--color-ink);
+}
+
+.h2 {
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 1.6vw, 1.35rem);
+  font-weight: 600;
+  letter-spacing: -0.022em;
+  line-height: 1.25;
+  color: var(--color-ink);
+}
+
+.h3 {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+}
+
+.eyebrow {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-brand);
+}
+
+.label {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.mono {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.hairline {
+  height: 1px;
+  background: var(--color-line);
+}
+
+/* --------------------------------------------------------------- surfaces */
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+  box-shadow:
+    0 1px 2px rgba(23, 45, 41, 0.03),
+    0 18px 40px -34px rgba(21, 63, 53, 0.45);
+}
+
+/* the explicit glass surface, for panels that sit over the ambient wash */
+.glass {
+  background: linear-gradient(158deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.66) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: var(--radius-panel);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.98),
+    0 1px 2px rgba(23, 45, 41, 0.04),
+    0 30px 60px -40px rgba(21, 63, 53, 0.55);
+  backdrop-filter: blur(22px) saturate(1.2);
+  -webkit-backdrop-filter: blur(22px) saturate(1.2);
+}
+
+.glass-dark {
+  background: linear-gradient(158deg, rgba(21, 63, 53, 0.95) 0%, rgba(21, 63, 53, 0.82) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-panel);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 30px 60px -40px rgba(9, 32, 27, 0.9);
+  backdrop-filter: blur(18px) saturate(1.1);
+  -webkit-backdrop-filter: blur(18px) saturate(1.1);
+}
+
+.glass-lime {
+  background: linear-gradient(158deg, rgba(228, 248, 186, 0.95) 0%, rgba(217, 244, 165, 0.72) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 26px 50px -36px rgba(90, 140, 40, 0.55);
+}
+
+.card-flat {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+}
+
+.card-forest {
+  background:
+    linear-gradient(158deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 42%),
+    linear-gradient(160deg, #17453a 0%, #12362d 100%);
+  color: #f2f7f2;
+  border: 1px solid rgba(21, 63, 53, 0.9);
+  border-radius: var(--radius-card);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 30px 60px -42px rgba(9, 32, 27, 0.95);
+}
+
+.card-forest .label,
+.card-forest .muted {
+  color: rgba(233, 245, 235, 0.62);
+}
+
+.card-lime {
+  background: linear-gradient(158deg, #e6f8c1 0%, var(--color-lime) 100%);
+  color: var(--color-forest);
+  border: 1px solid #cbea92;
+  border-radius: var(--radius-card);
+}
+
+.card-mint {
+  background: linear-gradient(158deg, rgba(245, 250, 243, 0.95) 0%, rgba(235, 242, 233, 0.8) 100%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: var(--color-forest);
+  border: 1px solid #dde9da;
+  border-radius: var(--radius-card);
+}
+
+.card-warn {
+  background: var(--color-warn);
+  color: #6a4712;
+  border: 1px solid #f2ddb4;
+  border-radius: var(--radius-card);
+}
+
+.surface-hover {
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.surface-hover:hover {
+  border-color: var(--color-line-strong);
+  box-shadow: var(--shadow-lift);
+}
+
+/* ------------------------------------------------------------------- text */
+
+.muted {
+  color: var(--color-muted);
+}
+
+.t-body {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-muted);
+}
+
+.t-small {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--color-muted);
+}
+
+.t-meta {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--color-muted);
+}
+
+.t-num {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------- buttons */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 46px;
+  padding: 0 22px;
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease,
+    opacity 150ms ease, transform 120ms ease;
+}
+
+/* a press should land on the same frame as the finger — no easing on the way in */
+.btn:active:not(:disabled) {
+  transform: translateY(1px) scale(0.992);
+  transition-duration: 60ms;
+}
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-primary,
+.btn-brass {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 55%),
+    var(--color-forest);
+  color: #f4f8f3;
+  border-color: rgba(9, 32, 27, 0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 12px 24px -16px rgba(21, 63, 53, 0.8);
+}
+
+.btn-primary:hover:not(:disabled),
+.btn-brass:hover:not(:disabled) {
+  background: var(--color-forest-700);
+}
+
+.btn-teal {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 55%),
+    var(--color-brand);
+  color: #ffffff;
+  border-color: var(--color-brand);
+}
+
+.btn-teal:hover:not(:disabled) {
+  background: var(--color-brand-600);
+}
+
+.btn-secondary,
+.btn-ghost {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.7) 100%);
+  color: var(--color-ink);
+  border-color: rgba(207, 218, 207, 0.9);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.btn-secondary:hover:not(:disabled),
+.btn-ghost:hover:not(:disabled) {
+  border-color: #b9c9bb;
+  background: #fbfdfb;
+}
+
+.btn-quiet {
+  background: transparent;
+  color: var(--color-brand);
+  border-color: transparent;
+  padding: 0 8px;
+}
+
+.btn-quiet:hover:not(:disabled) {
+  background: var(--color-mint);
+}
+
+.btn-danger {
+  background: #a93b26;
+  color: #ffffff;
+  border-color: #a93b26;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #933120;
+}
+
+.btn-sm {
+  height: 38px;
+  padding: 0 16px;
+  font-size: 12.5px;
+}
+
+.btn-xs {
+  height: 30px;
+  padding: 0 12px;
+  font-size: 11.5px;
+  border-radius: 9px;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+/* --------------------------------------------------------------- controls */
+
+.input,
+.textarea,
+.select {
+  width: 100%;
+  /* 16px on a phone stops iOS Safari zooming the page when a field is focused,
+     which used to shift the whole profile form sideways mid-tap */
+  font-size: 16px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--color-line-strong);
+  border-radius: 12px;
+  padding: 11px 14px;
+  color: var(--color-ink);
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+@media (min-width: 640px) {
+  .input,
+  .textarea,
+  .select {
+    font-size: 14px;
+  }
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: #9aa8a2;
+}
+
+.input:hover,
+.textarea:hover,
+.select:hover {
+  border-color: #b9c9bb;
+}
+
+.input:focus,
+.textarea:focus,
+.select:focus {
+  outline: none;
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px rgba(0, 132, 119, 0.12);
+}
+
+.input[aria-invalid="true"] {
+  border-color: var(--color-ember);
+}
+
+.textarea {
+  min-height: 96px;
+  resize: vertical;
+  line-height: 1.55;
+}
+
+.field-help {
+  font-size: 12px;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.field-error {
+  font-size: 12px;
+  color: var(--color-ember);
+  font-weight: 500;
+}
+
+/* ------------------------------------------------------------------ pills */
+
+.pill {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 11px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border: 1px solid var(--color-line);
+  background: var(--color-mint);
+  color: var(--color-forest);
+  white-space: nowrap;
+}
+
+.badge-forest {
+  background: var(--color-forest);
+  color: #eaf3ea;
+  border-color: var(--color-forest);
+}
+
+.badge-lime {
+  background: var(--color-lime);
+  color: var(--color-forest);
+  border-color: #cbea92;
+}
+
+.badge-mint {
+  background: var(--color-mint);
+  color: var(--color-forest);
+  border-color: #dbe7d8;
+}
+
+.badge-warn {
+  background: var(--color-warn);
+  color: var(--color-warnink);
+  border-color: #f2ddb4;
+}
+
+.badge-danger {
+  background: #fbe7e2;
+  color: #97351f;
+  border-color: #f4d2c9;
+}
+
+.badge-sand {
+  background: #f6f1e3;
+  color: #6b5a2a;
+  border-color: #e8dfc6;
+}
+
+.badge-neutral {
+  background: #f4f6f4;
+  color: var(--color-muted);
+  border-color: var(--color-line);
+}
+
+/* ----------------------------------------------------------------- tables */
+
+.row-link {
+  transition: background-color 140ms ease;
+}
+
+.row-link:hover {
+  background: #f8fbf8;
+}
+
+.row-link:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: -2px;
+}
+
+/* -------------------------------------------------------------- animation */
+
+.spin {
+  animation: spin 900ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.breathe {
+  animation: breathe 2.4s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(1.35);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .breathe,
+  .spin {
+    animation: none !important;
+  }
+}
+
+/* ------------------------------------------------------------------ print */
+
+@media print {
+  body {
+    background: #ffffff;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .card,
+  .card-flat {
+    box-shadow: none;
+  }
+  @page {
+    margin: 14mm;
+  }
+}
+
+/* ------------------------------------------------------- editorial layer */
+
+/* Marketing pages sit on warm paper, not on the app's mint wash. */
+.paper {
+  background:
+    radial-gradient(90% 46% at 50% -6%, rgba(167, 243, 208, 0.42), transparent 62%),
+    radial-gradient(70% 40% at 92% 2%, rgba(14, 111, 86, 0.12), transparent 60%),
+    linear-gradient(#fbfefc, #eff9f4);
+}
+
+/* Headlines use the product face (Manrope), not a second typeface: scale,
+   tight tracking and weight carry the emphasis instead. */
+.display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: -0.038em;
+  font-size: clamp(2.45rem, 6.2vw, 4.5rem);
+}
+
+/* The one line that has to fill a first screen. */
+/* The opening statement. Its own scale so the whole first screen — headline
+   and both buttons — fits without a scroll, on a small phone as well as a
+   laptop.
+   On a phone the words arrive one under the other at a narrow width, where
+   tight leading and negative tracking that reads as confidence on a wide screen
+   read as a block of ink. So the small end gets air between the lines and
+   between the words; the large end keeps the compressed, editorial setting. */
+.display-hero {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.09;
+  letter-spacing: -0.018em;
+  word-spacing: 0.04em;
+  text-transform: uppercase;
+  /* Bounded by the height as well as the width, so the statement can never
+     grow the first screen past the fold on a short laptop. */
+  font-size: clamp(1.8rem, min(7vw, 8.6vh), 4.05rem);
+  text-wrap: balance;
+}
+
+@media (min-width: 640px) {
+  .display-hero {
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+    word-spacing: 0;
+  }
+}
+
+.display-xl {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+  font-size: clamp(2.6rem, 7.4vw, 5.1rem);
+  text-wrap: balance;
+}
+
+.display-sm {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.06;
+  letter-spacing: -0.032em;
+  font-size: clamp(1.85rem, 4vw, 2.95rem);
+}
+
+.display-xs {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.16;
+  letter-spacing: -0.02em;
+  font-size: clamp(1.25rem, 2.2vw, 1.6rem);
+}
+
+/* The quiet, lower-case label that sits above a section, the way the
+   reference sites do it: a small pill, not a shout. */
+.eyebrow-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  border: 1px solid rgba(21, 63, 53, 0.12);
+  background: rgba(255, 255, 255, 0.72);
+  padding: 0.4rem 0.85rem;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.btn-ink {
+  background: var(--color-forest);
+  color: #f6faf5;
+  border-color: var(--color-forest);
+}
+.btn-ink:hover:not(:disabled) {
+  background: #0f2f28;
+}
+
+.hero-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.photo-frame {
+  overflow: hidden;
+  border-radius: var(--radius-panel);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 40px 80px -60px rgba(9, 32, 27, 0.9);
+}
+
+/* ------------------------------------------------------------ new language */
+
+/*
+ * Inner panes keep their scrollbar, because a pane with no visible edge reads as
+ * broken. It is 6px, transparent track, a forest thumb that darkens under the
+ * cursor — the same language as the rest of the interface.
+ */
+.scroll-slim {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(21, 63, 53, 0.24) transparent;
+  scrollbar-gutter: stable;
+}
+
+.scroll-slim::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scroll-slim::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll-slim::-webkit-scrollbar-thumb {
+  background: rgba(21, 63, 53, 0.2);
+  border-radius: 999px;
+}
+
+.scroll-slim::-webkit-scrollbar-thumb:hover {
+  background: rgba(21, 63, 53, 0.42);
+}
+
+.scroll-slim::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* A single tile in the marketing bento grid. */
+.tile {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-tile);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  padding: 1.5rem;
+}
+@media (min-width: 640px) {
+  .tile {
+    padding: 1.75rem;
+  }
+}
+
+.label-caps {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* The section wrapper every marketing block shares, so the page keeps one
+   rhythm from the hero to the closing card. */
+.section {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 1200px;
+  padding-inline: 1rem;
+}
+@media (min-width: 640px) {
+  .section {
+    padding-inline: 2rem;
+  }
+}
+
+/* Scroll rails on a phone: one card at a time, snapping, no page overflow. */
+.rail {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding-inline: 1rem;
+  padding-bottom: 0.25rem;
+}
+.rail::-webkit-scrollbar {
+  display: none;
+}
+.rail > * {
+  scroll-snap-align: start;
+  flex: 0 0 auto;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fade-in {
+    animation: fade-in 700ms ease-out both;
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+}
+
+/* ============================================================================
+   Hero — the motion language
+   Borrowed in spirit from the reference site: a statement that arrives word by
+   word, light that drifts, photographs that change, a band that runs. All of it
+   sits inside a no-preference query, so a visitor who asked for stillness gets
+   the same screen, simply already there.
+   ========================================================================= */
+
+.btn-mint {
+  background: linear-gradient(180deg, #cdfbe6 0%, var(--color-lime) 100%);
+  color: var(--color-forest);
+  border-color: rgba(167, 243, 208, 0.9);
+  box-shadow: 0 20px 40px -24px rgba(167, 243, 208, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+.btn-mint:hover:not(:disabled) {
+  background: linear-gradient(180deg, #e2fdef 0%, #b9f7dc 100%);
+}
+
+.btn-on-dark {
+  background: rgba(255, 255, 255, 0.07);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.btn-on-dark:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.13);
+  border-color: rgba(255, 255, 255, 0.36);
+}
+
+.ribbon {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(64px);
+  will-change: transform;
+}
+.ribbon-a {
+  left: -16vw;
+  top: -24vw;
+  width: 64vw;
+  height: 64vw;
+  min-width: 420px;
+  min-height: 420px;
+  opacity: 0.85;
+  background: radial-gradient(circle at 35% 35%, rgba(14, 111, 86, 0.95), rgba(14, 111, 86, 0) 66%);
+}
+.ribbon-b {
+  right: -14vw;
+  top: -10vw;
+  width: 52vw;
+  height: 52vw;
+  min-width: 340px;
+  min-height: 340px;
+  opacity: 0.55;
+  background: radial-gradient(circle at 50% 50%, rgba(167, 243, 208, 0.55), rgba(167, 243, 208, 0) 62%);
+}
+.ribbon-c {
+  left: 18vw;
+  bottom: -30vw;
+  width: 74vw;
+  height: 40vw;
+  opacity: 0.8;
+  border-radius: 48%;
+  background: radial-gradient(ellipse at 50% 50%, rgba(11, 61, 46, 0.95), rgba(11, 61, 46, 0) 70%);
+}
+
+.marquee {
+  overflow: hidden;
+}
+.marquee-track {
+  display: flex;
+  width: max-content;
+}
+
+@keyframes ph-word {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 0.55em, 0);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+@keyframes ph-fade {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes ph-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -10px, 0);
+  }
+}
+
+@keyframes ph-marquee {
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes ph-drift-a {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(6vw, 4vw, 0) scale(1.12);
+  }
+}
+
+@keyframes ph-drift-b {
+  from {
+    transform: translate3d(0, 0, 0) scale(1.08);
+  }
+  to {
+    transform: translate3d(-5vw, 5vw, 0) scale(0.96);
+  }
+}
+
+@keyframes ph-drift-c {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(-4vw, -3vw, 0) scale(1.1);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-word {
+    animation: ph-word 780ms cubic-bezier(0.22, 0.75, 0.2, 1) both;
+    animation-delay: calc(var(--i, 0) * 62ms + 40ms);
+  }
+  .hero-fade {
+    animation: ph-fade 900ms cubic-bezier(0.22, 0.75, 0.2, 1) both;
+    animation-delay: var(--d, 600ms);
+  }
+  .hero-float {
+    animation: ph-float 9s ease-in-out infinite;
+  }
+  .ribbon-a {
+    animation: ph-drift-a 26s ease-in-out infinite alternate;
+  }
+  .ribbon-b {
+    animation: ph-drift-b 32s ease-in-out infinite alternate;
+  }
+  .ribbon-c {
+    animation: ph-drift-c 38s ease-in-out infinite alternate;
+  }
+  .marquee-track {
+    animation: ph-marquee 38s linear infinite;
+  }
+  .marquee:hover .marquee-track {
+    animation-play-state: paused;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-float,
+  .ribbon-a,
+  .ribbon-b,
+  .ribbon-c,
+  .marquee-track {
+    animation: none !important;
+  }
+}
+
+/* a phone pays for every blurred pixel, so the light is cheaper there while
+   still reading as the same atmosphere */
+@media (max-width: 640px) {
+  .ribbon {
+    filter: blur(44px);
+  }
+  .ribbon-a {
+    width: 92vw;
+    height: 92vw;
+    left: -46vw;
+    top: -34vw;
+  }
+  .ribbon-b {
+    width: 76vw;
+    height: 76vw;
+    right: -34vw;
+    top: -6vw;
+  }
+  .ribbon-c {
+    width: 110vw;
+    height: 60vw;
+    left: 4vw;
+    bottom: -32vw;
+  }
+}
+
+/* --------------------------------------------------------------- the seal --
+   Sealing used to look like a button that had already been pressed. This is the
+   moment the arrangement becomes real: the stamp lands, three rings travel out
+   once, and a sheen crosses the word. It plays once, then rests. */
+
+.seal-mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  flex: none;
+}
+
+.seal-core {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  border-radius: 9999px;
+  color: var(--color-lime);
+  background:
+    radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.22), transparent 55%),
+    linear-gradient(160deg, #0e6f56, #0b3d2e 70%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.35),
+    0 16px 34px -18px rgba(11, 61, 46, 0.85);
+}
+
+.seal-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 1px solid rgba(167, 243, 208, 0.55);
+  animation: seal-ring 3.6s cubic-bezier(0.2, 0.6, 0.2, 1) infinite;
+}
+
+.seal-ring-light {
+  border-color: rgba(11, 61, 46, 0.28);
+}
+
+@keyframes seal-ring {
+  0% {
+    transform: scale(0.88);
+    opacity: 0.6;
+  }
+  70% {
+    transform: scale(1.55);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.seal-stamp {
+  animation: seal-stamp 760ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes seal-stamp {
+  0% {
+    transform: scale(1.45) rotate(-9deg);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(0.95) rotate(1.5deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.seal-sheen {
+  background-image: linear-gradient(
+    100deg,
+    transparent 18%,
+    rgba(255, 255, 255, 0.5) 45%,
+    transparent 72%
+  );
+  background-size: 240% 100%;
+  background-repeat: no-repeat;
+  animation: seal-sheen 2.6s ease-in-out 350ms 2;
+}
+
+@keyframes seal-sheen {
+  0% {
+    background-position: 150% 0;
+  }
+  100% {
+    background-position: -70% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seal-ring,
+  .seal-stamp,
+  .seal-sheen {
+    animation: none !important;
+  }
+}
