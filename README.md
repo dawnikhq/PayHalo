@@ -9,7 +9,6 @@ From savings and investments to cryptocurrency and online financial accounts, Pa
 
 The purpose is to make sure the people you intend to benefit from what you've built have a clearer understanding of what exists, what you've decided and where to begin.
 
-\---
 
 # 1. Why PayHalo exists
 
