@@ -21,10 +21,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Too many attempts. Try again in a few minutes." }, { status: 429 });
   }
 
-  const body = (await request.json().catch(() => null)) as { name?: unknown; email?: unknown; password?: unknown } | null;
+  const body = (await request.json().catch(() => null)) as
+    | { name?: unknown; email?: unknown; password?: unknown; next?: unknown }
+    | null;
   const name = typeof body?.name === "string" ? body.name.trim().slice(0, 80) : "";
   const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
   const password = typeof body?.password === "string" ? body.password : "";
+  /* where to land after confirming — only ever a path on this site */
+  const rawNext = typeof body?.next === "string" ? body.next : "";
+  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext.slice(0, 120) : "";
 
   if (!EMAIL.test(email)) return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
   if (!name) return NextResponse.json({ error: "Tell us what to call you." }, { status: 400 });
@@ -45,7 +50,10 @@ export async function POST(request: Request) {
     }
 
     const token = await startLoginToken(account.id, "confirm-email", CONFIRM_HOURS * 60);
-    const url = new URL(`/auth/confirm?token=${encodeURIComponent(token)}`, request.url).toString();
+    const url = new URL(
+      `/auth/confirm?token=${encodeURIComponent(token)}${next ? `&next=${encodeURIComponent(next)}` : ""}`,
+      request.url,
+    ).toString();
     const mail = await sendConfirmAddress(email, { name, url, hours: CONFIRM_HOURS });
 
     if (!mail.sent) {

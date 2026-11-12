@@ -53,6 +53,8 @@ export interface OperatorOverview {
     released: number;
   };
   signups: { label: string; count: number }[];
+  /** The path a member walks, in order, with how many got that far. */
+  funnel: { label: string; count: number }[];
   statuses: { label: string; count: number; tone: string }[];
   customers: OperatorCustomer[];
   events: OperatorEvent[];
@@ -224,9 +226,26 @@ export async function operatorOverview(): Promise<OperatorOverview> {
   }
   events.sort((a, b) => (a.at < b.at ? 1 : -1));
 
+  const reached = {
+    started: docs.filter((d) => d.doc.assets.length > 0 || d.doc.beneficiaries.length > 0).length,
+    people: docs.filter((d) => d.doc.beneficiaries.length > 0).length,
+    key: docs.filter((d) => Boolean(d.doc.keyholder)).length,
+    sealed: docs.filter((d) => Boolean(d.doc.plan.sealedAt)).length,
+    claims: docs.filter((d) => d.doc.claims.length > 0).length,
+  };
+  const funnel = [
+    { label: "Account created", count: accounts.length },
+    { label: "Plan started", count: reached.started },
+    { label: "People named", count: reached.people },
+    { label: "Trusted Key appointed", count: reached.key },
+    { label: "Plan confirmed", count: reached.sealed },
+    { label: "Handover filed", count: reached.claims },
+  ];
+
   return {
     generatedAt: new Date().toISOString(),
     totals,
+    funnel,
     signups: weeks,
     statuses,
     customers: customers.sort((a, b) => (a.joinedAt ?? "") < (b.joinedAt ?? "") ? 1 : -1),
@@ -238,3 +257,95 @@ export async function operatorOverview(): Promise<OperatorOverview> {
 /** Kept for the queue component, which wants only rows. */
 export type { ReleaseQueueRow } from "./store";
 export { isoDay };
+
+/** One row per filed claim that is still waiting on a human. */
+export interface ClaimReviewRow {
+  claimId: number;
+  ownerName: string;
+  ownerEmail: string;
+  keyholderName: string;
+  keyholderEmail: string;
+  status: string;
+  documentName: string;
+  documentKind: string;
+  confidence: number;
+  verdict: string;
+  summary: string;
+  fields: { label: string; value: string }[];
+  assets: { id: number; label: string; kind: string }[];
+  note: string | null;
+  filedAt: string;
+  reviewEndsAt: string | null;
+}
+
+/**
+ * The verification desk.
+ *
+ * A claim can only be decided on by a person: the automated pass in lib/certs.ts
+ * says whether the bytes look like a death certificate, never whether someone
+ * has died. This queue hands the operator the evidence, the checks that ran and
+ * the assets the claim is about — and nothing that belongs to another plan.
+ */
+export async function claimQueue(): Promise<ClaimReviewRow[]> {
+  const driver = await getDriver();
+  let docs: { key: string; doc: StateDoc }[] = [];
+  try {
+    docs = driver.scan ? await driver.scan() : [];
+  } catch {
+    docs = [];
+  }
+
+  const rows: ClaimReviewRow[] = [];
+  for (const { doc } of docs) {
+    for (const claim of doc.claims) {
+      if (claim.status !== "review") continue;
+      let fields: { label: string; value: string }[] = [];
+      let verdict = "review";
+      let summary = "The document was read on the server.";
+      try {
+        const parsed = JSON.parse(claim.verification) as { verdict?: string; summary?: string };
+        verdict = parsed.verdict ?? verdict;
+        summary = parsed.summary ?? summary;
+      } catch {
+        /* keep the defaults */
+      }
+      try {
+        const extracted = JSON.parse(claim.extracted) as { label?: string; value?: string }[];
+        fields = (Array.isArray(extracted) ? extracted : [])
+          .filter((f) => f && typeof f.label === "string")
+          .slice(0, 8)
+          .map((f) => ({ label: String(f.label), value: String(f.value ?? "") }));
+      } catch {
+        fields = [];
+      }
+      let assets: { id: number; label: string; kind: string }[] = [];
+      try {
+        const parsed = JSON.parse(claim.assetRefs ?? "[]") as { id: number; label: string; kind: string }[];
+        assets = Array.isArray(parsed) ? parsed : [];
+      } catch {
+        assets = [];
+      }
+
+      rows.push({
+        claimId: claim.id,
+        ownerName: doc.user.name || "Unnamed",
+        ownerEmail: doc.user.email || "—",
+        keyholderName: doc.keyholder?.name ?? "Not appointed",
+        keyholderEmail: doc.keyholder?.email ?? "—",
+        status: claim.status,
+        documentName: claim.documentName,
+        documentKind: claim.documentKind,
+        confidence: claim.confidence,
+        verdict,
+        summary,
+        fields,
+        assets,
+        note: claim.note ?? null,
+        filedAt: claim.initiatedAt,
+        reviewEndsAt: claim.reviewEndsAt,
+      });
+    }
+  }
+
+  return rows.sort((a, b) => (a.filedAt < b.filedAt ? -1 : 1));
+}

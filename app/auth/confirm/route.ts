@@ -14,6 +14,8 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const token = url.searchParams.get("token") ?? "";
+  const rawNext = url.searchParams.get("next") ?? "";
+  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/onboarding?confirmed=1";
 
   const userId = token ? await redeemLoginToken(token, "confirm-email") : null;
   if (!userId) return NextResponse.redirect(new URL("/signin?confirm=expired", request.url));
@@ -24,5 +26,5 @@ export async function GET(request: Request) {
   await markEmailVerified(userId);
   await setSessionCookie(await startSession(userId));
 
-  return NextResponse.redirect(new URL("/onboarding?confirmed=1", request.url));
+  return NextResponse.redirect(new URL(next, request.url));
 }

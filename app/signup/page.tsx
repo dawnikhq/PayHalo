@@ -7,11 +7,19 @@ import { accountsAvailable } from "@/lib/accounts";
 
 export const dynamic = "force-dynamic";
 
-export default async function SignUpPage() {
+export default async function SignUpPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ email?: string; next?: string }>;
+}) {
+  const { email, next } = await searchParams;
   const user = await currentUser();
   if (user) redirect("/dashboard");
 
   const configured = await accountsAvailable();
+  const invited = next === "/keyholder";
+  const prefill = typeof email === "string" ? email.trim().slice(0, 160) : "";
+  const destination = next && next.startsWith("/") && !next.startsWith("//") ? next : "";
 
   return (
     <div className="paper min-h-screen">
@@ -19,11 +27,12 @@ export default async function SignUpPage() {
 
       <main className="mx-auto grid w-full max-w-[1120px] items-start gap-10 px-5 pb-24 pt-6 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:pt-16">
         <div>
-          <p className="eyebrow">Your account</p>
-          <h1 className="h1 mt-3">Start a plan of your own.</h1>
+          <p className="eyebrow">{invited ? "Trusted Key" : "Your account"}</p>
+          <h1 className="h1 mt-3">{invited ? "Open your Trusted Key portal." : "Start a plan of your own."}</h1>
           <p className="t-body mt-3 max-w-[46ch]">
-            One account, one plan, nobody else&apos;s household. You can fill it in over months — nothing is shared
-            until you send a link.
+            {invited
+              ? "You were named as someone's Trusted Key. Create an account with the same email address they named, and your portal — with your access code inside it — opens straight away."
+              : "One account, one plan, nobody else's household. You can fill it in over months — nothing is shared until you send a link."}
           </p>
 
           <ul className="mt-8 space-y-3">
@@ -42,7 +51,7 @@ export default async function SignUpPage() {
 
         <div>
           {configured ? (
-            <SignUpForm />
+            <SignUpForm initialEmail={prefill} next={destination} />
           ) : (
             <div className="rounded-[18px] border border-[#f0cfc6] bg-[#fdf1ee] p-6">
               <p className="label text-[var(--color-ember)]">One moment</p>

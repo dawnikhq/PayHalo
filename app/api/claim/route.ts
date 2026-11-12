@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { MAX_BYTES, verifyCertificate, type StoredReport } from "@/lib/certs";
-import { existingHashes, getSnapshot, submitClaimAction } from "@/lib/store";
+import { existingHashes, getKeyholderView, submitClaimAction } from "@/lib/store";
 import { guarded } from "@/lib/route-guard";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +32,11 @@ async function handlePOST(request: Request) {
   }
 
   const accessCode = String(form.get("accessCode") ?? "");
+  const note = String(form.get("note") ?? "");
+  const assetIds = String(form.get("assetIds") ?? "")
+    .split(",")
+    .map((v) => Number(v.trim()))
+    .filter((n) => Number.isInteger(n) && n > 0);
   const file = form.get("file");
   if (!file || typeof file === "string") {
     return NextResponse.json({ error: "Attach the death certificate." }, { status: 400 });
@@ -41,12 +46,13 @@ async function handlePOST(request: Request) {
   }
 
   const bytes = new Uint8Array(await file.arrayBuffer());
-  const [snapshot, usedHashes] = await Promise.all([getSnapshot(), existingHashes()]);
+  const [view, usedHashes] = await Promise.all([getKeyholderView(), existingHashes()]);
+  if (!view) return NextResponse.json({ error: "This link is not valid." }, { status: 401 });
 
   const report = await verifyCertificate({
     bytes,
     fileName: file.name || "certificate",
-    ownerName: snapshot.user.name,
+    ownerName: view.ownerName,
     usedHashes,
   });
 
@@ -62,7 +68,7 @@ async function handlePOST(request: Request) {
 
   const stored: StoredReport = { ...report };
   delete stored.textPreview; // the transcript is already long enough
-  const result = await submitClaimAction(accessCode, stored);
+  const result = await submitClaimAction(accessCode, stored, { assetIds, note });
   if (!result.ok) return NextResponse.json({ ...result, report }, { status: 400 });
 
   return NextResponse.json({ ...result, report });

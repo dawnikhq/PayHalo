@@ -19,18 +19,18 @@ const EMPHASIS_FROM = 5;
 
 const FRAMES = [
   {
-    src: "/story/father-son.jpg",
-    alt: "A father and his adult son walking together in the late afternoon",
+    src: "/brand/field-ribbon.jpg",
+    alt: "A ribbon of mint light curving through deep green",
     focus: "object-center",
   },
   {
-    src: "/story/brothers.jpg",
-    alt: "Two brothers standing together, one holding a small wooden box",
-    focus: "object-[center_18%]",
+    src: "/brand/field-key.jpg",
+    alt: "A brass key resting on folded pale mint paper",
+    focus: "object-center",
   },
   {
-    src: "/story/handover.jpg",
-    alt: "An older man placing a key and a handwritten note into a younger man's hands",
+    src: "/brand/field-letter.jpg",
+    alt: "A sealed letter and a pen on a dark desk",
     focus: "object-center",
   },
 ];
@@ -130,7 +130,7 @@ export function Hero() {
 
             <div className="absolute inset-x-3 bottom-3 flex items-center justify-between gap-3 rounded-full border border-white/15 bg-[#0a0f0d]/45 px-3.5 py-2 backdrop-blur-md">
               <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/80">
-                A life built. A legacy kept.
+                Your Wealth, left in good hands.
               </span>
               <span className="flex items-center gap-1.5">
                 {FRAMES.map((f, i) => (

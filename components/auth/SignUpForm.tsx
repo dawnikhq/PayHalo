@@ -6,9 +6,9 @@ const input =
   "mt-1.5 h-11 w-full rounded-[12px] border border-[var(--color-line-strong)] bg-white px-3 text-[13.5px] text-[var(--color-ink)] placeholder:text-[#94a29a] focus:border-[var(--color-brand)] focus:outline-none";
 const label = "block text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]";
 
-export function SignUpForm() {
+export function SignUpForm({ initialEmail = "", next = "" }: { initialEmail?: string; next?: string }) {
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +23,7 @@ export function SignUpForm() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, next }),
       });
       const data = (await res.json()) as { error?: string; email?: string };
       if (!res.ok) throw new Error(data.error ?? "Could not create the account.");
@@ -40,7 +40,7 @@ export function SignUpForm() {
     const res = await fetch("/api/auth/resend-confirm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: waiting }),
+      body: JSON.stringify({ email: waiting, next }),
     });
     const data = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
     setResent(data.message ?? data.error ?? "If that address is waiting, a fresh link is on its way.");

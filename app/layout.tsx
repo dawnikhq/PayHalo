@@ -7,7 +7,7 @@ import "./globals.css";
  * icon, the brand line as the title, and the dark-green card as the preview.
  */
 const SITE = "https://hack1-weld.vercel.app";
-const TITLE = "PayHalo — A life built. A legacy kept.";
+const TITLE = "PayHalo — Your Wealth, left in good hands.";
 const DESCRIPTION =
   "PayHalo is a digital inheritance platform. Record what you own, decide who inherits it, appoint a Trusted Key, and leave instructions your family can follow.";
 
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     description: DESCRIPTION,
     url: "/",
     images: [
-      { url: "/brand/payhalo-og.png", width: 1200, height: 630, alt: "PayHalo — A life built. A legacy kept." },
+      { url: "/brand/payhalo-og.png", width: 1200, height: 630, alt: "PayHalo — Your Wealth, left in good hands." },
     ],
   },
   twitter: {

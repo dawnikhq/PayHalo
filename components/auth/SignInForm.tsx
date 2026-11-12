@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-type Mode = "password" | "link";
+type Mode = "password" | "link" | "reset";
 
 const input =
   "mt-1.5 h-11 w-full rounded-[12px] border border-[var(--color-line-strong)] bg-white px-3 text-[13.5px] text-[var(--color-ink)] placeholder:text-[#94a29a] focus:border-[var(--color-brand)] focus:outline-none";
@@ -17,6 +17,12 @@ export function SignInForm({ next }: { next: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState<{ delivered: boolean; message: string } | null>(null);
+  const [sentMessage, setSentMessage] = useState<{
+    delivered: boolean;
+    title: string;
+    lead: string;
+    message: string;
+  } | null>(null);
   const [resent, setResent] = useState<string | null>(null);
   const codeRef = useRef<HTMLInputElement>(null);
 
@@ -45,6 +51,23 @@ export function SignInForm({ next }: { next: string }) {
           return;
         }
         setStage("code");
+        return;
+      }
+
+      if (mode === "reset") {
+        const res = await fetch("/api/auth/forgot", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        });
+        const data = (await res.json()) as { error?: string; delivered?: boolean; message?: string };
+        if (!res.ok) throw new Error(data.error ?? "Could not send the link.");
+        setSentMessage({
+          delivered: data.delivered !== false,
+          title: data.delivered === false ? "Reset link not sent" : "Check your inbox",
+          lead: data.delivered === false ? "Email isn’t connected here." : "One link, one hour.",
+          message: data.message ?? "If that address has a PayHalo account, a reset link is on its way.",
+        });
         return;
       }
 
@@ -163,6 +186,27 @@ export function SignInForm({ next }: { next: string }) {
     );
   }
 
+  if (sentMessage) {
+    return (
+      <div className="rounded-[18px] border border-[var(--color-line)] bg-white p-6">
+        <p className="label text-[var(--color-brand)]">{sentMessage.title}</p>
+        <p className="h3 mt-2">{sentMessage.lead}</p>
+        <p className="t-small mt-2">{sentMessage.message}</p>
+        <button
+          type="button"
+          onClick={() => {
+            setSentMessage(null);
+            setMode("password");
+            setError(null);
+          }}
+          className="btn btn-secondary mt-5 w-full"
+        >
+          Back to sign in
+        </button>
+      </div>
+    );
+  }
+
   if (sent) {
     return (
       <div className="rounded-[18px] border border-[var(--color-line)] bg-white p-6">
@@ -189,6 +233,26 @@ export function SignInForm({ next }: { next: string }) {
 
   return (
     <form onSubmit={submit} className="rounded-[18px] border border-[var(--color-line)] bg-white p-6 md:p-7">
+      {mode === "reset" ? (
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="label text-[var(--color-brand)]">Password reset</p>
+            <p className="mt-1 text-[12.5px] leading-relaxed text-[var(--color-muted)]">
+              Enter the address on your account and we will email a link to set a new password.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setMode("password");
+              setError(null);
+            }}
+            className="shrink-0 text-[11.5px] font-semibold text-[var(--color-brand)]"
+          >
+            Cancel
+          </button>
+        </div>
+      ) : (
       <div className="flex gap-1 rounded-full border border-[var(--color-line)] p-1">
         {(
           [
@@ -213,6 +277,7 @@ export function SignInForm({ next }: { next: string }) {
           </button>
         ))}
       </div>
+      )}
 
       <div className="mt-5 space-y-4">
         <div>
@@ -246,7 +311,19 @@ export function SignInForm({ next }: { next: string }) {
               placeholder="Your password"
               className={input}
             />
-            <p className="t-meta mt-1.5">We then email a six-digit code — the password alone does not open the plan.</p>
+            <div className="mt-1.5 flex items-start justify-between gap-3">
+              <p className="t-meta">We then email a six-digit code — the password alone does not open the plan.</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("reset");
+                  setError(null);
+                }}
+                className="shrink-0 text-[11.5px] font-semibold text-[var(--color-brand)] underline-offset-4 hover:underline"
+              >
+                Forgot password?
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -254,7 +331,13 @@ export function SignInForm({ next }: { next: string }) {
       {error && <p className="field-error mt-4">{error}</p>}
 
       <button type="submit" disabled={busy} className="btn btn-primary mt-5 w-full">
-        {busy ? "Working…" : mode === "password" ? "Continue" : "Email me a sign-in link"}
+        {busy
+          ? "Working…"
+          : mode === "password"
+            ? "Continue"
+            : mode === "reset"
+              ? "Email me a reset link"
+              : "Email me a sign-in link"}
       </button>
 
       <p className="t-small mt-4">

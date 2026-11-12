@@ -7,7 +7,7 @@ export type PlanStatus = "draft" | "active" | "claiming" | "distributed";
  * cancelled   → the owner answered inside the window; nothing moved
  * distributed → the window closed and the engine paid out
  */
-export type ClaimStatus = "review" | "window" | "cancelled" | "distributed";
+export type ClaimStatus = "review" | "window" | "cancelled" | "distributed" | "rejected";
 
 export interface User {
   id: number;
@@ -145,6 +145,13 @@ export interface Claim {
   verifiedAt: string | null;
   windowEndsAt: string | null;
   distributedAt: string | null;
+  /** JSON array of `{ id, label }` — the assets this claim asks about. */
+  assetRefs?: string | null;
+  /** The keyholder's own words, kept for the operator's review. */
+  note?: string | null;
+  /** Why the operator accepted or refused the documents. */
+  decisionNote?: string | null;
+  decidedAt?: string | null;
 }
 
 export interface Distribution {

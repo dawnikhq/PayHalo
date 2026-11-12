@@ -153,7 +153,7 @@ export function MarketingFooter() {
       </div>
       <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-2 border-t border-[rgba(21,63,53,0.08)] px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
         <p className="font-[var(--font-display)] text-[14px] font-medium tracking-[-0.01em] text-[var(--color-forest)]">
-          A life built. A legacy kept.
+          Your Wealth, left in good hands.
         </p>
         <div className="flex items-center gap-4">
           <CookiePreferencesLink />

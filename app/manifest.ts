@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next";
 /** What a phone shows when PayHalo is added to the home screen. */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "PayHalo — A life built. A legacy kept.",
+    name: "PayHalo — Your Wealth, left in good hands.",
     short_name: "PayHalo",
     description:
       "Record what you own, decide who inherits it, appoint a Trusted Key, and leave instructions your family can follow.",

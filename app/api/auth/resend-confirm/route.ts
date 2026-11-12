@@ -15,8 +15,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Too many requests. Try again in a few minutes." }, { status: 429 });
   }
 
-  const body = (await request.json().catch(() => null)) as { email?: unknown } | null;
+  const body = (await request.json().catch(() => null)) as { email?: unknown; next?: unknown } | null;
   const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
+  const rawNext = typeof body?.next === "string" ? body.next : "";
+  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext.slice(0, 120) : "";
   if (!email) return NextResponse.json({ error: "Enter your email address." }, { status: 400 });
 
   const same = { ok: true, message: "If that address is waiting to be confirmed, a fresh link is on its way." };
@@ -26,7 +28,10 @@ export async function POST(request: Request) {
     const account = await accountByEmail(email);
     if (account && !account.emailVerifiedAt) {
       const token = await startLoginToken(account.id, "confirm-email", CONFIRM_HOURS * 60);
-      const url = new URL(`/auth/confirm?token=${encodeURIComponent(token)}`, request.url).toString();
+      const url = new URL(
+        `/auth/confirm?token=${encodeURIComponent(token)}${next ? `&next=${encodeURIComponent(next)}` : ""}`,
+        request.url,
+      ).toString();
       await sendConfirmAddress(account.email, {
         name: account.name ?? "there",
         url,

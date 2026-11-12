@@ -241,7 +241,7 @@ export function AppShell({
             <div className="flex items-center gap-4">
               <CookiePreferencesLink className="text-[11.5px] text-[var(--color-muted)] hover:text-[var(--color-brand)]" />
               <p className="font-[var(--font-display)] font-semibold tracking-[0.02em] text-[var(--color-forest)]">
-                A life built. A legacy kept.
+                Your Wealth, left in good hands.
               </p>
             </div>
           </div>

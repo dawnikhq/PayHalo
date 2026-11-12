@@ -4,8 +4,10 @@ import { AdminGate } from "@/components/admin/AdminGate";
 import { ReleaseQueue } from "@/components/admin/ReleaseQueue";
 import { MailCheck } from "@/components/admin/MailCheck";
 import { OperatorSignOut } from "@/components/admin/OperatorSignOut";
+import { ClaimDesk } from "@/components/admin/ClaimDesk";
+import { Logo } from "@/components/brand/Logo";
 import { adminConfigured, isAdmin } from "@/lib/admin";
-import { operatorOverview } from "@/lib/operator";
+import { claimQueue, operatorOverview } from "@/lib/operator";
 import { reviewRelease } from "@/lib/halo";
 import { releaseQueue } from "@/lib/store";
 import { mailConfigured, mailHealth } from "@/lib/mailer";
@@ -42,9 +44,9 @@ export default async function AdminPage() {
     );
   }
 
-  const [overview, queue] = await Promise.all([operatorOverview(), releaseQueue()]);
+  const [overview, queue, claims] = await Promise.all([operatorOverview(), releaseQueue(), claimQueue()]);
   const mail = mailHealth();
-  const { totals, signups, statuses, customers, events } = overview;
+  const { totals, signups, statuses, customers, events, funnel } = overview;
   const peak = Math.max(1, ...signups.map((s) => s.count));
 
   const kpis = [
@@ -80,13 +82,15 @@ export default async function AdminPage() {
       {/* operator rail */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[224px] flex-col justify-between border-r border-[rgba(21,63,53,0.08)] bg-white/70 px-4 py-6 backdrop-blur-xl lg:flex">
         <div>
-          <p className="px-2 font-[var(--font-display)] text-[18px] font-extrabold tracking-[-0.05em] text-[var(--color-brand)]">
-            payhalo
-          </p>
+          <span className="block px-2">
+            <Logo height={20} />
+          </span>
           <p className="mt-1 px-2 text-[9.5px] font-semibold uppercase tracking-[0.14em] text-[#94a29a]">Operations</p>
 
           <nav aria-label="Operator sections" className="mt-7 space-y-1">
             {[
+              ["#verification", "Death verification"],
+              ["#analytics", "Product analytics"],
               ["#overview", "Overview"],
               ["#customers", "Customers"],
               ["#release", "Release desk"],
@@ -120,10 +124,11 @@ export default async function AdminPage() {
           <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="eyebrow">Operations</p>
-              <h1 className="h1 mt-2">The customer desk</h1>
+              <h1 className="h1 mt-2">Verification &amp; analytics</h1>
               <p className="t-body mt-2 max-w-[70ch]">
-                Who has joined, how far each arrangement has got, and what is waiting on a decision. Operators read and
-                decide — they cannot move money, name a recipient, or see a vault key.
+                The two jobs of this console: settle a claim of death by reading the documents a Trusted Key filed, and
+                watch how the product is being used. Operators read and decide — they cannot move money, name a
+                recipient, or see a vault key.
               </p>
             </div>
             <div className="sm:text-right">
@@ -131,6 +136,23 @@ export default async function AdminPage() {
               <p className="t-small mt-1">{serverTime(overview.generatedAt)}</p>
             </div>
           </header>
+
+          {/* -------------------------------------------------- verification */}
+          <section id="verification" className="mb-8 scroll-mt-6">
+            <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 className="h2">Claims of death</h2>
+                <p className="t-meta">
+                  A claim only moves on a person&apos;s decision. Accepting releases the registry hold and starts the
+                  owner&apos;s 14-day window; refusing leaves the plan where it is.
+                </p>
+              </div>
+              <p className="t-num text-[12px] text-[var(--color-muted)]">
+                {claims.length} waiting
+              </p>
+            </div>
+            <ClaimDesk rows={claims} />
+          </section>
 
           {/* ---------------------------------------------------------- kpis */}
           <section id="overview" className="scroll-mt-6">
@@ -191,6 +213,48 @@ export default async function AdminPage() {
                   ))}
                 </ul>
               </div>
+            </div>
+          </section>
+
+          {/* ------------------------------------------------------- funnel */}
+          <section id="analytics" className="mt-8 scroll-mt-6">
+            <div className="mb-3">
+              <h2 className="h2">Product analytics</h2>
+              <p className="t-meta">Where the six decisions actually stop. Each bar counts members who reached it.</p>
+            </div>
+            <div className="rounded-[16px] border border-[rgba(21,63,53,0.08)] bg-white p-5">
+              <ul className="space-y-3">
+                {funnel.map((step, i) => {
+                  const top = Math.max(1, funnel[0]?.count ?? 1);
+                  const pct = Math.round((step.count / top) * 100);
+                  const prev = i === 0 ? step.count : funnel[i - 1].count;
+                  const drop = prev > 0 ? Math.max(0, prev - step.count) : 0;
+                  return (
+                    <li key={step.label}>
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span className="text-[12.5px] font-semibold text-[var(--color-ink)]">{step.label}</span>
+                        <span className="t-num text-[12px] text-[var(--color-muted)]">
+                          {step.count}
+                          <span className="ml-1.5 text-[10.5px]">({pct}%)</span>
+                          {i > 0 && drop > 0 && (
+                            <span className="ml-2 text-[10.5px] text-[var(--color-ember)]">−{drop}</span>
+                          )}
+                        </span>
+                      </div>
+                      <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-[#eef4f0]">
+                        <div
+                          className="h-full rounded-full bg-[linear-gradient(90deg,var(--color-forest),var(--color-brand))]"
+                          style={{ width: `${Math.max(2, pct)}%` }}
+                        />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="mt-4 text-[11px] leading-relaxed text-[var(--color-muted)]">
+                A drop is not a failure: some members prepare a plan privately for months before naming anyone. The
+                number that matters is the last one — a confirmed plan is one family&apos;s problem solved.
+              </p>
             </div>
           </section>
 

@@ -8,6 +8,7 @@ import type { KeyholderView } from "@/lib/store";
 import { clockLabel, shortDate } from "@/lib/format";
 import { Countdown } from "./Countdown";
 import { Badge, Field } from "./ui";
+import { CopyButton } from "./CopyButton";
 
 const CAN = ["Start a handover request", "Submit supporting evidence", "Track the verification status"];
 const CANNOT = ["View balances or asset details", "Edit plans or beneficiaries", "Move or release any assets"];
@@ -44,6 +45,8 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
   const [checking, setChecking] = useState(false);
   const [drag, setDrag] = useState(false);
   const [understood, setUnderstood] = useState(false);
+  const [picked, setPicked] = useState<number[]>([]);
+  const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -105,6 +108,8 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
       const body = new FormData();
       body.append("accessCode", code);
       body.append("file", file);
+      if (picked.length) body.append("assetIds", picked.join(","));
+      if (note.trim()) body.append("note", note.trim());
       const res = await fetch("/api/claim", { method: "POST", body });
       const data = await res.json();
       if (!res.ok) {
@@ -113,6 +118,8 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
       }
       setFile(null);
       setReport(null);
+      setPicked([]);
+      setNote("");
       await refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "The handover request couldn't be filed.");
@@ -192,6 +199,36 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
             </div>
           </section>
 
+          <section className="card p-6">
+            <p className="label text-[var(--color-brand)]">Your access code</p>
+            {view.keyholder?.accessCode ? (
+              <>
+                <p className="t-num mt-2 break-all text-[17px] tracking-[0.12em] text-[var(--color-forest)]">
+                  {view.keyholder.accessCode}
+                </p>
+                <p className="t-meta mt-2">
+                  It lives here, behind your sign-in — never in an email. You will use it to start a handover request.
+                </p>
+                <div className="mt-3">
+                  <CopyButton value={view.keyholder.accessCode} />
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="mt-2 text-[15px] font-semibold text-[var(--color-forest)]">
+                  Held by {view.ownerFirstName}, not here.
+                </p>
+                <p className="t-meta mt-2">
+                  {view.ownerFirstName} was shown this code when they named you, and was told to pass it to you on its
+                  own — never in the same message as this link. Sign in with the address they named and it appears here.
+                </p>
+                <Link href="/signin?next=/keyholder" className="btn btn-secondary mt-3 w-full">
+                  Sign in to reveal it
+                </Link>
+              </>
+            )}
+          </section>
+
           <section className="card flex flex-col p-6">
             <h2 className="h2">When help is needed.</h2>
             <p className="t-body mt-2 flex-1">
@@ -221,6 +258,17 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
           </div>
         </section>
 
+        {claim?.status === "rejected" && (
+          <div className="card mt-5 p-5">
+            <p className="text-[13px] font-semibold text-[var(--color-ember)]">
+              Claim #{claim.id} was not accepted.
+            </p>
+            <p className="t-small mt-1">
+              {claim.decisionNote ?? "The documents filed were not enough to continue."} Nothing changed on the plan.
+            </p>
+          </div>
+        )}
+
         {claim?.status === "cancelled" && (
           <div className="card mt-5 p-5">
             <p className="t-small">
@@ -247,10 +295,12 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
                 ? "Filed, and being checked."
                 : stage === "window"
                   ? "Waiting, on purpose."
-                  : "Your part is complete."}
+                  : stage === "rejected"
+                    ? "Those documents were not accepted."
+                    : "Your part is complete."}
           </h1>
           <p className="t-body mt-2">
-            A handover request notifies the account holder and starts a 72-hour registry check. Nothing is transferred by filing it.
+            A handover request is read by a person, then held for 72 hours before the account holder is told. Nothing is transferred by filing it.
           </p>
         </div>
         {stage === "none" && (
@@ -285,19 +335,97 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
                     />
                   </Field>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setCode(view.keyholder?.accessCode ?? "")}
-                  className="btn btn-secondary mb-[22px] shrink-0"
-                >
-                  Use my access code
-                </button>
+                {view.keyholder?.accessCode ? (
+                  <button
+                    type="button"
+                    onClick={() => setCode(view.keyholder?.accessCode ?? "")}
+                    className="btn btn-secondary mb-[22px] shrink-0"
+                  >
+                    Use my access code
+                  </button>
+                ) : null}
               </div>
               <p className="t-meta">
-                Your access code: <span className="font-semibold text-[var(--color-forest)]">{view.keyholder?.accessCode}</span>
+                {view.keyholder?.accessCode ? (
+                  <>
+                    Your access code:{" "}
+                    <span className="font-semibold text-[var(--color-forest)]">{view.keyholder.accessCode}</span>
+                  </>
+                ) : (
+                  <>Enter the code {view.ownerFirstName} sent you separately from this link — it is never in an email.</>
+                )}
               </p>
 
-              <h2 className="h3 mt-7">02 Supporting evidence</h2>
+              <h2 className="h3 mt-7">02 Which assets is this about?</h2>
+              <p className="t-body mt-1.5">
+                Name the records this request concerns. You can choose one, several, or leave it blank for the whole
+                plan. You will not see balances or values here, and neither will anyone reading your request.
+              </p>
+
+              {view.assets.length === 0 ? (
+                <p className="mt-3 rounded-[12px] bg-[#f6f8f5] px-4 py-3 text-[12px] text-[var(--color-muted)]">
+                  No individual assets are recorded on this plan yet.
+                </p>
+              ) : (
+                <ul className="mt-3 space-y-2">
+                  {view.assets.map((asset) => {
+                    const on = picked.includes(asset.id);
+                    return (
+                      <li key={asset.id}>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPicked((current) =>
+                              current.includes(asset.id)
+                                ? current.filter((id) => id !== asset.id)
+                                : [...current, asset.id],
+                            )
+                          }
+                          aria-pressed={on}
+                          className={`flex w-full items-center justify-between gap-3 rounded-[12px] border px-3.5 py-2.5 text-left transition ${
+                            on
+                              ? "border-[var(--color-brand)] bg-[var(--color-mint)]"
+                              : "border-[var(--color-line)] bg-white hover:border-[var(--color-line-strong)]"
+                          }`}
+                        >
+                          <span className="min-w-0">
+                            <span className="block truncate text-[13px] font-semibold text-[var(--color-ink)]">
+                              {asset.label}
+                            </span>
+                            <span className="block truncate text-[11px] text-[var(--color-muted)]">
+                              {asset.provider} · {asset.kind.replace(/_/g, " ")}
+                            </span>
+                          </span>
+                          <span
+                            className={`grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full text-[10px] ${
+                              on
+                                ? "bg-[var(--color-forest)] text-white"
+                                : "border border-[var(--color-line-strong)] text-transparent"
+                            }`}
+                          >
+                            ✓
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+
+              <label htmlFor="kh-note" className="label mt-4 block">
+                Anything the reviewer should know (optional)
+              </label>
+              <textarea
+                id="kh-note"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                rows={3}
+                maxLength={600}
+                placeholder="Dates, names on the record, or what you could not find."
+                className="input mt-1.5 resize-none"
+              />
+
+              <h2 className="h3 mt-7">03 Supporting evidence</h2>
               <p className="t-body mt-1.5">
                 Verification needs an official record of death. Do not upload real personal documents in this
                 concept.
@@ -406,10 +534,23 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
               <div className="p-6 md:p-7">
                 <h2 className="h2">Filed. Nobody has been told yet.</h2>
                 <p className="t-body mt-2 max-w-[56ch]">
-                  {claim.documentName} passed the automated checks and is now with the registry for a 72-hour
-                  review. {view.ownerFirstName} is not notified during this window — the notice only goes out
-                  once the record is confirmed.
+                  {claim.documentName} passed the automated checks and is now with our verification desk. A person
+                  reads the document, and a 72-hour registry hold runs alongside it. {view.ownerFirstName} is not
+                  notified during this window — the notice only goes out once the record is accepted.
                 </p>
+
+                {claim.assets.length > 0 && (
+                  <ul className="mt-4 flex flex-wrap gap-1.5">
+                    {claim.assets.map((a) => (
+                      <li
+                        key={a.id}
+                        className="rounded-full border border-[var(--color-line)] bg-white px-2.5 py-1 text-[11px] font-medium text-[var(--color-ink)]"
+                      >
+                        {a.label}
+                      </li>
+                    ))}
+                  </ul>
+                )}
 
                 <div className="mt-6 max-w-sm">
                   <Countdown seconds={view.secondsToReviewEnd ?? 0} onExpire={() => void refresh()} />
@@ -418,7 +559,8 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
                 <ul className="mt-6 space-y-2.5">
                   {[
                     ["Document read", `${Math.round(claim.confidence * 100)}% automated score`, true],
-                    ["Registry check", "Running · up to 72 hours", false],
+                    ["Human verification", "A reviewer checks the document", false],
+                    ["Registry hold", "Up to 72 hours", false],
                     ["Owner notification", "Sends only after the check clears", false],
                   ].map(([title, detail, done]) => (
                     <li key={String(title)} className="flex items-center gap-3">
@@ -456,8 +598,8 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
                   </button>
                 </div>
                 <p className="t-meta mt-3">
-                  The registry check runs for 72 hours and cannot be hurried — not by you, and not by PayHalo. You will see
-                  the result here.
+                  Verification cannot be hurried — not by you, and not by PayHalo. If the documents are not accepted,
+                  the reason appears here and you can file again.
                 </p>
               </div>
             </section>
@@ -539,6 +681,40 @@ export function KeyholderFlow({ initial }: { initial: KeyholderView }) {
               <Link href="/beneficiary" className="btn mt-5 bg-white text-[var(--color-forest)] hover:bg-[#f2f7f2]">
                 Open the beneficiary view →
               </Link>
+            </section>
+          )}
+
+          {claim?.status === "rejected" && (
+            <section className="card overflow-hidden">
+              <div className="border-b border-[#f0cfc6] bg-[#fdf1ee] px-6 py-3.5">
+                <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-[var(--color-ember)]">
+                  Documents not accepted
+                </p>
+              </div>
+              <div className="p-6 md:p-7">
+                <h2 className="h2">This request stopped where it was.</h2>
+                <p className="t-body mt-2 max-w-[56ch]">
+                  A reviewer looked at what you filed and could not accept it. Nothing has changed for{" "}
+                  {view.ownerFirstName}, and their plan is exactly as it was.
+                </p>
+                {claim.decisionNote && (
+                  <p className="mt-4 rounded-[12px] border border-[var(--color-line)] bg-[#fbfdfb] px-4 py-3 text-[12.5px] leading-relaxed text-[var(--color-ink)]">
+                    “{claim.decisionNote}”
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIntake(true);
+                    setReport(null);
+                    setFile(null);
+                    setUnderstood(false);
+                  }}
+                  className="btn btn-secondary mt-5"
+                >
+                  File again with a clearer document
+                </button>
+              </div>
             </section>
           )}
 

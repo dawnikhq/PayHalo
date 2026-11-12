@@ -28,8 +28,8 @@ export default function AboutPage() {
         <section className="mx-auto mt-10 w-full max-w-[1200px] px-4 sm:mt-14 sm:px-8">
           <div className="photo-frame relative h-[240px] sm:h-[360px]">
             <Image
-              src="/story/handover.jpg"
-              alt="A key and a handwritten note passing from one generation to the next"
+              src="/brand/hands.jpg"
+              alt="A brass key passing from an older hand to a younger one"
               fill
               priority
               sizes="(max-width: 1200px) 100vw, 1200px"

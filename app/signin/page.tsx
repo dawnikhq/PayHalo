@@ -26,6 +26,9 @@ export default async function SignInPage({
         <div>
           <p className="eyebrow">Your account</p>
           <h1 className="h1 mt-3">Sign in to your plan.</h1>
+          <p className="mt-2.5 font-[var(--font-display)] text-[15px] font-medium tracking-[-0.01em] text-[var(--color-brand)]">
+            Your Wealth, left in good hands.
+          </p>
           <p className="t-body mt-3 max-w-[46ch]">
             A password, or a one-time link by email. Either way the plan is yours alone until you choose to
             share it.

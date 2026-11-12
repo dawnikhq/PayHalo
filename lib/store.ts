@@ -31,6 +31,7 @@ import {
   updateProfile,
   keyholderView,
   verifyClaim,
+  decideClaim,
   type AssetInput,
   type Audience,
   type BeneficiaryInput,
@@ -121,14 +122,19 @@ async function ownerDoc(): Promise<{ ownerId: string; doc: StateDoc }> {
  * Only the keyholder flow uses this: filing and verifying a claim.
  */
 async function actorDoc(): Promise<{ ownerId: string; doc: StateDoc }> {
-  const user = await currentUser();
-  if (user) {
-    const key = planKey(user.id, await activePlanNo());
-    const doc = (await getDriver()).load(key);
-    return { ownerId: key, doc: await doc ?? (await loadDoc(user.id)) };
-  }
+  /*
+   * Order matters. A keyholder may be holding a share link, may be signed in
+   * with the address the owner named, or — in the demo — may do both. The plan
+   * they were named on is the plan they act on; their own account, if they have
+   * one, is never touched by a claim.
+   */
   const shared = await sharedOwner("keyholder");
   if (shared) return { ownerId: shared, doc: await loadDoc(shared) };
+
+  const user = await currentUser();
+  if (user) {
+    throw new Error("You are not named as a Trusted Key on any plan.");
+  }
   throw new Error("This link is not valid.");
 }
 
@@ -269,15 +275,57 @@ export async function renamePlanAction(no: number, name: string): Promise<{ ok: 
 
 /** Every document hash already filed on this plan — used to catch duplicates. */
 export async function existingHashes(): Promise<string[]> {
-  const { doc } = await ownerDoc();
+  const owner = await sharedOwner("keyholder");
+  const doc = owner ? await loadDoc(owner) : (await ownerDoc()).doc;
   return doc.claims.map((c) => c.documentHash).filter(Boolean);
 }
 
 export async function submitClaimAction(
   accessCode: string,
   report: StoredReport,
+  extra?: { assetIds?: number[]; note?: string },
 ): Promise<MutationResult & { snapshot: Snapshot }> {
-  return mutate((doc) => submitClaim(doc, { accessCode, report }), "keyholder");
+  return mutate((doc) => submitClaim(doc, { accessCode, report, ...extra }), "keyholder");
+}
+
+/** The operator's decision on a filed claim: accept the documents, or refuse them. */
+export async function decideClaimAction(decision: "accept" | "reject", note?: string) {
+  return mutate((doc) => decideClaim(doc, decision, note), "keyholder");
+}
+
+/**
+ * The verification desk acts on a claim, not on a session.
+ *
+ * An operator is neither the owner nor the Trusted Key, so the document is
+ * found by the claim itself: the account's address names the plan, the claim
+ * number names the request inside it. Decisions are recorded on that plan and
+ * nowhere else.
+ */
+export async function decideClaimByReview(
+  input: { ownerEmail: string; claimId: number },
+  decision: "accept" | "reject",
+  note?: string,
+) {
+  const driver = await getDriver();
+  let docs: { key: string; doc: StateDoc }[] = [];
+  try {
+    docs = driver.scan ? await driver.scan() : [];
+  } catch {
+    docs = [];
+  }
+  const email = input.ownerEmail.trim().toLowerCase();
+  const hit = docs.find(
+    ({ doc }) =>
+      doc.user.email.trim().toLowerCase() === email &&
+      doc.claims.some((c) => c.id === input.claimId && c.status === "review"),
+  );
+  if (!hit) return { ok: false as const, error: "That request is no longer waiting for a decision." };
+
+  const { key, doc } = hit;
+  if (settle(doc)) await driver.save(key, doc);
+  const result = decideClaim(doc, decision, note);
+  if (result.ok) await driver.save(key, doc);
+  return { ...result, snapshot: snapshotOf(doc, "keyholder") };
 }
 
 export async function verifyClaimAction() {
@@ -377,7 +425,16 @@ export async function getKeyholderView() {
     const ownerId = await sharedOwner("keyholder");
     if (ownerId) await driver.save(ownerId, doc);
   }
-  return keyholderView(doc);
+  const view = keyholderView(doc);
+  /*
+   * Hand the code over only to the person who signed in with the address the
+   * owner named. Anyone else holding the link sees everything about the plan
+   * except the one secret that turns a link into a claim.
+   */
+  const user = await currentUser();
+  const named = !!user && !!doc.keyholder && user.email.toLowerCase() === doc.keyholder.email.toLowerCase();
+  if (view.keyholder && !named) view.keyholder = { ...view.keyholder, accessCode: null };
+  return view;
 }
 
 /** Beneficiary-scoped read: only their own entitlement, and only after release. */

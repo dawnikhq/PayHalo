@@ -6,7 +6,7 @@ import { DeviceStage, ProductMock } from "@/components/marketing/ProductMock";
 import { SiteTour, SiteTourButton } from "@/components/marketing/SiteTour";
 
 export const metadata = {
-  title: { absolute: "PayHalo — A life built. A legacy kept." },
+  title: { absolute: "PayHalo — Your Wealth, left in good hands." },
   description:
     "PayHalo is a digital inheritance platform that helps you document what you own, decide who inherits it and leave instructions for how your wealth should be handled.",
 };
@@ -254,8 +254,8 @@ export default function LandingPage() {
 
           <div className="photo-frame relative mt-8 h-[240px] sm:mt-10 sm:h-[380px]">
             <Image
-              src="/story/generations.jpg"
-              alt="A grandmother, her daughter and her granddaughter sitting together on a veranda"
+              src="/brand/hands.jpg"
+              alt="A brass key passing from one generation to the next"
               fill
               priority
               sizes="(max-width: 1200px) 100vw, 1200px"
@@ -299,7 +299,7 @@ export default function LandingPage() {
                   {photo && (
                     <>
                       <Image
-                        src="/story/brothers.jpg"
+                        src="/brand/story-wide.jpg"
                         alt=""
                         fill
                         sizes="(max-width: 640px) 100vw, 400px"
@@ -508,8 +508,8 @@ export default function LandingPage() {
           <div className="grid items-center gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:gap-14">
             <div className="photo-frame relative h-[280px] sm:h-[400px]">
               <Image
-                src="/story/father-son.jpg"
-                alt="A father and his adult son walking together at the end of the day"
+                src="/brand/field-key.jpg"
+                alt="A brass key on folded pale mint paper"
                 fill
                 sizes="(max-width: 1024px) 100vw, 520px"
                 className="object-cover"

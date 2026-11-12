@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { setKeyholderAction } from "@/lib/store";
+import { notifyKeyholder } from "@/lib/keyholder-mail";
 import { guarded } from "@/lib/route-guard";
 
 export const dynamic = "force-dynamic";
@@ -31,7 +32,20 @@ async function handlePOST(request: Request) {
   });
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
 
-  return NextResponse.json({ ok: true, keyholder: result.snapshot.keyholder });
+  /*
+   * A plan confirmed before the Trusted Key was named still owes that person an
+   * introduction. Naming them later sends it now, so no plan can end up sealed
+   * with someone who was never told.
+   */
+  let keyholderMail: Awaited<ReturnType<typeof notifyKeyholder>> | null = null;
+  if (result.snapshot.plan.sealedAt && result.snapshot.keyholder?.email) {
+    keyholderMail = await notifyKeyholder(new URL(request.url).origin, {
+      ownerName: result.snapshot.user.name,
+      keyholder: { name: result.snapshot.keyholder.name, email: result.snapshot.keyholder.email },
+    });
+  }
+
+  return NextResponse.json({ ok: true, keyholder: result.snapshot.keyholder, keyholderMail });
 }
 
 export const POST = guarded(handlePOST);

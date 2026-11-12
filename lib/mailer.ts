@@ -35,6 +35,9 @@ const fromEmail = () =>
 
 const fromName = () => (process.env.MAIL_FROM_NAME ?? "").trim() || "PayHalo";
 
+/** Every message signs off the same way. */
+const SIGNATURE = ["", "PayHalo", "Your Wealth, left in good hands."];
+
 /** True when there is a key to send with. The sender always resolves. */
 export function mailConfigured(): boolean {
   return Boolean(apiKey());
@@ -293,4 +296,159 @@ export async function sendTestMessage(to: string): Promise<MailResult & { sender
     ].join("\n"),
   });
   return { ...result, sender };
+}
+
+/**
+ * The Trusted Key introduction.
+ *
+ * Sent when a plan is sealed. It deliberately carries no access code: the code
+ * is the thing that starts a handover, so it lives behind a sign-in, never in an
+ * inbox that may be forwarded or archived. A person who is not on PayHalo yet
+ * gets a sign-up link that pre-fills their address, so the code is waiting for
+ * them the moment the account exists.
+ */
+export async function sendKeyholderNamed(
+  to: string,
+  details: {
+    keyholderName: string;
+    ownerName: string;
+    portalUrl: string;
+    signupUrl?: string;
+  },
+): Promise<MailResult> {
+  if (!to.trim()) return { sent: false, reason: "There is no email address for the Trusted Key yet." };
+
+  const greeting = details.keyholderName?.trim() ? `Hello ${details.keyholderName.trim()},` : "Hello,";
+  const lines = [
+    greeting,
+    "",
+    `${details.ownerName} has named you as their Trusted Key on PayHalo.`,
+    "",
+    "Being a Trusted Key does not give you their assets, their balances or their instructions. It lets you do one thing: if something happens to them, you can open a handover request and submit the documents it needs.",
+    "",
+    "Your access code is never sent by email. It is waiting inside your PayHalo portal:",
+    details.portalUrl,
+  ];
+
+  if (details.signupUrl) {
+    lines.push(
+      "",
+      "There is no PayHalo account with this address yet. Create one using this same email address, and your portal opens with the code already in it:",
+      details.signupUrl,
+    );
+  }
+
+  lines.push(
+    "",
+    "If you were not expecting this, you can ignore this message. Nothing changes unless you act.",
+    ...SIGNATURE,
+  );
+
+  return send({
+    to,
+    toName: details.keyholderName,
+    subject: `${details.ownerName} named you as their Trusted Key`,
+    text: lines.join("\n"),
+  });
+}
+
+/**
+ * Reset a forgotten password. One link, one hour, one use — and the response to
+ * the request is identical whether or not the address has an account.
+ */
+export async function sendPasswordReset(
+  to: string,
+  details: { name?: string | null; url: string; minutes: number },
+): Promise<MailResult> {
+  const greeting = details.name?.trim() ? `Hello ${details.name.trim()},` : "Hello,";
+  return send({
+    to,
+    toName: details.name ?? undefined,
+    subject: "Reset your PayHalo password",
+    text: [
+      greeting,
+      "",
+      "Someone asked to reset the password on your PayHalo account. If that was you, open this link and choose a new one:",
+      "",
+      details.url,
+      "",
+      `The link works once, and for ${details.minutes} minutes. Your current password keeps working until you set a new one.`,
+      "",
+      "If you did not ask for this, ignore the message — nothing changes.",
+      ...SIGNATURE,
+    ].join("\n"),
+  });
+}
+
+/**
+ * The two decisions, told to the people they concern.
+ *
+ * Accepting is not a private event: the owner is told, in plain words, that a
+ * verified handover has begun and that they can still stop it. Refusing is told
+ * to the Trusted Key, with the reason, because otherwise the portal is the only
+ * place a person would ever find out.
+ */
+export async function sendClaimAccepted(
+  to: { keyholder?: string; owner?: string },
+  details: { ownerName: string; keyholderName: string; claimId: number; days: number; ownerUrl: string; keyholderUrl: string },
+): Promise<void> {
+  if (to.owner) {
+    await send({
+      to: to.owner,
+      toName: details.ownerName,
+      subject: "A verified handover request has been filed on your plan",
+      text: [
+        `Hello ${details.ownerName},`,
+        "",
+        `The documents filed by ${details.keyholderName} as your Trusted Key have been verified. A handover request is now open on your plan.`,
+        "",
+        `You have ${details.days} full days to respond. If this is a mistake, or you are well, sign in and stop it here:`,
+        details.ownerUrl,
+        "",
+        "Nothing is transferred before that window closes, and PayHalo cannot shorten it.",
+        ...SIGNATURE,
+      ].join("\n"),
+    });
+  }
+
+  if (to.keyholder) {
+    await send({
+      to: to.keyholder,
+      toName: details.keyholderName,
+      subject: `Claim #${details.claimId}: your documents were accepted`,
+      text: [
+        `Hello ${details.keyholderName},`,
+        "",
+        `The documents you filed for ${details.ownerName} have been accepted.`,
+        "",
+        `${details.days} days from now, if ${details.ownerName} does not respond, the handover proceeds as recorded in their plan.`,
+        "",
+        "You can follow the status here:",
+        details.keyholderUrl,
+        ...SIGNATURE,
+      ].join("\n"),
+    });
+  }
+}
+
+export async function sendClaimRefused(
+  to: string,
+  details: { keyholderName: string; ownerName: string; claimId: number; reason: string; url: string },
+): Promise<MailResult> {
+  return send({
+    to,
+    toName: details.keyholderName,
+    subject: `Claim #${details.claimId}: the documents were not accepted`,
+    text: [
+      `Hello ${details.keyholderName},`,
+      "",
+      `A reviewer looked at the documents you filed for ${details.ownerName} and could not accept them.`,
+      "",
+      `Reason given: ${details.reason}`,
+      "",
+      "Nothing has changed on the plan. You can file again with a clearer record here:",
+      details.url,
+      ...SIGNATURE,
+    ].join("\n"),
+  });
 }

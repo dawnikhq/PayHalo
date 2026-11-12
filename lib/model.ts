@@ -398,9 +398,12 @@ export function settle(doc: StateDoc): boolean {
     changed = true;
   }
 
-  /* 1 — registry check cleared: only now does the owner hear about the claim. */
+  /* 1 — documents accepted and the registry check cleared: only now does the
+     owner hear about the claim. The operator's decision is a real gate, not a
+     formality — without it a claim sits in review however long it waits. */
   if (
     claim.status === "review" &&
+    claim.decidedAt &&
     claim.reviewEndsAt &&
     Date.parse(claim.reviewEndsAt) <= Date.now()
   ) {
@@ -574,6 +577,9 @@ export function applyPlan(input: PlanInput): StateDoc {
 export interface SubmitClaimInput {
   accessCode: string;
   report: StoredReport;
+  /** Which recorded assets this claim is about. Labels only — never balances. */
+  assetIds?: number[];
+  note?: string;
 }
 
 /**
@@ -582,14 +588,20 @@ export interface SubmitClaimInput {
  * repeated here because this function is the gate that matters.
  */
 export function submitClaim(doc: StateDoc, input: SubmitClaimInput): { ok: boolean; error?: string } {
-  const { accessCode, report } = input;
+  const { accessCode, report, note } = input;
+  const assetIds = Array.isArray(input.assetIds) ? input.assetIds.filter((n) => Number.isInteger(n)) : [];
+  const assetRefs = assetIds
+    .map((id) => doc.assets.find((a) => a.id === id))
+    .filter((a): a is NonNullable<typeof a> => Boolean(a))
+    .map((a) => ({ id: a.id, label: a.label, kind: a.kind }));
 
   if (!doc.keyholder) return { ok: false, error: "No keyholder on file." };
   if (accessCode.trim().toUpperCase() !== doc.keyholder.accessCode.toUpperCase()) {
     return { ok: false, error: "That access code doesn't match the keyholder on file." };
   }
   const existing = latestClaim(doc);
-  if (existing && existing.status !== "cancelled") {
+  /* a refused claim is closed: the same person may file again with better papers */
+  if (existing && existing.status !== "cancelled" && existing.status !== "rejected") {
     return { ok: false, error: "A handover is already in progress." };
   }
   if (report.verdict === "rejected") {
@@ -619,6 +631,10 @@ export function submitClaim(doc: StateDoc, input: SubmitClaimInput): { ok: boole
     verifiedAt: null,
     windowEndsAt: null,
     distributedAt: null,
+    assetRefs: JSON.stringify(assetRefs),
+    note: note?.trim() ? note.trim().slice(0, 600) : null,
+    decisionNote: null,
+    decidedAt: null,
   };
   doc.claims.push(claim);
 
@@ -626,7 +642,7 @@ export function submitClaim(doc: StateDoc, input: SubmitClaimInput): { ok: boole
     doc,
     "claim.submitted",
     "Certificate filed — registry check running",
-    `${doc.keyholder.name} filed ${report.fileName}. Automated checks: ${report.verdict.replace("_", " ")}. The ${REVIEW_HOURS}-hour registry check ends ${reviewEndsAt}. The owner has not been notified yet.`,
+    `${doc.keyholder.name} filed ${report.fileName}${assetRefs.length ? ` for ${assetRefs.length} asset${assetRefs.length === 1 ? "" : "s"}` : ""}. Automated checks: ${report.verdict.replace("_", " ")}. The ${REVIEW_HOURS}-hour registry check ends ${reviewEndsAt}. The owner has not been notified yet.`,
     stamp,
     0, // internal: the owner must not see this until the check clears
   );
@@ -646,6 +662,52 @@ export function verifyClaim(doc: StateDoc): { ok: boolean; error?: string } {
   }
   claim.reviewEndsAt = now();
   settle(doc);
+  return { ok: true };
+}
+
+/**
+ * The operator's decision on the documents.
+ *
+ * Accepting releases the registry hold, and the claim then moves through its
+ * safety window on its own. Refusing closes the claim where it stands: the plan
+ * stays with its owner and the Trusted Key may file again with better papers.
+ */
+export function decideClaim(
+  doc: StateDoc,
+  decision: "accept" | "reject",
+  note?: string,
+): { ok: boolean; error?: string } {
+  const claim = latestClaim(doc);
+  if (!claim) return { ok: false, error: "No claim submitted." };
+  if (claim.status !== "review") return { ok: false, error: "This handover is no longer in review." };
+
+  const stamp = now();
+  claim.decisionNote = note?.trim() ? note.trim().slice(0, 600) : null;
+  claim.decidedAt = stamp;
+
+  if (decision === "accept") {
+    claim.reviewEndsAt = stamp;
+    settle(doc);
+    addEvent(
+      doc,
+      "claim.accepted",
+      "Documents accepted",
+      `The operator accepted the documents filed for claim #${claim.id}. The registry check is released and the ${SAFETY_WINDOW_DAYS}-day window begins.`,
+      stamp,
+    );
+    return { ok: true };
+  }
+
+  claim.status = "rejected";
+  doc.plan.status = "active";
+  doc.plan.updatedAt = stamp;
+  addEvent(
+    doc,
+    "claim.rejected",
+    "Documents not accepted",
+    `Claim #${claim.id} was refused. ${claim.decisionNote ?? "The documents on file were not enough to continue."} The plan stays with its owner.`,
+    stamp,
+  );
   return { ok: true };
 }
 
@@ -677,6 +739,7 @@ export function fastForward(doc: StateDoc): { ok: boolean; error?: string } {
   // One clock per press, so the demo walks through both gates in order.
   if (claim.status === "review") {
     claim.reviewEndsAt = now();
+    claim.decidedAt = claim.decidedAt ?? claim.reviewEndsAt;
     settle(doc);
     return { ok: true };
   }
@@ -951,7 +1014,14 @@ export interface KeyholderView {
   planStatus: PlanStatus;
   sealedAt: string | null;
   recipientCount: number;
-  keyholder: { name: string; relationship: string; accessCode: string } | null;
+  /**
+   * `accessCode` is only present when the visitor has proved the address the
+   * owner named — a bare share link never carries the code, because the owner
+   * was told to send it by a different route.
+   */
+  keyholder: { name: string; relationship: string; accessCode: string | null } | null;
+  /** The assets this plan records, named only — never valued. */
+  assets: { id: number; label: string; kind: string; provider: string }[];
   claim: {
     id: number;
     status: ClaimStatus;
@@ -963,6 +1033,9 @@ export interface KeyholderView {
     windowEndsAt: string | null;
     distributedAt: string | null;
     verification: string;
+    assets: { id: number; label: string; kind: string }[];
+    note: string | null;
+    decisionNote: string | null;
   } | null;
   secondsToReviewEnd: number | null;
   secondsToWindowEnd: number | null;
@@ -984,6 +1057,8 @@ export function keyholderView(doc: StateDoc): KeyholderView {
           accessCode: doc.keyholder.accessCode,
         }
       : null,
+    /* names and providers only: a Trusted Key never sees a value or a share */
+    assets: doc.assets.map((a) => ({ id: a.id, label: a.label, kind: a.kind, provider: a.provider })),
     claim: claim
       ? {
           id: claim.id,
@@ -996,6 +1071,16 @@ export function keyholderView(doc: StateDoc): KeyholderView {
           windowEndsAt: claim.windowEndsAt,
           distributedAt: claim.distributedAt,
           verification: claim.verification,
+          assets: (() => {
+            try {
+              const parsed = JSON.parse(claim.assetRefs ?? "[]") as { id: number; label: string; kind: string }[];
+              return Array.isArray(parsed) ? parsed : [];
+            } catch {
+              return [];
+            }
+          })(),
+          note: claim.note ?? null,
+          decisionNote: claim.decisionNote ?? null,
         }
       : null,
     secondsToReviewEnd:
