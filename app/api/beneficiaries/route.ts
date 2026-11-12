@@ -31,7 +31,7 @@ async function handlePOST(request: Request) {
  * Three shapes:
  *   { shares: [{id, share}] }        → rebalance the family backups
  *   { update: { id, name, … } }      → edit one person's details
- *   { remove: id }                   → take a backup off the plan
+ *   { remove: id }                   → take one person off the plan, in place
  */
 async function handlePATCH(request: Request) {
   const body = await request.json().catch(() => ({}));

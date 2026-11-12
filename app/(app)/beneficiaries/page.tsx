@@ -4,6 +4,7 @@ import { money, pct } from "@/lib/format";
 import { Page, EmptyState } from "@/components/ui";
 import { AllocationEditor } from "@/components/beneficiaries/AllocationEditor";
 import { PersonDialog } from "@/components/beneficiaries/PersonDialog";
+import { RemovePerson } from "@/components/beneficiaries/RemovePerson";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,10 @@ export default async function BeneficiariesPage() {
         <div>
           <p className="eyebrow">People &amp; purpose</p>
           <h1 className="h1 mt-2.5">Beneficiaries</h1>
-          <p className="t-body mt-2">A clear order of care. No ambiguity about who comes next.</p>
+          <p className="t-body mt-2">
+            A clear order of care. Every share is a percentage of the {money(s.totalCents)} recorded in this plan — add,
+            edit or remove anyone without starting the plan again.
+          </p>
         </div>
         <PersonDialog label="+ Add beneficiary" className="self-start" />
       </header>
@@ -55,13 +59,18 @@ export default async function BeneficiariesPage() {
                   </div>
                   <div className="text-right">
                     <p className="t-num text-[30px] leading-none text-[var(--color-lime)]">{pct(primary.share)}</p>
-                    <p className="mt-1 text-[11.5px] text-[#a9c4b0]">of your inheritance</p>
+                    <p className="mt-1 text-[11.5px] text-[#a9c4b0]">of this plan&apos;s {money(s.totalCents)}</p>
                   </div>
                 </div>
                 <p className="mt-5 border-t border-white/10 pt-4 text-[12px] text-[#b7cfbd]">
                   Primary beneficiary receives the full share if able to inherit, worth{" "}
                   {money(Math.round((s.totalCents * primary.share) / 100))} at today&apos;s recorded value.
                 </p>
+                {!locked && (
+                  <div className="mt-3 flex flex-wrap items-center gap-4">
+                    <RemovePerson id={primary.id} name={primary.name} className="!text-[#a9c4b0]" label="Remove first choice" />
+                  </div>
+                )}
               </>
             ) : (
               <div className="mt-4">
@@ -75,7 +84,7 @@ export default async function BeneficiariesPage() {
 
           {/* backups */}
           <section className="card p-6 md:p-7">
-            <AllocationEditor backups={backups} locked={locked} />
+            <AllocationEditor backups={backups} locked={locked} totalCents={s.totalCents} />
           </section>
 
           {/* final cause */}
@@ -85,6 +94,7 @@ export default async function BeneficiariesPage() {
               {charity && <PersonDialog person={charity} label="Edit" variant="quiet" />}
             </div>
             {charity ? (
+              <>
               <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
                 <div className="min-w-0">
                   <h2 className="h2">{charity.name}</h2>
@@ -95,9 +105,15 @@ export default async function BeneficiariesPage() {
                 </div>
                 <div className="text-right">
                   <p className="t-num text-[24px] leading-none text-[var(--color-ink)]">100%</p>
-                  <p className="t-meta mt-1">final fallback</p>
+                  <p className="t-meta mt-1">final fallback · {money(s.totalCents)}</p>
                 </div>
               </div>
+              {!locked && (
+                <div className="mt-3">
+                  <RemovePerson id={charity.id} name={charity.name} label="Remove final cause" />
+                </div>
+              )}
+              </>
             ) : (
               <EmptyState
                 title="No final cause yet"

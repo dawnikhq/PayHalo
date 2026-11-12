@@ -5,6 +5,14 @@ import { useEffect, useRef, useState } from "react";
 interface Turn {
   role: "person" | "halo";
   text: string;
+  /** Which model phrased this answer — Halo rotates between two. */
+  model?: string;
+}
+
+/** "qwen/qwen3.8-27b" → "Qwen 3.8 27B", small enough to sit under an answer. */
+function shortModel(id: string): string {
+  const name = id.split("/").pop() ?? id;
+  return `via ${name.replace(/-/g, " ").replace(/\b[a-z]/g, (c) => c.toUpperCase())}`;
 }
 
 /**
@@ -62,9 +70,18 @@ export function HaloLauncher({ role }: { role: "owner" | "keyholder" | "benefici
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text }),
       });
-      const data = (await res.json()) as { text?: string; suggestions?: string[]; error?: string };
+      const data = (await res.json()) as {
+        text?: string;
+        model?: string;
+        source?: "model" | "engine";
+        suggestions?: string[];
+        error?: string;
+      };
       if (!res.ok || !data.text) throw new Error(data.error ?? "Halo could not answer just now.");
-      setTurns((prev) => [...prev, { role: "halo", text: data.text as string }]);
+      setTurns((prev) => [
+        ...prev,
+        { role: "halo", text: data.text as string, model: data.source === "model" ? data.model : undefined },
+      ]);
       if (data.suggestions?.length) setSuggestions(data.suggestions);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Halo could not answer just now.");
@@ -123,6 +140,11 @@ export function HaloLauncher({ role }: { role: "owner" | "keyholder" | "benefici
                 }
               >
                 {turn.text}
+                {turn.model && (
+                  <span className="mt-1.5 block text-[10px] uppercase tracking-[0.14em] text-[#9aa8a1]">
+                    {shortModel(turn.model)}
+                  </span>
+                )}
               </div>
             ))}
             {busy && (

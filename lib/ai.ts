@@ -42,10 +42,72 @@ const MODEL = {
   anthropic: () => (process.env.AI_MODEL ?? "claude-3-5-haiku-latest").trim(),
   gemini: () => (process.env.AI_MODEL ?? "gemini-2.0-flash").trim(),
   /** Groq serves open models on an OpenAI-shaped API. Fast, and free at demo scale. */
-  groq: () => (process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile").trim(),
+  groq: () => groqModels()[0],
 };
 
 export type AiProvider = keyof typeof MODEL;
+
+/**
+ * The models Halo may speak through, in the order she prefers them.
+ *
+ * Two very different open models, on purpose: Qwen reasons in long form, GPT-OSS
+ * answers tightly. The assistant rotates between them on each turn and falls
+ * over to the next one when a model is unavailable or rate-limited, so a busy
+ * minute on Groq degrades to the other model rather than to no answer at all.
+ * `GROQ_MODELS` overrides the list, comma-separated.
+ */
+export function groqModels(): string[] {
+  const raw = (process.env.GROQ_MODELS ?? "").trim();
+  if (raw) {
+    const list = raw
+      .split(",")
+      .map((m) => m.trim())
+      .filter(Boolean);
+    if (list.length) return list;
+  }
+  const single = (process.env.GROQ_MODEL ?? "").trim();
+  if (single) return [single];
+  return ["qwen/qwen3.8-27b", "openai/gpt-oss-120b"];
+}
+
+/** One model from the pool, chosen by a rotating index. */
+export function groqModelAt(index: number): string {
+  const pool = groqModels();
+  return pool[((index % pool.length) + pool.length) % pool.length];
+}
+
+/**
+ * Last-resort ids.
+ *
+ * The product names two models; if a named id is retired or not enabled on this
+ * key, these are the same family one version away, so an answer still arrives.
+ */
+export function groqFallbackModels(): string[] {
+  const raw = (process.env.GROQ_FALLBACK_MODELS ?? "").trim();
+  if (raw) {
+    return raw
+      .split(",")
+      .map((m) => m.trim())
+      .filter(Boolean);
+  }
+  return ["qwen/qwen3.6-27b", "openai/gpt-oss-20b"];
+}
+
+/** Every model to try, in order, starting from the rotation's current turn. */
+export function groqAttemptOrder(startTurn: number): string[] {
+  const pool = groqModels();
+  const rotated = pool.map((_, i) => groqModelAt(startTurn + i));
+  return Array.from(new Set([...rotated, ...groqFallbackModels()]));
+}
+
+let groqTurn = 0;
+
+/** The next model in the rotation, and the turn number that chose it. */
+export function nextGroqModel(): { model: string; turn: number } {
+  const turn = groqTurn;
+  groqTurn = (groqTurn + 1) % 1_000_000;
+  return { model: groqModelAt(turn), turn };
+}
 
 export function aiProvider(): AiProvider | null {
   if ((process.env.GROQ_API_KEY ?? "").trim()) return "groq";
@@ -118,24 +180,36 @@ async function askOpenAI(key: string, text: string): Promise<string> {
 
 async function askGroq(key: string, text: string): Promise<string> {
   const base = (process.env.GROQ_BASE_URL ?? "https://api.groq.com/openai/v1").trim().replace(/\/+$/, "");
-  const res = await fetch(`${base}/chat/completions`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: MODEL.groq(),
-      messages: [
-        { role: "system", content: SYSTEM },
-        { role: "user", content: text },
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.2,
-      max_tokens: 900,
-    }),
-    cache: "no-store",
-  });
-  if (!res.ok) throw new Error(`Groq ${res.status}`);
-  const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-  return data.choices?.[0]?.message?.content ?? "";
+  const { turn } = nextGroqModel();
+  let lastError = "Groq unavailable";
+
+  for (const model of groqAttemptOrder(turn)) {
+    const res = await fetch(`${base}/chat/completions`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: SYSTEM },
+          { role: "user", content: text },
+        ],
+        temperature: 0.2,
+        max_tokens: 900,
+      }),
+      cache: "no-store",
+    }).catch(() => null);
+
+    if (!res) continue;
+    if (!res.ok) {
+      lastError = `Groq ${res.status} (${model})`;
+      continue;
+    }
+    const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+    const content = data.choices?.[0]?.message?.content ?? "";
+    if (content.trim()) return content;
+    lastError = `Groq empty (${model})`;
+  }
+  throw new Error(lastError);
 }
 
 async function askAnthropic(key: string, text: string): Promise<string> {

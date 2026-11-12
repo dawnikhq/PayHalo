@@ -23,7 +23,8 @@ export default async function PlansPage() {
           <h1 className="h1 mt-2.5">One account, as many plans as you need.</h1>
           <p className="t-body mt-2 max-w-[58ch]">
             Keep your family arrangements separate from a business, or split what you own across plans with different
-            people and a different Trusted Key. Each one is a complete plan of its own.
+            people and a different Trusted Key. Each one is a complete plan of its own, with one vault of its own —
+            and an asset can move between them without being retyped.
           </p>
         </div>
         <Link href="/dashboard" className="btn btn-secondary self-start">

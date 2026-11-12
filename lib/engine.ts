@@ -42,6 +42,8 @@ export function allocate(beneficiaries: Beneficiary[], totalCents: number): Allo
   });
 }
 
-export function totalOf(assets: { balanceCents: number }[]): number {
-  return assets.reduce((s, a) => s + a.balanceCents, 0);
+export function totalOf(assets: { balanceCents?: number }[]): number {
+  /* A record written by an older shape may carry no figure; a missing number is
+     zero, never NaN, because NaN would print as "$NaN" across the whole plan. */
+  return assets.reduce((sum, a) => sum + (Number(a.balanceCents) || 0), 0);
 }

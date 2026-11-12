@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getSnapshot } from "@/lib/store";
+import { getSnapshot, listPlans } from "@/lib/store";
 import { money, pct, stampLabel } from "@/lib/format";
 import { KIND_LABEL } from "@/components/assets/AssetsExplorer";
 import { Page } from "@/components/ui";
+import { MoveAsset } from "@/components/assets/MoveAsset";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,7 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
   const primary = s.beneficiaries.find((b) => b.role === "primary");
   const backups = s.beneficiaries.filter((b) => b.role === "backup");
   const docs = s.documents.filter((d) => d.relatedTo === asset.label);
+  const plans = await listPlans().catch(() => []);
 
   const metrics: { label: string; value: string }[] = [];
   if (asset.kind === "business") {
@@ -156,6 +158,20 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
           </div>
 
           <p className="t-meta mt-4">Only you can edit this asset.</p>
+
+          <div className="mt-4 border-t border-[var(--color-line)] pt-4">
+            <MoveAsset
+              assetId={asset.id}
+              assetLabel={asset.label}
+              plans={plans.map((p) => ({
+                no: p.no,
+                name: p.name,
+                sealed: Boolean(p.sealedAt),
+                vault: p.vault?.ref ?? null,
+                current: p.active,
+              }))}
+            />
+          </div>
         </section>
       </div>
 

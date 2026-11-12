@@ -2,43 +2,47 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { SealedSeal } from "@/components/plan/SealedSeal";
 
+/**
+ * Sealing.
+ *
+ * Two things changed here for good. A plan does not seal without the Trusted Key
+ * being told — the introduction is sent first, and if it cannot go out the plan
+ * stays a draft with the reason on screen. And a sealed plan stops looking like
+ * a button: it wears the seal.
+ */
 export function SealPlan({
   sealed,
   ready,
+  sealedAt,
+  vaultRef,
   className = "",
 }: {
   sealed: boolean;
   ready: boolean;
+  sealedAt?: string | null;
+  vaultRef?: string | null;
   className?: string;
 }) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
 
   async function seal() {
     setBusy(true);
     setError(null);
     const res = await fetch("/api/plan", { method: "POST" });
-    const data = await res.json().catch(() => ({ ok: false, error: "Something went wrong." }));
+    const data = (await res.json().catch(() => ({ ok: false, error: "Something went wrong." }))) as {
+      ok?: boolean;
+      error?: string;
+      keyholderMail?: { to?: string };
+    };
     setBusy(false);
-    if (!res.ok || !data.ok) {
-      setError(data.error ?? "The plan could not be confirmed yet.");
-      return;
-    }
-    const mail = (data as {
-      keyholderMail?: { sent?: boolean; reason?: string; to?: string; existingAccount?: boolean };
-    }).keyholderMail;
 
-    if (mail && !mail.sent) {
-      setNotice({
-        ok: false,
-        text: `The plan is confirmed, but the email to your Trusted Key did not go out${
-          mail.reason ? ` (${mail.reason})` : ""
-        }. You can send it again below — the arrangements are unaffected.`,
-      });
+    if (!res.ok || !data.ok) {
+      setError(data.error ?? "The plan could not be sealed yet.");
       return;
     }
 
@@ -46,31 +50,13 @@ export function SealPlan({
     router.refresh();
   }
 
-  async function resend() {
-    setBusy(true);
-    setNotice(null);
-    try {
-      const res = await fetch("/api/plan/notify", { method: "POST" });
-      const data = (await res.json().catch(() => ({}))) as {
-        keyholderMail?: { sent?: boolean; reason?: string; to?: string };
-      };
-      if (!res.ok || !data.keyholderMail?.sent) {
-        throw new Error(data.keyholderMail?.reason ?? "The message still could not be sent.");
-      }
-      setNotice({ ok: true, text: `Sent to ${data.keyholderMail.to ?? "your Trusted Key"}.` });
-    } catch (e) {
-      setNotice({ ok: false, text: e instanceof Error ? e.message : "The message could not be sent." });
-    } finally {
-      setBusy(false);
-    }
-  }
-
   if (sealed) {
     return (
-      <div className={`card-mint p-5 ${className}`}>
-        <p className="text-[13px] font-semibold text-[var(--color-forest)]">These arrangements are confirmed.</p>
-        <p className="t-small mt-1 text-[#3c5a4e]">
-          Your instructions are recorded. You can still edit them — any change is dated on the trail.
+      <div className={`rounded-[16px] bg-[linear-gradient(155deg,#0e6f56,#0b3d2e)] p-5 ${className}`}>
+        <SealedSeal sealedAt={sealedAt ?? null} vaultRef={vaultRef ?? null} compact />
+        <p className="mt-3 text-[12px] leading-relaxed text-[#c9e4d2]">
+          Your instructions are recorded and your Trusted Key has been told. You can still edit anything — a change is
+          dated on the trail and never unseals the plan.
         </p>
       </div>
     );
@@ -82,56 +68,42 @@ export function SealPlan({
         confirming ? (
           <div className="flex flex-wrap gap-2">
             <button onClick={seal} disabled={busy} className="btn btn-primary flex-1">
-              {busy ? "Confirming…" : "Yes, confirm my plan"}
+              {busy ? "Sealing…" : "Yes, seal my plan"}
             </button>
-            <button onClick={() => setConfirming(false)} className="btn btn-secondary">
+            <button onClick={() => setConfirming(false)} disabled={busy} className="btn btn-secondary">
               Not yet
             </button>
           </div>
         ) : (
           <button onClick={() => setConfirming(true)} className="btn btn-primary w-full">
-            Review &amp; confirm <span aria-hidden>→</span>
+            Review &amp; seal <span aria-hidden>→</span>
           </button>
         )
       ) : (
         <p className="t-small">
-          Finish the remaining steps and the confirm button unlocks. Nothing is locked in the meantime.
+          Finish the remaining steps and sealing unlocks. Nothing is locked in the meantime, and nothing is lost by
+          waiting.
         </p>
       )}
-      {error && <p className="field-error mt-2">{error}</p>}
-      {notice && (
-        <div
-          className={`mt-3 rounded-[12px] border px-3.5 py-2.5 text-[12px] leading-relaxed ${
-            notice.ok
-              ? "border-[#cbea92] bg-[var(--color-mint)] text-[var(--color-forest)]"
-              : "border-[#f0cfc6] bg-[#fdf1ee] text-[var(--color-ember)]"
-          }`}
-        >
-          <p>{notice.text}</p>
-          <div className="mt-2 flex flex-wrap gap-3">
-            {!notice.ok && (
-              <button type="button" onClick={resend} disabled={busy} className="font-semibold underline underline-offset-4">
-                {busy ? "Sending…" : "Send it again"}
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => {
-                router.push("/dashboard?sealed=1");
-                router.refresh();
-              }}
-              className="font-semibold underline underline-offset-4"
-            >
-              Continue to my plan
-            </button>
-          </div>
-        </div>
-      )}
-      {confirming && (
+
+      {confirming && !error && (
         <p className="t-meta mt-2">
-          Confirming records your instructions as final. Nothing is released without a verified claim and 14
-          full days.
+          Sealing dates your instructions and emails your Trusted Key. The email is required — a plan cannot be sealed
+          silently.
         </p>
+      )}
+      {error && (
+        <div className="mt-3 rounded-[12px] border border-[#f0cfc6] bg-[#fdf1ee] px-3.5 py-2.5 text-[12px] leading-relaxed text-[var(--color-ember)]">
+          <p>{error}</p>
+          <button
+            type="button"
+            onClick={seal}
+            disabled={busy}
+            className="mt-2 font-semibold underline underline-offset-4"
+          >
+            {busy ? "Sending…" : "Try again"}
+          </button>
+        </div>
       )}
     </div>
   );

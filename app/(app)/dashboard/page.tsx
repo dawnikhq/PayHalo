@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SealedSeal } from "@/components/plan/SealedSeal";
 import { getSnapshot } from "@/lib/store";
 import { money, pct, shortDate, stampLabel } from "@/lib/format";
 import { SafetyWindowBanner } from "@/components/SafetyWindowBanner";
@@ -73,13 +74,16 @@ export default async function DashboardPage({
       )}
 
       {sealed && (
-        <div className="card-mint mb-5 flex items-start gap-3 p-5">
-          <span aria-hidden className="text-[15px] text-[var(--color-brand)]">✓</span>
-          <p className="t-body text-[var(--color-forest)]">
-            Your arrangements are confirmed. {s.beneficiaries.length} recipient
-            {s.beneficiaries.length === 1 ? "" : "s"} on file and {s.keyholder?.name ?? "your Trusted Key"} can
-            start a handover whenever it&apos;s needed.
-          </p>
+        <div className="mb-5 overflow-hidden rounded-[var(--radius-card)] bg-[linear-gradient(140deg,#0e6f56_0%,#0b3d2e_65%,#082c21_100%)] p-5 md:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <SealedSeal sealedAt={s.plan.sealedAt} vaultRef={s.vault?.ref ?? null} />
+            <p className="max-w-[46ch] text-[12.5px] leading-relaxed text-[#c9e4d2]">
+              {s.plan.name ? `${s.plan.name} is sealed. ` : "Your arrangement is sealed. "}
+              {s.beneficiaries.length} recipient{s.beneficiaries.length === 1 ? "" : "s"} on file and{" "}
+              {s.keyholder?.name ?? "your Trusted Key"} has been told. Nothing left to press — you can still edit
+              anything from the pages below.
+            </p>
+          </div>
         </div>
       )}
 

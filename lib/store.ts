@@ -32,6 +32,7 @@ import {
   keyholderView,
   verifyClaim,
   decideClaim,
+  recordEvent,
   type AssetInput,
   type Audience,
   type BeneficiaryInput,
@@ -198,6 +199,10 @@ export interface PlanSummary {
   assets: number;
   people: number;
   active: boolean;
+  /** A sealed plan carries its own vault; this is where it stands. */
+  vault: { ref: string; status: string } | null;
+  keyholderName: string | null;
+  beneficiaryNames: string[];
 }
 
 /** Every arrangement this account holds, in the order they were made. */
@@ -238,6 +243,9 @@ export async function listPlans(): Promise<PlanSummary[]> {
         assets: doc.assets.length,
         people: doc.beneficiaries.length,
         active: no === active,
+        vault: doc.vault ? { ref: doc.vault.ref, status: doc.vault.status } : null,
+        keyholderName: doc.keyholder?.name ?? null,
+        beneficiaryNames: doc.beneficiaries.map((b) => b.name),
       };
     });
 }
@@ -258,6 +266,74 @@ export async function createPlanAction(name: string): Promise<{ ok: boolean; no?
   doc.plan = { ...doc.plan, id: no + 1, name: name.trim().slice(0, 60) || `Plan ${no}` };
   await driver.save(planKey(user.id, no), doc);
   return { ok: true, no };
+}
+
+/**
+ * Move one asset record from the plan on screen into another arrangement.
+ *
+ * The record keeps its label, provider, figure and notes; it is re-numbered in
+ * the destination so nothing collides. Both plans get a dated line, because an
+ * asset leaving one set of instructions and joining another is exactly the kind
+ * of change a family may one day need to trace. A sealed plan accepts the asset:
+ * it then belongs to that plan's vault and to that plan's people, since one plan
+ * has one vault.
+ */
+export async function moveAssetToPlanAction(
+  assetId: number,
+  toPlanNo: number,
+): Promise<{ ok: boolean; error?: string; toName?: string; sealed?: boolean }> {
+  const user = await requireOwner();
+  const driver = await getDriver();
+  const fromNo = await activePlanNo();
+
+  if (!Number.isInteger(toPlanNo) || toPlanNo < 1) return { ok: false, error: "Choose an arrangement first." };
+  if (toPlanNo === fromNo) return { ok: false, error: "That asset is already in this arrangement." };
+  if (toPlanNo > 9) return { ok: false, error: "That arrangement does not exist." };
+
+  const fromKey = planKey(user.id, fromNo);
+  const toKey = planKey(user.id, toPlanNo);
+  const from = await driver.load(fromKey);
+  const to = await driver.load(toKey);
+
+  if (!from) return { ok: false, error: "This arrangement has no record yet." };
+  if (!to) return { ok: false, error: "That arrangement no longer exists." };
+
+  const claim = latestClaim(from);
+  if (claim && claim.status !== "cancelled" && claim.status !== "rejected" && claim.status !== "distributed") {
+    return { ok: false, error: "A handover is running on this arrangement. Assets cannot move until it closes." };
+  }
+
+  const asset = from.assets.find((a) => a.id === assetId);
+  if (!asset) return { ok: false, error: "That asset is not in this arrangement." };
+
+  const toName = to.plan.name?.trim() || `Plan ${toPlanNo}`;
+  const fromName = from.plan.name?.trim() || `Plan ${fromNo}`;
+
+  from.assets = from.assets.filter((a) => a.id !== assetId);
+  from.plan.updatedAt = new Date().toISOString();
+  recordEvent(
+    from,
+    "asset.moved",
+    `${asset.label} moved to ${toName}`,
+    `The record left this arrangement and joined ${toName}. Its people and shares here are unchanged.`,
+  );
+
+  to.seq += 1;
+  to.assets.push({ ...asset, id: to.seq, userId: to.user.id });
+  to.plan.updatedAt = new Date().toISOString();
+  recordEvent(
+    to,
+    "asset.moved",
+    `${asset.label} moved in from ${fromName}`,
+    to.vault
+      ? `The asset now sits inside vault ${to.vault.ref} and is allocated to this arrangement's people.`
+      : `The asset now belongs to this arrangement and its people.`,
+  );
+
+  await driver.save(fromKey, from);
+  await driver.save(toKey, to);
+
+  return { ok: true, toName, sealed: Boolean(to.plan.sealedAt) };
 }
 
 export async function renamePlanAction(no: number, name: string): Promise<{ ok: boolean; error?: string }> {

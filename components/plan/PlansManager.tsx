@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { PlanSummary } from "@/lib/store";
-import { stampLabel } from "@/lib/format";
+import { money, stampLabel } from "@/lib/format";
 
 /**
  * Several arrangements, one account.
@@ -56,12 +56,15 @@ export function PlansManager({ plans }: { plans: PlanSummary[] }) {
           return (
             <li
               key={plan.key}
-              className={`card p-5 ${plan.active ? "ring-2 ring-[var(--color-brand)]/25" : ""}`}
+              className={`card flex flex-col p-5 ${plan.active ? "ring-2 ring-[var(--color-brand)]/25" : ""}`}
               data-tour={plan.active ? "app-plan-card" : undefined}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="label">Arrangement {plan.no}</p>
+                  <p className="label">
+                    Arrangement {plan.no}
+                    {plan.sealedAt ? " · sealed" : " · draft"}
+                  </p>
                   {isRenaming ? (
                     <form
                       className="mt-1 flex items-center gap-2"
@@ -84,20 +87,48 @@ export function PlansManager({ plans }: { plans: PlanSummary[] }) {
                       </button>
                     </form>
                   ) : (
-                    <h3 className="mt-1 truncate font-[var(--font-display)] text-[18px] font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
-                      {plan.name}
-                    </h3>
+                    <h3 className="h3 mt-1 truncate">{plan.name}</h3>
                   )}
                   <p className="t-meta mt-1 truncate">
                     {plan.sealedAt ? `Sealed ${stampLabel(plan.sealedAt)}` : `Saved ${stampLabel(plan.updatedAt)}`}
                   </p>
                 </div>
-                <span className={`pill ${plan.active ? "badge-lime" : "badge-neutral"} shrink-0`}>
-                  {plan.active ? "Open now" : plan.status}
+                <span className={`pill ${plan.active ? "badge-lime" : plan.sealedAt ? "badge-mint" : "badge-neutral"} shrink-0`}>
+                  {plan.active ? "Open now" : plan.sealedAt ? "Sealed" : "Draft"}
                 </span>
               </div>
 
-              <div className="mt-4 flex items-center gap-2">
+              <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2.5 border-y border-[var(--color-line)] py-3 text-[12px]">
+                <div>
+                  <dt className="label">Recorded</dt>
+                  <dd className="mt-0.5 font-medium text-[var(--color-ink)]">
+                    {money(plan.valueCents)} · {plan.assets} {plan.assets === 1 ? "asset" : "assets"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="label">People</dt>
+                  <dd className="mt-0.5 truncate font-medium text-[var(--color-ink)]">
+                    {plan.beneficiaryNames.length
+                      ? plan.beneficiaryNames.slice(0, 3).join(", ") +
+                        (plan.beneficiaryNames.length > 3 ? ` +${plan.beneficiaryNames.length - 3}` : "")
+                      : "None named"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="label">Trusted Key</dt>
+                  <dd className="mt-0.5 truncate font-medium text-[var(--color-ink)]">
+                    {plan.keyholderName ?? "Not appointed"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="label">Vault</dt>
+                  <dd className="mt-0.5 truncate font-medium text-[var(--color-ink)]">
+                    {plan.vault ? `${plan.vault.ref} · ${plan.vault.status}` : "Not opened"}
+                  </dd>
+                </div>
+              </dl>
+
+              <div className="mt-3.5 flex items-center gap-2">
                 {Array.from({ length: plan.total }).map((_, i) => (
                   <span
                     key={i}
@@ -107,33 +138,42 @@ export function PlansManager({ plans }: { plans: PlanSummary[] }) {
                 ))}
               </div>
               <p className="t-meta mt-2">
-                {plan.done} of {plan.total} complete · {plan.assets} {plan.assets === 1 ? "asset" : "assets"} ·{" "}
-                {plan.people} {plan.people === 1 ? "person" : "people"}
+                {plan.done} of {plan.total} steps complete
               </p>
 
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                {plan.active ? (
-                  <a href="/dashboard" className="btn btn-primary btn-sm">
-                    Continue <span aria-hidden>→</span>
-                  </a>
-                ) : (
+              <div className="mt-auto pt-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  {plan.active ? (
+                    <a href="/dashboard" className="btn btn-primary btn-sm">
+                      Continue <span aria-hidden>→</span>
+                    </a>
+                  ) : (
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      disabled={busy === `switch-${plan.no}`}
+                      onClick={async () => {
+                        const ok = await post({ action: "switch", no: plan.no }, `switch-${plan.no}`);
+                        if (ok) router.push("/dashboard");
+                      }}
+                    >
+                      {busy === `switch-${plan.no}` ? "Opening…" : "Open this plan"}
+                    </button>
+                  )}
                   <button
-                    className="btn btn-secondary btn-sm"
-                    disabled={busy === `switch-${plan.no}`}
-                    onClick={() => post({ action: "switch", no: plan.no }, `switch-${plan.no}`)}
+                    className="btn btn-quiet btn-sm"
+                    onClick={() => {
+                      setRenaming(isRenaming ? null : plan.no);
+                      setDraft(plan.name);
+                    }}
                   >
-                    {busy === `switch-${plan.no}` ? "Opening…" : "Open this plan"}
+                    {isRenaming ? "Cancel" : "Rename"}
                   </button>
-                )}
-                <button
-                  className="btn btn-quiet btn-sm"
-                  onClick={() => {
-                    setRenaming(isRenaming ? null : plan.no);
-                    setDraft(plan.name);
-                  }}
-                >
-                  {isRenaming ? "Cancel" : "Rename"}
-                </button>
+                </div>
+                <p className="t-meta mt-2">
+                  {plan.active
+                    ? "Assets can be moved into another plan from the asset's own page."
+                    : "Open this plan, then open an asset to move it here."}
+                </p>
               </div>
             </li>
           );

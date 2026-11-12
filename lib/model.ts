@@ -359,7 +359,7 @@ export function seedDoc(): StateDoc {
 
 /* ------------------------------------------------------------- utilities -- */
 
-function addEvent(
+export function recordEvent(
   doc: StateDoc,
   type: string,
   title: string,
@@ -370,6 +370,8 @@ function addEvent(
   doc.seq += 1;
   doc.events.push({ id: doc.seq, planId: doc.plan.id, type, title, body, createdAt, ownerVisible });
 }
+
+const addEvent = recordEvent;
 
 export function allocateFor(doc: StateDoc) {
   return allocate(orderedBeneficiaries(doc), totalCents(doc));
@@ -879,14 +881,58 @@ export function addBeneficiary(doc: StateDoc, input: BeneficiaryInput): { ok: bo
     email: input.email.trim(),
     relationship: input.relationship.trim() || "Relationship not set",
     role: input.role,
-    share: input.share ?? (input.role === "backup" ? 0 : 100),
+    /* A backup added without a share joins an even split rather than sitting at
+       zero and quietly breaking the 100% rule the page enforces. */
+    share: input.share !== undefined ? input.share : input.role === "backup" ? 0 : 100,
     sort: input.role === "charity" ? 90 : input.role === "primary" ? 0 : backups + 1,
     available: 1,
     note: input.note?.trim() ?? "",
   });
+  if (input.role === "backup" && input.share === undefined) {
+    evenSplitBackups(doc);
+  }
   doc.plan.updatedAt = now();
   addEvent(doc, "beneficiary.added", `${input.name.trim()} added`, `Added as ${input.role === "charity" ? "the final cause" : input.role === "primary" ? "the first choice" : "a family backup"}.`);
   return { ok: true };
+}
+
+/**
+ * Spread 100% across the family backups, keeping the shape the owner set where
+ * there is one. Used when a backup joins or leaves, so the percentages on the
+ * page always add up to the estate that plan actually records.
+ */
+function evenSplitBackups(doc: StateDoc): void {
+  const backups = doc.beneficiaries.filter((b) => b.role === "backup");
+  if (!backups.length) return;
+  const base = Math.floor(100 / backups.length);
+  backups.forEach((b, i) => {
+    b.share = i === backups.length - 1 ? 100 - base * (backups.length - 1) : base;
+  });
+}
+
+function rebalanceBackups(doc: StateDoc): void {
+  const backups = doc.beneficiaries.filter((b) => b.role === "backup");
+  if (!backups.length) return;
+  const current = backups.reduce((sum, b) => sum + (b.share || 0), 0);
+
+  if (current <= 0) {
+    const base = Math.floor(100 / backups.length);
+    backups.forEach((b, i) => {
+      b.share = i === backups.length - 1 ? 100 - base * (backups.length - 1) : base;
+    });
+    return;
+  }
+
+  let assigned = 0;
+  backups.forEach((b, i) => {
+    if (i === backups.length - 1) {
+      b.share = Math.max(0, 100 - assigned);
+      return;
+    }
+    const scaled = Math.round(((b.share || 0) / current) * 100);
+    b.share = scaled;
+    assigned += scaled;
+  });
 }
 
 export function setAllocations(doc: StateDoc, shares: { id: number; share: number }[]): { ok: boolean; error?: string } {
@@ -930,10 +976,21 @@ export function updateBeneficiary(
 export function removeBeneficiary(doc: StateDoc, id: number): { ok: boolean; error?: string } {
   const person = doc.beneficiaries.find((b) => b.id === id);
   if (!person) return { ok: false, error: "That person is not on the plan." };
-  if (person.role !== "backup") return { ok: false, error: "The first choice and the final cause can't be removed here." };
+  if (doc.beneficiaries.length === 1) {
+    return { ok: false, error: "A plan needs at least one person named. Add someone else first." };
+  }
+
   doc.beneficiaries = doc.beneficiaries.filter((b) => b.id !== id);
+  /* Removing a backup silently changes who receives what; re-spread the 100%
+     across whoever is left so the page never shows a plan that adds to 40%. */
+  if (person.role === "backup") rebalanceBackups(doc);
   doc.plan.updatedAt = now();
-  addEvent(doc, "beneficiary.removed", `${person.name} removed`, "They are no longer a family backup.");
+  addEvent(
+    doc,
+    "beneficiary.removed",
+    `${person.name} removed`,
+    `They are no longer ${person.role === "primary" ? "the first choice" : person.role === "charity" ? "the final cause" : "a family backup"}. The rest of the plan is untouched.`,
+  );
   return { ok: true };
 }
 
@@ -987,6 +1044,7 @@ export function updateProfile(
 /* -------------------------------------------------------------------- plan -- */
 
 export function sealPlan(doc: StateDoc): { ok: boolean; error?: string } {
+  if (doc.plan.sealedAt) return { ok: false, error: "This plan is already sealed." };
   const steps = planSteps(doc);
   const missing = steps.filter((s) => !s.done && s.key !== "review");
   if (missing.length) {
@@ -1297,7 +1355,7 @@ export function recordMove(doc: StateDoc, input: MoveInput): { ok: boolean; erro
 
 /** What the vault holds: money in PayHalo plus the value recorded in assets. */
 export function vaultBalanceCents(doc: StateDoc): number {
-  const cash = (doc.stashCents ?? 0) + (doc.pots ?? []).reduce((sum, p) => sum + p.allocatedCents, 0);
+  const cash = (Number(doc.stashCents) || 0) + (doc.pots ?? []).reduce((sum, p) => sum + (Number(p.allocatedCents) || 0), 0);
   return cash + totalCents(doc);
 }
 

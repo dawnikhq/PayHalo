@@ -3,9 +3,19 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Avatar } from "@/components/Avatar";
+import { money } from "@/lib/format";
 import type { Beneficiary } from "@/lib/types";
 
-export function AllocationEditor({ backups, locked }: { backups: Beneficiary[]; locked: boolean }) {
+export function AllocationEditor({
+  backups,
+  locked,
+  totalCents,
+}: {
+  backups: Beneficiary[];
+  locked: boolean;
+  /** Value of the assets recorded in this plan — the estate these shares split. */
+  totalCents: number;
+}) {
   const router = useRouter();
   const [shares, setShares] = useState<Record<number, string>>(
     Object.fromEntries(backups.map((b) => [b.id, String(b.share)])),
@@ -14,7 +24,8 @@ export function AllocationEditor({ backups, locked }: { backups: Beneficiary[]; 
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
-  const total = backups.reduce((sum, b) => sum + (Number(shares[b.id]) || 0), 0);
+  const typed = backups.reduce((sum, b) => sum + (Number(shares[b.id]) || 0), 0);
+  const total = typed;
   const dirty = backups.some((b) => Number(shares[b.id] ?? 0) !== b.share);
 
   async function save() {
@@ -66,6 +77,10 @@ export function AllocationEditor({ backups, locked }: { backups: Beneficiary[]; 
                     {b.relationship}
                     {b.email ? ` · ${b.email}` : ""}
                   </p>
+                  <p className="mt-0.5 text-[11.5px] text-[var(--color-brand)]">
+                    {money(Math.round((totalCents * (Number(shares[b.id]) || 0)) / 100))} of this plan&apos;s{" "}
+                    {money(totalCents)}
+                  </p>
                 </div>
 
                 <div className="flex items-center gap-1.5 rounded-[10px] border border-[var(--color-line-strong)] bg-white px-2.5 py-1.5">
@@ -104,7 +119,10 @@ export function AllocationEditor({ backups, locked }: { backups: Beneficiary[]; 
                 total === 100 ? "text-[var(--color-brand)]" : "text-[var(--color-ember)]"
               }`}
             >
-              Backup total: {total}% · If only one backup can inherit, they receive 100%.
+              {total}% of this plan allocated ·{" "}
+              {money(Math.round((totalCents * total) / 100))} across {backups.length}{" "}
+              {backups.length === 1 ? "backup" : "backups"}
+              {total === 100 ? " · If only one backup can inherit, they receive 100%." : " · must total 100%."}
             </p>
             <button
               onClick={save}

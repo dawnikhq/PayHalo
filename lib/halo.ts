@@ -1,4 +1,6 @@
-import { aiKey, aiModel, aiProvider } from "./ai";
+import { aiKey, aiProvider, groqAttemptOrder, nextGroqModel } from "./ai";
+import { PAYHALO_KNOWLEDGE } from "./halo-knowledge";
+import { allocate } from "./engine";
 import type { Snapshot } from "./types";
 
 /**
@@ -27,12 +29,17 @@ export type HaloAudience = "owner" | "keyholder" | "beneficiary" | "operator";
 export interface HaloFacts {
   audience: HaloAudience;
   name: string;
+  /** The arrangement on screen — its name is its purpose ("Family", "The studio"). */
+  planName: string | null;
+  planStatus: string;
+  sealedAt: string | null;
   planConfirmed: boolean;
   steps: { label: string; done: boolean }[];
   nextStep: string | null;
   assets: number;
+  assetLines: { label: string; provider: string; kind: string; valueCents: number }[];
   totalCents: number;
-  people: { name: string; role: string; share: number }[];
+  people: { name: string; role: string; share: number; amountCents: number }[];
   trustedKey: { name: string; relationship: string } | null;
   vault: { ref: string; status: string; keySent: boolean } | null;
   claim: { status: string; daysLeft: number | null } | null;
@@ -43,6 +50,8 @@ export interface HaloFacts {
 export interface HaloAnswer {
   text: string;
   source: "model" | "engine";
+  /** Which Groq model phrased the answer, when a model did. */
+  model?: string;
   topic: string;
   suggestions: string[];
 }
@@ -59,12 +68,32 @@ export function factsFromSnapshot(s: Snapshot, audience: HaloAudience = "owner")
   return {
     audience,
     name: s.user.name.split(" ")[0] || "there",
+    planName: s.plan.name?.trim() || null,
+    planStatus: s.plan.status,
+    sealedAt: s.plan.sealedAt,
     planConfirmed: Boolean(s.plan.sealedAt),
     steps: s.steps.map((step) => ({ label: step.label, done: step.done })),
     nextStep: next?.label ?? null,
     assets: s.assets.length,
+    assetLines: s.assets.map((a) => ({
+      label: a.label,
+      provider: a.provider,
+      kind: a.kind,
+      valueCents: a.balanceCents,
+    })),
     totalCents: s.totalCents,
-    people: s.beneficiaries.map((b) => ({ name: b.name, role: ROLE_WORD[b.role] ?? b.role, share: b.share })),
+    people: (() => {
+      const money = allocate(s.beneficiaries, s.totalCents);
+      return s.beneficiaries.map((b) => {
+        const row = money.find((m) => m.beneficiaryId === b.id);
+        return {
+          name: b.name,
+          role: ROLE_WORD[b.role] ?? b.role,
+          share: row?.share ?? b.share,
+          amountCents: row?.amountCents ?? 0,
+        };
+      });
+    })(),
     trustedKey: s.keyholder ? { name: s.keyholder.name, relationship: s.keyholder.relationship } : null,
     vault: s.vault ? { ref: s.vault.ref, status: s.vault.status, keySent: Boolean(s.vault.keySentAt) } : null,
     claim: s.claim
@@ -179,6 +208,26 @@ const RULES: Rule[] = [
       "PayHalo is not a will and does not replace one. It records what you own, who should inherit, and who can start the process — so your family has a starting point instead of a puzzle. Where the law requires a will or probate, that still applies.",
   },
   {
+    topic: "plans",
+    keys: /another plan|second plan|several plans|multiple plans|my arrangements|different plan|purpose|separate plan/i,
+    answer: (f) =>
+      `One account can hold several arrangements — family, a business, a property — and each one is complete on its own: its own asset records, people, Trusted Key and vault. Nothing is copied between them. You are in ${f.planName ? `"${f.planName}"` : "one of them"} now; the My arrangements page lists the rest, and switching plans changes the record you are editing rather than filtering a view.`,
+  },
+  {
+    topic: "move",
+    keys: /move (an )?asset|transfer (an )?asset|into (another|the) plan|belongs to another plan/i,
+    answer: () =>
+      "Open the asset record and use Move to another plan. The record leaves one plan and joins the other with its label, provider and figure intact, and both plans get a dated line in their trail. If the plan you move it into is sealed and has a vault, the asset belongs to that vault and to that plan's people — one vault per plan.",
+  },
+  {
+    topic: "editing",
+    keys: /remove (a )?beneficiar|delete (a )?beneficiar|change (my )?beneficiar|edit.*(plan|beneficiar|share)|start (over|again|from scratch)/i,
+    answer: (f) =>
+      `Nothing here means starting again. On the Beneficiaries page you can add someone, edit anyone, change a backup's share or remove a person — including the first choice — and the plan keeps everything else. ${
+        f.people.length ? `Right now ${plural(f.people.length, "person is", "people are")} named, and the shares are measured against ${money(f.totalCents)} recorded in this plan.` : "No one is named yet."
+      } A sealed plan is not frozen: edits are allowed and each one is dated on your trail.`,
+  },
+  {
     topic: "me",
     keys: /who are you|your name|halo|are you (a )?(bot|human|real)|what can you do/i,
     answer: () =>
@@ -229,54 +278,85 @@ export function answerWithoutModel(question: string, f: HaloFacts): HaloAnswer {
 
 /* ------------------------------------------------------------------- model -- */
 
-const SYSTEM = `You are Halo, the assistant inside PayHalo, a digital inheritance product.
+const SYSTEM = `You are Halo, the assistant inside PayHalo, a digital inheritance product. You are speaking to a person using the product right now: an owner, a Trusted Key, a beneficiary, or PayHalo's own operator.
+
+You know the whole product. The PRODUCT section below is your source of truth about how PayHalo works; the FACTS block is your only source of truth about this person's own plan. Read both before answering, and answer the question that was asked rather than the nearest one you recognise.
 
 How to speak:
-- Warm, plain, unhurried. British English. Address the person by first name only if their name is in the facts.
+- Warm, plain, unhurried. Address the person by first name only if their name is in the facts.
 - Answer in 2 to 5 short sentences. No bullet lists unless you are listing three or more concrete things.
-- Use PayHalo's own words: arrangements, asset records, beneficiaries (primary, backup, final), Trusted Key, handover request, safety window, vault, key, release desk. Never "keyholder" and never "claim".
+- Use PayHalo's own words: arrangements, asset records, beneficiaries (primary, backup, final), Trusted Key, handover request, safety window, vault, release desk. Never "keyholder" and never "claim".
+- If the question is about a page or a button, say which page it is on.
+- If the answer depends on something you cannot see, say what you would need and where they can find it.
 
 What you must never do:
-- Never invent a fact. The FACTS block is the only source of truth about this person's plan. If something is not in it, say you do not have it and point to the Help page.
+- Never invent a fact about PayHalo or about this person. If the PRODUCT section does not cover it, say you do not have it and point to the Help page.
 - Never approve, promise or predict a release. The release desk is human.
 - Never ask for a password, private key, recovery phrase or access code.
-- Never state or imply that money moves automatically.
+- Never state or imply that money moves automatically, or that PayHalo holds anyone's passwords.
+- Never tell someone to start their plan again; every part of a plan can be edited in place.
 
-The rules of the product you may rely on:
-- Four decisions and six steps make an arrangement: primary beneficiaries, asset records, backup beneficiaries, final beneficiary, Trusted Key, review and confirm.
-- A Trusted Key can start a handover request and nothing else. They never see balances or shares.
-- A handover request needs death documentation, is read automatically, then a 72-hour registry check runs before the owner is notified.
-- After the owner is notified there is a 14-day safety window in which the owner can cancel and stop the release permanently.
-- Only after that can the release desk approve, and approval pays the plan's own beneficiaries with no amount or destination supplied by anyone.
-- PayHalo stores no passwords or private keys.`;
+${PAYHALO_KNOWLEDGE}`;
 
 function factsBlock(f: HaloFacts) {
   return `FACTS (the person you are speaking to):\n${JSON.stringify(f, null, 1)}`;
 }
 
-async function askGroq(question: string, f: HaloFacts): Promise<string> {
+/**
+ * Ask Groq, starting from whichever model's turn it is.
+ *
+ * Halo alternates between the pool — Qwen's longer reasoning on one turn, GPT-OSS's
+ * tighter answers on the next — and if the chosen model is missing, retired or
+ * rate-limited she simply tries the next one. The caller is told which model
+ * answered so the operator view can show it.
+ */
+async function askGroq(question: string, f: HaloFacts): Promise<{ text: string; model: string }> {
   const provider = aiProvider();
   if (provider !== "groq") throw new Error("no groq");
   const base = (process.env.GROQ_BASE_URL ?? "https://api.groq.com/openai/v1").trim().replace(/\/+$/, "");
-  const res = await fetch(`${base}/chat/completions`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${aiKey("groq")}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: aiModel("groq"),
-      messages: [
-        { role: "system", content: `${SYSTEM}\n\n${factsBlock(f)}` },
-        { role: "user", content: question },
-      ],
-      temperature: 0.3,
-      max_tokens: 400,
-    }),
-    cache: "no-store",
-  });
-  if (!res.ok) throw new Error(`groq ${res.status}`);
-  const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-  const text = (data.choices?.[0]?.message?.content ?? "").trim();
-  if (!text) throw new Error("groq: empty");
-  return text;
+  const { turn } = nextGroqModel();
+  let lastError = "";
+
+  for (const model of groqAttemptOrder(turn)) {
+    const res = await fetch(`${base}/chat/completions`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${aiKey("groq")}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: `${SYSTEM}\n\n${factsBlock(f)}` },
+          { role: "user", content: question },
+        ],
+        temperature: 0.3,
+        max_tokens: 500,
+      }),
+      cache: "no-store",
+    }).catch((e: unknown) => {
+      lastError = e instanceof Error ? e.message : "network";
+      return null;
+    });
+
+    if (!res) continue;
+    if (!res.ok) {
+      lastError = `${model} ${res.status}`;
+      /* A rate limit or a missing model is worth trying the other model for; a
+         refused key is not, but the cost of one more attempt is a single call. */
+      continue;
+    }
+
+    const data = (await res.json()) as {
+      choices?: { message?: { content?: string; reasoning?: string } }[];
+      model?: string;
+    };
+    const text = (data.choices?.[0]?.message?.content ?? "").trim();
+    if (!text) {
+      lastError = `${model} empty`;
+      continue;
+    }
+    return { text, model: data.model ?? model };
+  }
+
+  throw new Error(lastError || "groq unavailable");
 }
 
 /**
@@ -289,8 +369,8 @@ export async function haloReply(question: string, f: HaloFacts): Promise<HaloAns
   if (aiProvider() !== "groq") return engine;
 
   try {
-    const text = await askGroq(question, f);
-    return { ...engine, text, source: "model" };
+    const { text, model } = await askGroq(question, f);
+    return { ...engine, text, source: "model", model };
   } catch {
     return engine;
   }

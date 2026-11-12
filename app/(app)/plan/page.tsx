@@ -3,6 +3,7 @@ import { getSnapshot } from "@/lib/store";
 import { money, pct, stampLabel } from "@/lib/format";
 import { Page, ProgressTicks } from "@/components/ui";
 import { SealPlan } from "@/components/plan/SealPlan";
+import { SealedSeal } from "@/components/plan/SealedSeal";
 
 const VAULT_LABEL: Record<string, string> = { open: "Open", frozen: "Paused", released: "Released" };
 
@@ -37,6 +38,24 @@ export default async function PlanPage() {
           </Link>
         </div>
       </header>
+
+      {s.plan.sealedAt && (
+        <section className="mb-5 overflow-hidden rounded-[var(--radius-card)] bg-[linear-gradient(140deg,#0e6f56_0%,#0b3d2e_62%,#082c21_100%)] p-6 md:p-7">
+          <div className="flex flex-wrap items-center justify-between gap-5">
+            <SealedSeal sealedAt={s.plan.sealedAt} vaultRef={s.vault?.ref ?? null} />
+            <div className="max-w-[46ch]">
+              <p className="text-[12px] leading-relaxed text-[#c9e4d2]">
+                These instructions are recorded{s.plan.name ? ` for ${s.plan.name}` : ""}. Your Trusted Key{" "}
+                {s.keyholder ? `${s.keyholder.name.split(" ")[0]} ` : ""}has been told and holds the code that can start
+                a handover — nothing more.
+              </p>
+              <p className="mt-2 text-[11.5px] text-[#9dc2ab]">
+                Editing never unseals the plan: add, change or remove a person and the change is dated on the trail.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="card-lime mb-5 flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between md:p-7">
         <div>
@@ -154,18 +173,51 @@ export default async function PlanPage() {
             <div className="flex items-start justify-between gap-3">
               <p className="eyebrow">The people</p>
               <Link href="/beneficiaries" className="text-[12.5px] font-semibold text-[var(--color-brand)]">
-                Edit →
+                Add, edit or remove →
               </Link>
             </div>
             <h2 className="h2 mt-2">Who receives it</h2>
-            <p className="mt-2 text-[13px] font-medium text-[var(--color-brand)]">
-              {primary ? `${primary.name} · ${pct(primary.share)} primary share` : "No first choice named"}
-            </p>
             <p className="t-small mt-1">
-              {backups.length
-                ? `Backups: ${backups.map((b) => `${b.name} ${pct(b.share)}`).join(" · ")}`
-                : "No family backups named yet."}
+              Each share is a percentage of the {money(s.totalCents)} recorded in this plan. Add, edit or remove anyone
+              without restarting the plan.
             </p>
+            {s.beneficiaries.length ? (
+              <ul className="mt-4 divide-y divide-[var(--color-line)]">
+                {[...s.beneficiaries]
+                  .sort((a, b) => {
+                    const order = { primary: 0, backup: 1, charity: 2 } as const;
+                    return order[a.role] - order[b.role] || a.sort - b.sort;
+                  })
+                  .map((person) => {
+                    const share = person.role === "backup" ? person.share : 100;
+                    return (
+                      <li key={person.id} className="flex items-center justify-between gap-3 py-2.5 first:pt-0">
+                        <span className="min-w-0">
+                          <span className="block truncate text-[13.5px] font-medium text-[var(--color-ink)]">
+                            {person.name}
+                          </span>
+                          <span className="t-meta block truncate">
+                            {person.role === "primary"
+                              ? "First choice"
+                              : person.role === "backup"
+                                ? "Family backup"
+                                : "Final cause"}
+                            {person.email ? ` · ${person.email}` : ""}
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-right">
+                          <span className="t-num block text-[14px] text-[var(--color-forest)]">{pct(share)}</span>
+                          <span className="t-meta block">
+                            {money(Math.round((s.totalCents * share) / 100))}
+                          </span>
+                        </span>
+                      </li>
+                    );
+                  })}
+              </ul>
+            ) : (
+              <p className="t-body mt-3">No one is named yet.</p>
+            )}
           </section>
 
           <section className="card p-6 md:p-7">
@@ -232,7 +284,12 @@ export default async function PlanPage() {
             </ul>
 
             <div className="mt-5 border-t border-[var(--color-line)] pt-4">
-              <SealPlan sealed={Boolean(s.plan.sealedAt)} ready={ready} />
+              <SealPlan
+                sealed={Boolean(s.plan.sealedAt)}
+                ready={ready}
+                sealedAt={s.plan.sealedAt}
+                vaultRef={s.vault?.ref ?? null}
+              />
             </div>
           </section>
 
