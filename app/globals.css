@@ -643,19 +643,32 @@ body {
 }
 
 /* The one line that has to fill a first screen. */
-/* The opening statement. Its own scale so the whole first screen — headline,
-   both buttons and the photograph beneath them — fits without a scroll, on a
-   small phone as well as a laptop. */
+/* The opening statement. Its own scale so the whole first screen — headline
+   and both buttons — fits without a scroll, on a small phone as well as a
+   laptop.
+   On a phone the words arrive one under the other at a narrow width, where
+   tight leading and negative tracking that reads as confidence on a wide screen
+   read as a block of ink. So the small end gets air between the lines and
+   between the words; the large end keeps the compressed, editorial setting. */
 .display-hero {
   font-family: var(--font-display);
   font-weight: 600;
-  line-height: 0.98;
-  letter-spacing: -0.035em;
+  line-height: 1.09;
+  letter-spacing: -0.018em;
+  word-spacing: 0.04em;
   text-transform: uppercase;
   /* Bounded by the height as well as the width, so the statement can never
      grow the first screen past the fold on a short laptop. */
-  font-size: clamp(1.95rem, min(6.2vw, 8.6vh), 4.05rem);
+  font-size: clamp(1.8rem, min(7vw, 8.6vh), 4.05rem);
   text-wrap: balance;
+}
+
+@media (min-width: 640px) {
+  .display-hero {
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+    word-spacing: 0;
+  }
 }
 
 .display-xl {

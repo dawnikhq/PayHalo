@@ -60,7 +60,7 @@ async function handleGET(request: Request) {
   try {
     const redirectUri = paypalRedirectUri(request.url);
     const tokens = await exchangeCode(code, redirectUri);
-    const identity = await userInfo(tokens.accessToken);
+    const identity = await userInfo(tokens.accessToken, tokens.idToken);
 
     const owner = await requireOwner();
     await savePayPalConnection(owner.id, {

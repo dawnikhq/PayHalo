@@ -246,10 +246,11 @@ export function PayPalCard() {
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-[var(--color-line)] bg-[#fbfdfb] p-4">
               <div className="min-w-0">
                 <p className="truncate text-[13px] font-semibold text-[var(--color-ink)]">
-                  {status.connection.name ?? status.connection.email}
+                  {status.connection.name ?? status.connection.email ?? "PayPal account"}
                 </p>
                 <p className="truncate text-[12px] text-[var(--color-muted)]">
-                  {status.connection.email} · linked {shortDate(status.connection.connectedAt)}
+                  {status.connection.email ? `${status.connection.email} · ` : "Email not shared · "}
+                  linked {shortDate(status.connection.connectedAt)}
                 </p>
                 {status.connection.expired && (
                   <p className="mt-1 text-[11.5px] font-semibold text-[var(--color-warnink)]">

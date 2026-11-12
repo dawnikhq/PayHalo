@@ -554,6 +554,11 @@ export default async function AdminPage() {
                       <strong className="text-[var(--color-ink)]">Scope asked for:</strong> {paypal.oauth.scope}
                     </li>
                     <li className="break-all">
+                      <strong className="text-[var(--color-ink)]">Profile endpoints (no token):</strong>{" "}
+                      {paypal.oauth.profileEndpoints.map((e) => `${e.path} → ${e.status || "unreachable"}`).join(" · ") ||
+                        "not attempted"}
+                    </li>
+                    <li className="break-all">
                       <strong className="text-[var(--color-ink)]">Verdict:</strong> {paypal.verdict}
                     </li>
                   </ul>

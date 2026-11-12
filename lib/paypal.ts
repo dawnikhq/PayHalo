@@ -149,7 +149,10 @@ function basicAuth(): string {
 async function tokenRequest(
   body: Record<string, string>,
   mode: PayPalMode = paypalMode(),
-): Promise<{ ok: true; token: string; expiresIn: number; scope: string | null } | { ok: false; status: number; message: string }> {
+): Promise<
+  | { ok: true; token: string; expiresIn: number; scope: string | null; idToken: string | null }
+  | { ok: false; status: number; message: string }
+> {
   const res = await fetch(`${API[mode]}/v1/oauth2/token`, {
     method: "POST",
     headers: {
@@ -162,7 +165,14 @@ async function tokenRequest(
   });
 
   const json = (await res.json().catch(() => null)) as
-    | { access_token?: string; expires_in?: number; scope?: string; error?: string; error_description?: string }
+    | {
+        access_token?: string;
+        expires_in?: number;
+        scope?: string;
+        id_token?: string;
+        error?: string;
+        error_description?: string;
+      }
     | null;
 
   if (!res.ok || !json?.access_token) {
@@ -173,7 +183,13 @@ async function tokenRequest(
     };
   }
 
-  return { ok: true, token: json.access_token, expiresIn: Number(json.expires_in ?? 0), scope: json.scope ?? null };
+  return {
+    ok: true,
+    token: json.access_token,
+    expiresIn: Number(json.expires_in ?? 0),
+    scope: json.scope ?? null,
+    idToken: json.id_token ?? null,
+  };
 }
 
 /** App-level token: identifies this application's own business account. */
@@ -562,12 +578,14 @@ export interface OAuthTokens {
   accessToken: string;
   expiresIn: number;
   scope: string | null;
+  /** Present when the `openid` scope was granted; carries the profile as claims. */
+  idToken: string | null;
 }
 
 export async function exchangeCode(code: string, redirectUri: string): Promise<OAuthTokens> {
   const result = await tokenRequest({ grant_type: "authorization_code", code, redirect_uri: redirectUri });
   if (!result.ok) throw new PayPalError(result.message, result.status);
-  return { accessToken: result.token, expiresIn: result.expiresIn, scope: result.scope };
+  return { accessToken: result.token, expiresIn: result.expiresIn, scope: result.scope, idToken: result.idToken };
 }
 
 export interface PayPalIdentity {
@@ -585,48 +603,84 @@ type UserInfoPayload = {
   name?: string;
   given_name?: string;
   family_name?: string;
+  error?: string;
+  error_description?: string;
 };
+
+/** The claims inside an OpenID id_token. Nothing here is trusted for access —
+ *  it only saves a second round trip to ask who signed in. */
+function claimsFromIdToken(idToken: string | null | undefined): UserInfoPayload | null {
+  if (!idToken) return null;
+  const payload = idToken.split(".")[1];
+  if (!payload) return null;
+  try {
+    return JSON.parse(Buffer.from(payload.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8"));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Three facts, if PayPal shared them. An email is what the screen shows, but it
+ * is not a condition of the link: a sandbox app that only shares the account id
+ * still identifies an account, and refusing the whole sign-in over a missing
+ * email is how a working connection reads as a broken one.
+ */
+function identityFrom(payload: UserInfoPayload): PayPalIdentity | null {
+  const email = payload.email ?? payload.emails?.find((e) => e.primary)?.value ?? payload.emails?.[0]?.value ?? "";
+  const payerId = payload.sub ?? payload.user_id ?? payload.payer_id ?? "";
+  if (!email && !payerId) return null;
+  const assembled = [payload.given_name, payload.family_name].filter(Boolean).join(" ");
+  return {
+    payerId: payerId || "unknown",
+    email,
+    name: payload.name ?? (assembled || null),
+  };
+}
 
 /**
  * Who just signed in.
  *
- * PayPal answers this in two shapes — OpenID (`sub`, `email`) and v1.1
- * (`user_id`, `emails[0].value`) — and which one arrives depends on how the app
- * was set up, not on anything this code controls. Asking for one schema and
- * failing if it is refused would throw away a sign-in PayPal already granted,
- * so both are tried and both shapes are read.
+ * PayPal answers this in more shapes than one: OpenID Connect on the
+ * `openidconnect` endpoint, the older v1.1 profile on the `oauth2` endpoint,
+ * and — when neither answers — the claims already inside the id_token that came
+ * back with the sign-in. Asking one way and failing would throw away a sign-in
+ * PayPal already granted, so every route to the same three facts is tried, and
+ * the last refusal is quoted so the next attempt has a lead.
  */
-export async function userInfo(accessToken: string): Promise<PayPalIdentity> {
+export async function userInfo(accessToken: string, idToken: string | null = null): Promise<PayPalIdentity> {
+  const endpoints = [
+    "/v1/identity/openidconnect/userinfo?schema=openid",
+    "/v1/identity/oauth2/userinfo?schema=openid",
+    "/v1/identity/oauth2/userinfo?schema=paypalv1.1",
+  ];
+
   let lastError = "";
 
-  for (const schema of ["openid", "paypalv1.1"]) {
-    const res = await fetch(`${API[paypalMode()]}/v1/identity/oauth2/userinfo?schema=${schema}`, {
-      headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
-      cache: "no-store",
-    });
+  for (const path of endpoints) {
+    try {
+      const res = await fetch(`${API[paypalMode()]}${path}`, {
+        headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
+        cache: "no-store",
+      });
 
-    const json = (await res.json().catch(() => null)) as UserInfoPayload | null;
-    if (!res.ok || !json) {
-      lastError = `${res.status} ${schema}`;
-      continue;
+      const json = (await res.json().catch(() => null)) as UserInfoPayload | null;
+      const identity = json && res.ok ? identityFrom(json) : null;
+      if (identity) return identity;
+
+      const said = json?.error_description ?? json?.error ?? "";
+      lastError = `${path.split("?")[1] ?? path} · ${res.status}${said ? ` · ${said}` : ""}`;
+    } catch {
+      lastError = `${path} · unreachable`;
     }
-
-    const email = json.email ?? json.emails?.find((e) => e.primary)?.value ?? json.emails?.[0]?.value ?? "";
-    if (!email) {
-      lastError = `no email (${schema})`;
-      continue;
-    }
-
-    const assembled = [json.given_name, json.family_name].filter(Boolean).join(" ");
-    return {
-      payerId: json.sub ?? json.user_id ?? json.payer_id ?? "unknown",
-      email,
-      name: json.name ?? (assembled || null),
-    };
   }
 
+  /* Last resort: the id_token is issued to this app by PayPal itself. */
+  const identity = identityFrom(claimsFromIdToken(idToken) ?? {});
+  if (identity) return identity;
+
   throw new PayPalError(
-    `PayPal signed you in but would not share the profile (${lastError}). The app needs the Email scope under Log in with PayPal.`,
+    `PayPal signed you in but would not return the profile (${lastError || "no profile returned"}).`,
     502,
   );
 }
@@ -706,6 +760,12 @@ export interface OAuthProbe {
   finalHost: string;
   title: string | null;
   hint: string;
+  /**
+   * The profile endpoints, asked without a token. A 401 means "the address is
+   * right, bring a user token"; a 404 means "there is nothing at this address".
+   * That difference is what tells a wrong URL apart from a missing permission.
+   */
+  profileEndpoints: { path: string; status: number }[];
 }
 
 const PHRASES: [RegExp, string][] = [
@@ -731,7 +791,28 @@ async function probeConnect(redirectUri: string): Promise<OAuthProbe> {
     finalHost: "",
     title: null,
     hint: "not attempted",
+    profileEndpoints: [],
   };
+
+  const paths = [
+    "/v1/identity/openidconnect/userinfo?schema=openid",
+    "/v1/identity/oauth2/userinfo?schema=openid",
+    "/v1/identity/oauth2/userinfo?schema=paypalv1.1",
+  ];
+  probe.profileEndpoints = await Promise.all(
+    paths.map(async (path) => {
+      try {
+        const res = await fetch(`${API[paypalMode()]}${path}`, {
+          headers: { Accept: "application/json" },
+          cache: "no-store",
+          signal: AbortSignal.timeout(8000),
+        });
+        return { path: path.split("/v1/identity/")[1] ?? path, status: res.status };
+      } catch {
+        return { path: path.split("/v1/identity/")[1] ?? path, status: 0 };
+      }
+    }),
+  );
 
   try {
     const res = await fetch(authorizeUrl(redirectUri, "diagnostic"), {
@@ -791,7 +872,15 @@ export async function diagnosePayPal(requestUrl: string): Promise<PayPalDiagnosi
     balances: { ok: false, status: 0, message: "not attempted" },
     payoutCapability: { ok: false, status: 0, message: "not attempted" },
     invoicing: { ok: false, status: 0, message: "not attempted" },
-    oauth: { scope: OAUTH_SCOPE, host: "", status: 0, finalHost: "", title: null, hint: "not attempted" },
+    oauth: {
+      scope: OAUTH_SCOPE,
+      host: "",
+      status: 0,
+      finalHost: "",
+      title: null,
+      hint: "not attempted",
+      profileEndpoints: [],
+    },
     otherEnvironment: null,
     verdict: "",
   };
