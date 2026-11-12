@@ -10,7 +10,7 @@ From savings and investments to cryptocurrency and online financial accounts, Pa
 The purpose is to make sure the people you intend to benefit from what you've built have a clearer understanding of what exists, what you've decided and where to begin.
 
 
-# 1. Why PayHalo exists
+## 1. Why PayHalo exists
 
 Building wealth is a gradual process. It happens through years of working, saving, investing, taking opportunities and making decisions about the future.
 
@@ -24,10 +24,10 @@ This creates a gap between what someone has built and what their beneficiaries k
 
 Inheritance is not simply a question of who receives what. It also involves making sure that relevant information is available, intentions are documented and the people involved have a practical way to navigate the process.
 
-PayHalo exists to help close that gap.
+### PayHalo exists to help close that gap.
 
 
-# 2. What PayHalo makes possible
+## 2. What PayHalo makes possible
 
 PayHalo gives individuals a structured way to prepare their inheritance while they are alive and able to make their own decisions.
 
@@ -51,21 +51,13 @@ PayHalo is not designed to take control of someone's wealth. It helps them prepa
 
 ## 3. Who it's for
 
-
-
 PayHalo is for anyone who has financial holdings they want to account for when preparing their inheritance.
-
-
 
 You don't need to own multiple properties or have an enormous estate. Savings, investments, cryptocurrency, online financial accounts and business interests can all be important to the people you intend to benefit.
 
-
-
 The platform brings together three important roles.
 
-
-
-\*\*Account holders\*\* are the people preparing an inheritance plan. They document their holdings, select beneficiaries, determine allocations and appoint a Trusted Key.
+\*Account holders\* are the people preparing an inheritance plan. They document their holdings, select beneficiaries, determine allocations and appoint a Trusted Key.
 
 
 
