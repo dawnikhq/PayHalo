@@ -13,11 +13,64 @@ export interface MailResult {
 }
 
 const apiKey = () => (process.env.BREVO_API_KEY ?? "").trim();
-const fromEmail = () => (process.env.MAIL_FROM ?? "").trim();
-const fromName = () => (process.env.MAIL_FROM_NAME ?? "PayHalo").trim();
 
+/**
+ * The sender. `MAIL_FROM` when it is set, otherwise the address Brevo has been
+ * verified for PayHalo.
+ *
+ * Vercel scopes an environment variable to specific targets, and this project
+ * sets MAIL_FROM for production only — which meant every preview deployment
+ * (the branch aliases, where this product actually gets tested) believed email
+ * was unavailable and refused to send anything. A sender we can always name is
+ * better than a sender that disappears with a deployment target.
+ */
+const VERIFIED_SENDER = "admin.payhalo@gmail.com";
+
+const fromEmail = () =>
+  (process.env.MAIL_FROM ?? process.env.MAIL_FROM_EMAIL ?? process.env.BREVO_SENDER_EMAIL ?? "").trim() ||
+  VERIFIED_SENDER;
+
+const fromName = () => (process.env.MAIL_FROM_NAME ?? "").trim() || "PayHalo";
+
+/** True when there is a key to send with. The sender always resolves. */
 export function mailConfigured(): boolean {
-  return Boolean(apiKey() && fromEmail());
+  return Boolean(apiKey());
+}
+
+/** What the delivery report shows. No secrets, only yes/no and the sender. */
+export interface MailHealth {
+  keyPresent: boolean;
+  sender: string;
+  senderSource: "environment" | "default";
+  senderName: string;
+  provider: string;
+}
+
+export function mailHealth(): MailHealth {
+  const fromEnv = (process.env.MAIL_FROM ?? process.env.MAIL_FROM_EMAIL ?? process.env.BREVO_SENDER_EMAIL ?? "").trim();
+  return {
+    keyPresent: Boolean(apiKey()),
+    sender: fromEmail(),
+    senderSource: fromEnv ? "environment" : "default",
+    senderName: fromName(),
+    provider: "Brevo",
+  };
+}
+
+/** Ask Brevo who the key belongs to. Proves reachability without sending mail. */
+export async function brevoAccount(): Promise<{ ok: boolean; detail: string }> {
+  if (!apiKey()) return { ok: false, detail: "No BREVO_API_KEY on this deployment." };
+  try {
+    const res = await fetch("https://api.brevo.com/v3/account", {
+      headers: { "api-key": apiKey(), Accept: "application/json" },
+      cache: "no-store",
+    });
+    if (!res.ok) return { ok: false, detail: `Brevo refused the key (${res.status}).` };
+    const body = (await res.json().catch(() => ({}))) as { email?: string; companyName?: string };
+    return { ok: true, detail: `Key valid for ${body.email ?? "an account"}${body.companyName ? ` (${body.companyName})` : ""}.` };
+  } catch (error) {
+    return { ok: false, detail: error instanceof Error ? error.message : "Brevo is unreachable." };
+  }
 }
 
 interface Message {

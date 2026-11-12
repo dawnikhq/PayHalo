@@ -19,9 +19,9 @@ function greeting(hourUtc: number) {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sealed?: string }>;
+  searchParams: Promise<{ sealed?: string; nocode?: string }>;
 }) {
-  const { sealed } = await searchParams;
+  const { sealed, nocode } = await searchParams;
   const s = await getSnapshot();
   const firstName = s.user.name.split(" ")[0];
 
@@ -51,6 +51,18 @@ export default async function DashboardPage({
           Manage my assets <span aria-hidden>→</span>
         </Link>
       </header>
+
+      {nocode && (
+        <div className="card mb-5 flex items-start gap-3 border-[#e8dfc6] bg-[#f6f1e3] p-4">
+          <span aria-hidden className="text-[14px] text-[#6b5a2a]">
+            !
+          </span>
+          <p className="text-[12.5px] leading-relaxed text-[#6b5a2a]">
+            Email is unavailable on this deployment right now, so this sign-in skipped the six-digit code. Your
+            password was still checked. Once email is restored, sign out and in again for the full check.
+          </p>
+        </div>
+      )}
 
       {sealed && (
         <div className="card-mint mb-5 flex items-start gap-3 p-5">

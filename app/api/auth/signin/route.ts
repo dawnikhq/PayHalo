@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { accountByEmail, startLoginCode, sixDigits } from "@/lib/accounts";
+import { accountByEmail, markLogin, sixDigits, startLoginCode, startSession } from "@/lib/accounts";
+import { setSessionCookie } from "@/lib/session";
 import { verifyPassword } from "@/lib/passwords";
 import { mailConfigured, sendLoginCode } from "@/lib/mailer";
 import { clientKey, tooMany } from "@/lib/throttle";
@@ -53,11 +54,21 @@ export async function POST(request: Request) {
       );
     }
 
+    /*
+     * Mail down means the second factor cannot happen. Rather than lock every
+     * account out of its own plan, the password alone is accepted and the
+     * answer says plainly that the code step was skipped — silence here would
+     * be a security story we cannot tell.
+     */
     if (!mailConfigured()) {
-      return NextResponse.json(
-        { error: "Email delivery is not available on this deployment, so the sign-in code cannot be sent." },
-        { status: 503 },
-      );
+      await setSessionCookie(await startSession(account.id));
+      await markLogin(account.id);
+      return NextResponse.json({
+        ok: true,
+        code: false,
+        warning:
+          "Email delivery is unavailable right now, so the six-digit code step was skipped. Your password was still checked.",
+      });
     }
 
     const code = sixDigits();

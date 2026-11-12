@@ -7,7 +7,7 @@ import { OperatorSignOut } from "@/components/admin/OperatorSignOut";
 import { adminConfigured, isAdmin } from "@/lib/admin";
 import { operatorOverview } from "@/lib/operator";
 import { releaseQueue } from "@/lib/store";
-import { mailConfigured } from "@/lib/mailer";
+import { mailConfigured, mailHealth } from "@/lib/mailer";
 import { money, shortDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -42,6 +42,7 @@ export default async function AdminPage() {
   }
 
   const [overview, queue] = await Promise.all([operatorOverview(), releaseQueue()]);
+  const mail = mailHealth();
   const { totals, signups, statuses, customers, events } = overview;
   const peak = Math.max(1, ...signups.map((s) => s.count));
 
@@ -327,6 +328,26 @@ export default async function AdminPage() {
           </section>
 
           <section id="mail" className="mt-8 scroll-mt-6">
+            <div className="mb-3">
+              <h2 className="h2">Email delivery</h2>
+              <p className="t-meta">
+                Confirmation links, sign-in codes and notices all leave through Brevo. If this is off, nobody can create
+                an account or take the second step of signing in.
+              </p>
+            </div>
+            <div className="mb-3 grid gap-3 sm:grid-cols-3">
+              {[
+                ["Status", mailConfigured() ? "Sending" : "Off", mailConfigured() ? "A Brevo key is present." : "No Brevo key on this deployment."],
+                ["Sender", mail.sender, mail.senderSource === "environment" ? "From MAIL_FROM." : "Verified PayHalo default."],
+                ["Reply name", mail.senderName, "Shown in the inbox."],
+              ].map(([label, value, note]) => (
+                <div key={label} className="rounded-[16px] border border-[rgba(21,63,53,0.08)] bg-white p-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">{label}</p>
+                  <p className="mt-2 break-words text-[14px] font-semibold text-[var(--color-ink)]">{value}</p>
+                  <p className="mt-1 text-[11.5px] text-[var(--color-muted)]">{note}</p>
+                </div>
+              ))}
+            </div>
             <MailCheck configured={mailConfigured()} />
           </section>
         </main>

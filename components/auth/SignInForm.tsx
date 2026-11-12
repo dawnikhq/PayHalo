@@ -37,8 +37,13 @@ export function SignInForm({ next }: { next: string }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
         });
-        const data = (await res.json()) as { error?: string };
+        const data = (await res.json()) as { error?: string; code?: boolean };
         if (!res.ok) throw new Error(data.error ?? "Could not sign you in.");
+        if (data.code === false) {
+          // email is down: the server accepted the password on its own and said so
+          window.location.assign(`${next}${next.includes("?") ? "&" : "?"}nocode=1`);
+          return;
+        }
         setStage("code");
         return;
       }
